@@ -1,0 +1,82 @@
+# Dependabot configuration for BoltDown
+# Auto-updates dependencies and creates PRs
+
+version: 2
+
+updates:
+  # ============================================================================
+  # npm (Frontend)
+  # ============================================================================
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"  # Check weekly
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "ai-screams"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "frontend"
+    # Group minor/patch updates
+    groups:
+      react-ecosystem:
+        patterns:
+          - "react*"
+          - "@types/react*"
+      vite-ecosystem:
+        patterns:
+          - "vite*"
+          - "@vitejs/*"
+      eslint-ecosystem:
+        patterns:
+          - "eslint*"
+          - "@typescript-eslint/*"
+      codemirror-ecosystem:
+        patterns:
+          - "@codemirror/*"
+          - "@uiw/react-codemirror"
+
+  # ============================================================================
+  # Cargo (Backend)
+  # ============================================================================
+  - package-ecosystem: "cargo"
+    directory: "/src-tauri"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "ai-screams"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "backend"
+      - "rust"
+    # Group tauri updates
+    groups:
+      tauri-ecosystem:
+        patterns:
+          - "tauri*"
+
+  # ============================================================================
+  # GitHub Actions
+  # ============================================================================
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "ci"
+    labels:
+      - "ci"
+      - "dependencies"

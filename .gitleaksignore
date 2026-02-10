@@ -1,0 +1,12 @@
+# Gitleaks Ignore File
+# False positives or known safe secrets
+
+# Example: Test fixtures
+# tests/fixtures/fake-api-key.txt:generic-api-key
+
+# Documentation examples
+.docs/**/*.md:generic-api-key
+
+# Package lock files (hashes, not secrets)
+package-lock.json:*
+Cargo.lock:*
