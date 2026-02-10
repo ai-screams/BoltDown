@@ -14,23 +14,56 @@ import {
   Quote,
   Strikethrough,
 } from 'lucide-react'
-import type { RefObject } from 'react'
+import { memo } from 'react'
 
+import { useEditorView } from '@/contexts/EditorViewContext'
 import IconButton from '@components/common/IconButton'
 
-interface EditorToolbarProps {
-  editorView: RefObject<EditorView | null>
-}
-
-function wrapSelection(view: EditorView, before: string, after: string) {
+function toggleWrap(view: EditorView, before: string, after: string) {
   const { from, to } = view.state.selection.main
   const selected = view.state.sliceDoc(from, to)
+  const doc = view.state.doc
+
+  // Case 1: Selected text is already wrapped with markers (e.g. selecting "**bold**")
+  if (
+    selected.startsWith(before) &&
+    selected.endsWith(after) &&
+    selected.length >= before.length + after.length
+  ) {
+    const inner = selected.slice(before.length, selected.length - after.length)
+    view.dispatch({
+      changes: { from, to, insert: inner },
+      selection: { anchor: from, head: from + inner.length },
+    })
+    view.focus()
+    return
+  }
+
+  // Case 2: Markers exist just outside the selection (e.g. cursor inside **|bold|**)
+  const outerFrom = from - before.length
+  const outerTo = to + after.length
+  if (
+    outerFrom >= 0 &&
+    outerTo <= doc.length &&
+    doc.sliceString(outerFrom, from) === before &&
+    doc.sliceString(to, outerTo) === after
+  ) {
+    view.dispatch({
+      changes: [
+        { from: outerFrom, to: from, insert: '' },
+        { from: to, to: outerTo, insert: '' },
+      ],
+      selection: { anchor: outerFrom, head: outerFrom + (to - from) },
+    })
+    view.focus()
+    return
+  }
+
+  // Case 3: No existing markers — wrap with markers
+  const text = selected || 'text'
   view.dispatch({
-    changes: { from, to, insert: `${before}${selected || 'text'}${after}` },
-    selection: {
-      anchor: from + before.length,
-      head: from + before.length + (selected || 'text').length,
-    },
+    changes: { from, to, insert: `${before}${text}${after}` },
+    selection: { anchor: from + before.length, head: from + before.length + text.length },
   })
   view.focus()
 }
@@ -65,9 +98,11 @@ function insertBlock(view: EditorView, text: string) {
   view.focus()
 }
 
-export default function EditorToolbar({ editorView }: EditorToolbarProps) {
+export default memo(function EditorToolbar() {
+  const editorViewRef = useEditorView()
+
   const exec = (fn: (view: EditorView) => void) => {
-    if (editorView.current) fn(editorView.current)
+    if (editorViewRef.current) fn(editorViewRef.current)
   }
 
   return (
@@ -76,18 +111,18 @@ export default function EditorToolbar({ editorView }: EditorToolbarProps) {
         icon={Bold}
         label="Bold"
         shortcut="Cmd+B"
-        onClick={() => exec(v => wrapSelection(v, '**', '**'))}
+        onClick={() => exec(v => toggleWrap(v, '**', '**'))}
       />
       <IconButton
         icon={Italic}
         label="Italic"
         shortcut="Cmd+I"
-        onClick={() => exec(v => wrapSelection(v, '*', '*'))}
+        onClick={() => exec(v => toggleWrap(v, '*', '*'))}
       />
       <IconButton
         icon={Strikethrough}
         label="Strikethrough"
-        onClick={() => exec(v => wrapSelection(v, '~~', '~~'))}
+        onClick={() => exec(v => toggleWrap(v, '~~', '~~'))}
       />
 
       <div className="mx-1 h-4 w-px bg-gray-200 dark:bg-gray-700" />
@@ -113,7 +148,7 @@ export default function EditorToolbar({ editorView }: EditorToolbarProps) {
       <IconButton
         icon={Link}
         label="Link"
-        onClick={() => exec(v => wrapSelection(v, '[', '](url)'))}
+        onClick={() => exec(v => toggleWrap(v, '[', '](url)'))}
       />
       <IconButton
         icon={Image}
@@ -131,9 +166,9 @@ export default function EditorToolbar({ editorView }: EditorToolbarProps) {
             const { from, to } = v.state.selection.main
             const selected = v.state.sliceDoc(from, to)
             if (selected.includes('\n')) {
-              wrapSelection(v, '```\n', '\n```')
+              toggleWrap(v, '```\n', '\n```')
             } else {
-              wrapSelection(v, '`', '`')
+              toggleWrap(v, '`', '`')
             }
           })
         }}
@@ -163,4 +198,4 @@ export default function EditorToolbar({ editorView }: EditorToolbarProps) {
       />
     </div>
   )
-}
+})
