@@ -168,7 +168,10 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        # Test phase: Ubuntu only (faster CI)
+        # TODO: Enable macOS and Windows in Phase 2
+        os: [ubuntu-latest]
+        # os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
       - name: Checkout
