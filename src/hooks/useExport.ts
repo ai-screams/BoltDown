@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 
-import { useEditorStore } from '@/stores/editorStore'
+import { useTabStore } from '@/stores/tabStore'
 import { md } from '@/utils/markdownConfig'
 import { isTauri } from '@/utils/tauri'
 
@@ -45,22 +45,31 @@ ${html}
 </html>`
 }
 
-export function useExport() {
-  const { content, fileName } = useEditorStore()
+function getActiveTab() {
+  const { tabs, activeTabId } = useTabStore.getState()
+  return tabs.find(t => t.id === activeTabId)
+}
 
+export function useExport() {
   const exportHtml = useCallback(async () => {
-    const html = md.render(content)
-    const title = fileName.replace(/\.[^.]+$/, '')
+    const tab = getActiveTab()
+    if (!tab) return
+
+    const html = md.render(tab.content)
+    const title = tab.fileName.replace(/\.[^.]+$/, '')
     const fullHtml = buildStandaloneHtml(html, title)
 
     if (isTauri()) {
+      const { save } = await import('@tauri-apps/plugin-dialog')
       const { invoke } = await import('@tauri-apps/api/core')
-      const path = await invoke<string | null>('save_file_dialog')
+      const path = await save({
+        filters: [{ name: 'HTML', extensions: ['html'] }],
+        defaultPath: `${title}.html`,
+      })
       if (path) {
         await invoke('write_file', { path, content: fullHtml })
       }
     } else {
-      // Browser fallback: download
       const blob = new Blob([fullHtml], { type: 'text/html' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -69,28 +78,30 @@ export function useExport() {
       a.click()
       URL.revokeObjectURL(url)
     }
-  }, [content, fileName])
+  }, [])
 
   const exportPdf = useCallback(() => {
     window.print()
   }, [])
 
   const copyHtml = useCallback(async () => {
-    const html = md.render(content)
+    const tab = getActiveTab()
+    if (!tab) return false
+
+    const html = md.render(tab.content)
     try {
       await navigator.clipboard.write([
         new ClipboardItem({
           'text/html': new Blob([html], { type: 'text/html' }),
-          'text/plain': new Blob([content], { type: 'text/plain' }),
+          'text/plain': new Blob([tab.content], { type: 'text/plain' }),
         }),
       ])
       return true
     } catch {
-      // Fallback to text copy
-      await navigator.clipboard.writeText(content)
+      await navigator.clipboard.writeText(tab.content)
       return false
     }
-  }, [content])
+  }, [])
 
   return { exportHtml, exportPdf, copyHtml }
 }

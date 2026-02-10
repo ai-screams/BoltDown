@@ -61,6 +61,8 @@ export default [
         MediaQueryListEvent: 'readonly',
         requestAnimationFrame: 'readonly',
         cancelAnimationFrame: 'readonly',
+        crypto: 'readonly',
+        ResizeObserver: 'readonly',
         React: 'readonly',
       },
     },

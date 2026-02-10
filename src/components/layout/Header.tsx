@@ -9,18 +9,20 @@ import {
   FolderOpen,
   Monitor,
   Moon,
+  PanelLeft,
   Printer,
   Save,
   Sun,
   Zap,
 } from 'lucide-react'
 import { memo, useEffect, useRef, useState } from 'react'
-import { useShallow } from 'zustand/react/shallow'
 
 import { useExport } from '@/hooks/useExport'
 import { useFileSystem } from '@/hooks/useFileSystem'
 import { useTheme } from '@/hooks/useTheme'
 import { useEditorStore } from '@/stores/editorStore'
+import { useSidebarStore } from '@/stores/sidebarStore'
+import { useTabStore } from '@/stores/tabStore'
 import type { EditorMode } from '@/types/editor'
 
 const modes: { mode: EditorMode; icon: typeof Columns2; label: string }[] = [
@@ -32,18 +34,30 @@ const modes: { mode: EditorMode; icon: typeof Columns2; label: string }[] = [
 const themeIcon = { light: Sun, dark: Moon, system: Monitor }
 const themeLabel = { light: 'Light', dark: 'Dark', system: 'System' }
 
+function useActiveFileName() {
+  return useTabStore(s => {
+    const tab = s.tabs.find(t => t.id === s.activeTabId)
+    return tab?.fileName ?? 'Untitled.md'
+  })
+}
+
+function useActiveIsDirty() {
+  return useTabStore(s => {
+    const tab = s.tabs.find(t => t.id === s.activeTabId)
+    return tab ? tab.content !== tab.savedContent : false
+  })
+}
+
 export default memo(function Header() {
-  const { fileName, isDirty, mode, setMode } = useEditorStore(
-    useShallow(s => ({
-      fileName: s.fileName,
-      isDirty: s.isDirty,
-      mode: s.mode,
-      setMode: s.setMode,
-    }))
-  )
+  const mode = useEditorStore(s => s.mode)
+  const setMode = useEditorStore(s => s.setMode)
+  const fileName = useActiveFileName()
+  const isDirty = useActiveIsDirty()
   const { openFile, saveFile } = useFileSystem()
   const { theme, cycleTheme } = useTheme()
   const { exportHtml, exportPdf, copyHtml } = useExport()
+  const sidebarOpen = useSidebarStore(s => s.isOpen)
+  const toggleSidebar = useSidebarStore(s => s.toggle)
 
   const ThemeIcon = themeIcon[theme]
   const [exportOpen, setExportOpen] = useState(false)
@@ -64,6 +78,18 @@ export default memo(function Header() {
   return (
     <header className="flex h-12 items-center justify-between border-b border-gray-200 bg-white px-4 dark:border-gray-700 dark:bg-gray-800">
       <div className="flex items-center gap-2">
+        <button
+          onClick={toggleSidebar}
+          title="Toggle Sidebar (Cmd+Shift+E)"
+          className={clsx(
+            'rounded p-1.5 transition-colors',
+            sidebarOpen
+              ? 'bg-electric-yellow/20 text-electric-dark'
+              : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+          )}
+        >
+          <PanelLeft className="h-4 w-4" />
+        </button>
         <Zap className="h-5 w-5 text-electric-yellow" fill="currentColor" />
         <span className="text-sm font-semibold text-gray-900 dark:text-white">BoltDown</span>
         <span className="text-gray-300 dark:text-gray-600">|</span>

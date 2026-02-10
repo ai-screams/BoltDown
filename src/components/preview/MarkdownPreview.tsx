@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useRef } from 'react'
 
 import { useMarkdownParser } from '@/hooks/useMarkdownParser'
-import { useEditorStore } from '@/stores/editorStore'
+import { useTabStore } from '@/stores/tabStore'
 
 async function renderMermaidBlocks(container: HTMLElement) {
   const blocks = container.querySelectorAll<HTMLPreElement>('pre.mermaid-block')
@@ -57,8 +57,15 @@ function addCopyButtons(container: HTMLElement) {
   }
 }
 
+function useActiveTabContent(): string {
+  return useTabStore(s => {
+    const tab = s.tabs.find(t => t.id === s.activeTabId)
+    return tab?.content ?? ''
+  })
+}
+
 export default memo(function MarkdownPreview() {
-  const content = useEditorStore(s => s.content)
+  const content = useActiveTabContent()
   const html = useMarkdownParser(content)
   const containerRef = useRef<HTMLDivElement>(null)
 
