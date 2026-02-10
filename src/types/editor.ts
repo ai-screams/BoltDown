@@ -1,4 +1,4 @@
-export type EditorMode = 'split' | 'source' | 'wysiwyg'
+export type EditorMode = 'split' | 'source' | 'zen'
 
 export interface Tab {
   id: string

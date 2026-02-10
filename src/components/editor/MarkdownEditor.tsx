@@ -49,8 +49,8 @@ export default memo(function MarkdownEditor() {
   const buildExtensions = (): Extension[] => [
     markdownExtension(),
     themeCompRef.current.of(isDark ? boltdownDarkTheme : boltdownTheme),
-    wysiwygCompRef.current.of(mode === 'wysiwyg' ? wysiwygPlugin : []),
-    gutterCompRef.current.of(buildGutterExts(mode !== 'wysiwyg')),
+    wysiwygCompRef.current.of(mode === 'zen' ? wysiwygPlugin : []),
+    gutterCompRef.current.of(buildGutterExts(mode !== 'zen')),
     history(),
     search(),
     bracketMatching(),
@@ -106,8 +106,8 @@ export default memo(function MarkdownEditor() {
       view.dispatch({
         effects: [
           themeCompRef.current.reconfigure(isDark ? boltdownDarkTheme : boltdownTheme),
-          wysiwygCompRef.current.reconfigure(mode === 'wysiwyg' ? wysiwygPlugin : []),
-          gutterCompRef.current.reconfigure(buildGutterExts(mode !== 'wysiwyg')),
+          wysiwygCompRef.current.reconfigure(mode === 'zen' ? wysiwygPlugin : []),
+          gutterCompRef.current.reconfigure(buildGutterExts(mode !== 'zen')),
         ],
       })
     } else {
@@ -150,8 +150,8 @@ export default memo(function MarkdownEditor() {
     if (!view) return
     view.dispatch({
       effects: [
-        wysiwygCompRef.current.reconfigure(mode === 'wysiwyg' ? wysiwygPlugin : []),
-        gutterCompRef.current.reconfigure(buildGutterExts(mode !== 'wysiwyg')),
+        wysiwygCompRef.current.reconfigure(mode === 'zen' ? wysiwygPlugin : []),
+        gutterCompRef.current.reconfigure(buildGutterExts(mode !== 'zen')),
       ],
     })
   }, [mode])

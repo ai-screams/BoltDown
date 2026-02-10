@@ -1,7 +1,8 @@
 import { clsx } from 'clsx'
-import { FileText, Plus, X } from 'lucide-react'
+import { FileText, PanelLeft, Plus, X } from 'lucide-react'
 import { memo, useCallback } from 'react'
 
+import { useSidebarStore } from '@/stores/sidebarStore'
 import { useTabStore } from '@/stores/tabStore'
 
 export default memo(function TabBar() {
@@ -10,6 +11,8 @@ export default memo(function TabBar() {
   const setActiveTab = useTabStore(s => s.setActiveTab)
   const closeTab = useTabStore(s => s.closeTab)
   const openTab = useTabStore(s => s.openTab)
+  const sidebarOpen = useSidebarStore(s => s.isOpen)
+  const toggleSidebar = useSidebarStore(s => s.toggle)
 
   const handleNewTab = useCallback(() => {
     openTab(null, 'Untitled.md', '')
@@ -25,13 +28,25 @@ export default memo(function TabBar() {
 
   return (
     <div className="flex h-8 flex-none items-center border-b border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-900">
+      <button
+        onClick={toggleSidebar}
+        title="Toggle Sidebar (Cmd+Shift+E)"
+        className={clsx(
+          'flex h-8 w-8 flex-none items-center justify-center border-r border-gray-200 transition-colors dark:border-gray-700',
+          sidebarOpen
+            ? 'bg-electric-yellow/30 text-electric-dark'
+            : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300'
+        )}
+      >
+        <PanelLeft className="h-3.5 w-3.5" />
+      </button>
       <div className="flex flex-1 items-center overflow-x-auto">
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={clsx(
-              'group flex h-8 min-w-0 max-w-[180px] items-center gap-1.5 border-r border-gray-200 px-3 text-xs dark:border-gray-700',
+              'group flex h-8 w-[160px] shrink-0 items-center gap-1.5 border-r border-gray-200 px-3 text-xs dark:border-gray-700',
               tab.id === activeTabId
                 ? 'bg-white text-gray-900 dark:bg-gray-800 dark:text-white'
                 : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200'
@@ -50,14 +65,14 @@ export default memo(function TabBar() {
             </span>
           </button>
         ))}
+        <button
+          onClick={handleNewTab}
+          title="New Tab (Cmd+N)"
+          className="flex h-8 w-8 flex-none items-center justify-center text-gray-400 hover:bg-gray-50 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </button>
       </div>
-      <button
-        onClick={handleNewTab}
-        title="New Tab (Cmd+N)"
-        className="flex h-8 w-8 flex-none items-center justify-center text-gray-400 hover:bg-gray-50 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-      >
-        <Plus className="h-3.5 w-3.5" />
-      </button>
     </div>
   )
 })

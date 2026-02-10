@@ -63,7 +63,7 @@ function App() {
 
       if (mod && e.key === '\\') {
         e.preventDefault()
-        const cycle: EditorMode[] = ['split', 'source', 'wysiwyg']
+        const cycle: EditorMode[] = ['split', 'source', 'zen']
         const idx = cycle.indexOf(mode)
         setMode(cycle[(idx + 1) % cycle.length]!)
         return
