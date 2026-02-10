@@ -15,9 +15,8 @@
 [![Tauri](https://img.shields.io/badge/Tauri-2.0-blue.svg)](https://tauri.app)
 [![React](https://img.shields.io/badge/React-18-blue.svg)](https://react.dev)
 
-**[Download](https://github.com/yourusername/boltdown/releases)** •
-**[Documentation](https://docs.boltdown.io)** •
-**[Discord](https://discord.gg/boltdown)**
+**[Download](https://github.com/ai-screams/BoltDown/releases)** •
+**[Documentation](https://docs.boltdown.io)**
 
 </div>
 
@@ -27,13 +26,13 @@
 
 > **"Electron apps are gas-guzzling SUVs. BoltDown is a Tesla."**
 
-| Feature | ⚡ BoltDown | ⛽ Typora | 📊 Obsidian |
-|---------|------------|----------|-------------|
-| **Bundle Size** | **7MB** | 120MB | 100MB |
-| **Memory Usage** | **50-100MB** | 200-500MB | 300-400MB |
-| **Startup Time** | **<1 second** | 2-3 seconds | 2-3 seconds |
-| **Price** | **Free** (Open Source) | $14.99 | Free |
-| **Framework** | **Tauri** (Rust) | Electron | Electron |
+| Feature          | ⚡ BoltDown            | ⛽ Typora   | 📊 Obsidian |
+| ---------------- | ---------------------- | ----------- | ----------- |
+| **Bundle Size**  | **7MB**                | 120MB       | 100MB       |
+| **Memory Usage** | **50-100MB**           | 200-500MB   | 300-400MB   |
+| **Startup Time** | **<1 second**          | 2-3 seconds | 2-3 seconds |
+| **Price**        | **Free** (Open Source) | $14.99      | Free        |
+| **Framework**    | **Tauri** (Rust)       | Electron    | Electron    |
 
 ### 🎯 10x smaller. 4x faster. 100% free.
 
@@ -74,7 +73,7 @@
 brew install boltdown
 
 # Or download from releases
-# https://github.com/yourusername/boltdown/releases
+# https://github.com/ai-screams/BoltDown/releases
 ```
 
 ### Windows
@@ -84,7 +83,7 @@ brew install boltdown
 winget install boltdown
 
 # Or download installer
-# https://github.com/yourusername/boltdown/releases
+# https://github.com/ai-screams/BoltDown/releases
 ```
 
 ### Linux
@@ -119,13 +118,15 @@ boltdown README.md
 Strike through your writing at the speed of light.
 
 ## Math
+
 $E = mc^2$
 
 ## Diagram
+
 \`\`\`mermaid
 flowchart LR
-    A[Fast] --> B[Faster]
-    B --> C[BoltDown]
+A[Fast] --> B[Faster]
+B --> C[BoltDown]
 \`\`\`
 ```
 
@@ -149,8 +150,8 @@ flowchart LR
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/boltdown.git
-cd boltdown
+git clone https://github.com/ai-screams/BoltDown.git
+cd BoltDown
 
 # Install dependencies
 pnpm install
@@ -200,7 +201,7 @@ pnpm tauri:build
 - **User Guide**: [docs.boltdown.io/guide](https://docs.boltdown.io/guide)
 - **API Reference**: [docs.boltdown.io/api](https://docs.boltdown.io/api)
 - **Contributing**: [CONTRIBUTING.md](CONTRIBUTING.md)
-- **Architecture Decisions**: [.docs/adr/](\.docs/adr/)
+- **Architecture Decisions**: [.docs/adr/](.docs/adr/)
 
 ---
 
@@ -242,9 +243,7 @@ Built with these amazing open-source projects:
 ## 📞 Contact
 
 - **Website**: [boltdown.io](https://boltdown.io)
-- **GitHub**: [github.com/yourusername/boltdown](https://github.com/yourusername/boltdown)
-- **Discord**: [discord.gg/boltdown](https://discord.gg/boltdown)
-- **Email**: hello@boltdown.io
+- **GitHub**: [github.com/ai-screams/BoltDown](https://github.com/ai-screams/BoltDown)
 
 ---
 

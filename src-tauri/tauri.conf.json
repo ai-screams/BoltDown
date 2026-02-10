@@ -1,0 +1,72 @@
+{
+  "$schema": "https://schema.tauri.app/config/2.0.0",
+  "productName": "BoltDown",
+  "version": "0.1.0",
+  "identifier": "io.boltdown.app",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "security": {
+      "csp": {
+        "default-src": "'self'",
+        "img-src": "'self' data: https:",
+        "style-src": "'self' 'unsafe-inline'",
+        "script-src": "'self' 'unsafe-inline'",
+        "font-src": "'self' data:"
+      },
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["**"]
+      }
+    },
+    "windows": [
+      {
+        "title": "BoltDown - Lightning-Fast Markdown",
+        "width": 1400,
+        "height": 900,
+        "minWidth": 800,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": true,
+        "center": true,
+        "dragDropEnabled": true,
+        "theme": "Light"
+      }
+    ],
+    "macOSPrivateApi": true
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": [],
+    "copyright": "© 2026 BoltDown Team",
+    "category": "Productivity",
+    "shortDescription": "Lightning-fast Markdown editor",
+    "longDescription": "BoltDown is a lightning-fast, lightweight Markdown editor built with Tauri. 10x smaller than Electron apps, with instant startup and beautiful WYSIWYG editing."
+  },
+  "plugins": {
+    "fs": {
+      "scope": ["$HOME/**", "$DOCUMENT/**", "$DESKTOP/**", "$DOWNLOAD/**"]
+    },
+    "dialog": {
+      "open": true,
+      "save": true
+    },
+    "shell": {
+      "open": true
+    }
+  }
+}

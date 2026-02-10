@@ -1,0 +1,38 @@
+# Rust Formatter Configuration for BoltDown
+
+# Edition
+edition = "2021"
+
+# Indentation
+indent_style = "Block"
+tab_spaces = 4
+
+# Line Width
+max_width = 100
+comment_width = 80
+
+# Imports
+imports_granularity = "Crate"
+reorder_imports = true
+group_imports = "StdExternalCrate"
+
+# Formatting
+use_small_heuristics = "Default"
+fn_single_line = false
+where_single_line = false
+force_explicit_abi = true
+format_code_in_doc_comments = true
+format_macro_matchers = true
+format_strings = true
+normalize_comments = true
+normalize_doc_attributes = true
+wrap_comments = true
+
+# Blank Lines
+blank_lines_lower_bound = 0
+blank_lines_upper_bound = 1
+
+# Misc
+newline_style = "Unix"
+remove_nested_parens = true
+reorder_impl_items = true

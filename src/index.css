@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* BoltDown Custom Styles */
+
+@layer base {
+  /* Font Faces */
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+  /* Root Variables */
+  :root {
+    /* BoltDown Brand Colors */
+    --color-electric-yellow: #facc15;
+    --color-electric-dark: #ca8a04;
+    --color-deep-blue: #1e3a8a;
+    --color-thunder-gray: #64748b;
+    --color-volt-orange: #f97316;
+    --color-ion-purple: #7c3aed;
+    --color-charge-green: #10b981;
+
+    /* Spacing */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+  }
+
+  /* Dark Mode */
+  .dark {
+    color-scheme: dark;
+  }
+
+  /* Base Styles */
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Inter', 'Pretendard', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  code,
+  pre {
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, monospace;
+  }
+}
+
+/* Prose Styling (Markdown Preview) */
+@layer components {
+  .prose {
+    @apply text-gray-900 dark:text-gray-100;
+  }
+
+  .prose h1 {
+    @apply mb-4 text-4xl font-bold text-gray-900 dark:text-white;
+  }
+
+  .prose h2 {
+    @apply mb-3 mt-8 text-3xl font-bold text-gray-900 dark:text-white;
+  }
+
+  .prose h3 {
+    @apply mb-2 mt-6 text-2xl font-semibold text-gray-900 dark:text-white;
+  }
+
+  .prose p {
+    @apply mb-4 leading-relaxed;
+  }
+
+  .prose code {
+    @apply rounded bg-gray-100 px-1.5 py-0.5 text-sm dark:bg-gray-800;
+  }
+
+  .prose pre {
+    @apply mb-4 overflow-x-auto rounded-lg bg-gray-100 p-4 dark:bg-gray-800;
+  }
+
+  .prose a {
+    @apply text-electric-yellow underline hover:text-electric-dark;
+  }
+
+  .prose blockquote {
+    @apply border-l-4 border-electric-yellow pl-4 italic text-gray-600 dark:text-gray-400;
+  }
+}
+
+/* Animations */
+@layer utilities {
+  .animate-bolt {
+    animation: bolt 0.3s ease-in-out;
+  }
+
+  @keyframes bolt {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-4px);
+    }
+  }
+}

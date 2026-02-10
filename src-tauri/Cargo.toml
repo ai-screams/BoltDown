@@ -1,0 +1,66 @@
+[package]
+name = "boltdown"
+version = "0.1.0"
+description = "⚡ Lightning-fast Markdown editor built with Tauri"
+authors = ["BoltDown Team"]
+license = "MIT"
+repository = "https://github.com/ai-screams/BoltDown"
+homepage = "https://boltdown.io"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[build-dependencies]
+tauri-build = { version = "2.0", features = [] }
+
+[dependencies]
+# Tauri Core
+tauri = { version = "2.0", features = [
+    "protocol-asset",
+    "devtools",
+] }
+tauri-plugin-fs = "2.0"
+tauri-plugin-dialog = "2.0"
+tauri-plugin-shell = "2.0"
+
+# Async Runtime
+tokio = { version = "1.40", features = ["full"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# File System
+notify = "6.1"  # 파일 변경 감지 (auto-save)
+
+# Image Processing (Phase 2)
+# image = "0.25"
+
+# Spell Checking (Phase 2)
+# hunspell = "0.3"
+
+# Git Integration (Phase 3)
+# git2 = "0.18"
+
+# Search (Phase 3)
+# grep-searcher = "0.1"
+
+# Database (Phase 3)
+# rusqlite = "0.31"
+
+[features]
+# This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+# 최적화: 번들 크기 최소화
+opt-level = "z"     # 크기 최적화 (속도보다 크기)
+lto = true          # Link Time Optimization
+codegen-units = 1   # 단일 코드 생성 유닛
+strip = true        # 심볼 제거
+panic = "abort"     # panic시 abort (unwinding 제거)
+
+[profile.dev]
+# 개발 시: 빠른 컴파일
+opt-level = 0
+incremental = true

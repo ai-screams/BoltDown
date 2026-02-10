@@ -1,0 +1,65 @@
+{
+  "recommendations": [
+    // ========================================
+    // Essential (필수)
+    // ========================================
+
+    // TypeScript & JavaScript
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+
+    // Rust
+    "rust-lang.rust-analyzer",
+    "tamasfe.even-better-toml",
+
+    // Tauri
+    "tauri-apps.tauri-vscode",
+
+    // React
+    "dsznajder.es7-react-js-snippets",
+
+    // Tailwind CSS
+    "bradlc.vscode-tailwindcss",
+
+    // ========================================
+    // Recommended (권장)
+    // ========================================
+
+    // Git
+    "eamodio.gitlens",
+    "mhutchie.git-graph",
+
+    // Markdown
+    "yzhang.markdown-all-in-one",
+    "bierner.markdown-mermaid",
+
+    // Code Quality
+    "usernamehw.errorlens",
+    "streetsidesoftware.code-spell-checker",
+
+    // Productivity
+    "christian-kohler.path-intellisense",
+    "formulahendry.auto-rename-tag",
+    "naumovs.color-highlight",
+
+    // ========================================
+    // Optional (선택)
+    // ========================================
+
+    // Icons
+    "vscode-icons-team.vscode-icons",
+
+    // Theme
+    "github.github-vscode-theme",
+
+    // AI Assistance
+    "github.copilot"
+  ],
+
+  "unwantedRecommendations": [
+    // 충돌하는 확장
+    "hookyqr.beautify",
+    "dbaeumer.jshint",
+    "ms-vscode.vscode-typescript-tslint-plugin"
+  ]
+}
