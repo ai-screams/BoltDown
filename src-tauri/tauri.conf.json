@@ -56,17 +56,5 @@
     "category": "Productivity",
     "shortDescription": "Lightning-fast Markdown editor",
     "longDescription": "BoltDown is a lightning-fast, lightweight Markdown editor built with Tauri. 10x smaller than Electron apps, with instant startup and beautiful WYSIWYG editing."
-  },
-  "plugins": {
-    "fs": {
-      "scope": ["$HOME/**", "$DOCUMENT/**", "$DESKTOP/**", "$DOWNLOAD/**"]
-    },
-    "dialog": {
-      "open": true,
-      "save": true
-    },
-    "shell": {
-      "open": true
-    }
   }
 }

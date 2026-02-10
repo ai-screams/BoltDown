@@ -6,16 +6,6 @@ import reactHooksPlugin from 'eslint-plugin-react-hooks'
 import importPlugin from 'eslint-plugin-import'
 import jsxA11yPlugin from 'eslint-plugin-jsx-a11y'
 import prettierConfig from 'eslint-config-prettier'
-import { FlatCompat } from '@eslint/eslintrc'
-import path from 'path'
-import { fileURLToPath } from 'url'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-})
 
 export default [
   // Global ignores
@@ -28,6 +18,10 @@ export default [
       'src-tauri/target/',
       '.husky/',
       'vite.config.ts.timestamp-*',
+      '*.config.js',
+      '*.config.ts',
+      'eslint.config.js',
+      'tests/',
     ],
   },
 

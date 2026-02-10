@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background: Electric Yellow -->
+  <rect width="1024" height="1024" fill="#FACC15" rx="180"/>
+
+  <!-- Lightning Bolt: Deep Blue -->
+  <path d="M 450 200 L 550 400 L 520 400 L 600 700 L 500 550 L 530 550 L 450 350 L 480 350 Z"
+        fill="#1E3A8A"
+        stroke="#0F172A"
+        stroke-width="8"
+        stroke-linejoin="round"/>
+
+  <!-- Text: BoltDown (optional) -->
+  <text x="512" y="900"
+        font-family="Arial, sans-serif"
+        font-size="80"
+        font-weight="bold"
+        fill="#1E3A8A"
+        text-anchor="middle">
+    ⚡
+  </text>
+</svg>

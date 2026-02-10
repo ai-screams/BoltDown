@@ -6,9 +6,9 @@ function App() {
   )
 
   return (
-    <div className="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+    <div className="flex h-screen flex-col bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+      <header className="border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800">
         <div className="flex items-center gap-2">
           <span className="text-2xl">⚡</span>
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">BoltDown</h1>
@@ -17,19 +17,19 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex overflow-hidden">
+      <main className="flex flex-1 overflow-hidden">
         {/* Editor Pane */}
         <div className="flex-1 border-r border-gray-200 dark:border-gray-700">
           <textarea
             value={markdown}
             onChange={e => setMarkdown(e.target.value)}
-            className="w-full h-full p-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono resize-none focus:outline-none"
+            className="h-full w-full resize-none bg-white p-4 font-mono text-gray-900 focus:outline-none dark:bg-gray-800 dark:text-white"
             placeholder="Start writing in Markdown..."
           />
         </div>
 
         {/* Preview Pane */}
-        <div className="flex-1 p-4 bg-white dark:bg-gray-800 overflow-auto">
+        <div className="flex-1 overflow-auto bg-white p-4 dark:bg-gray-800">
           <div className="prose dark:prose-invert max-w-none">
             <div dangerouslySetInnerHTML={{ __html: markdown }} />
           </div>
@@ -37,7 +37,7 @@ function App() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-2">
+      <footer className="border-t border-gray-200 bg-white px-4 py-2 dark:border-gray-700 dark:bg-gray-800">
         <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
           <span>Ready ⚡</span>
           <span>{markdown.length} characters</span>
