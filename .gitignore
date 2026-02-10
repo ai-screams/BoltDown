@@ -1,0 +1,437 @@
+# ============================================================================
+# BoltDown .gitignore
+# ⚡ Lightning-Fast Markdown Editor
+# ============================================================================
+
+# ============================================================================
+# OS (Operating Systems)
+# ============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.directory
+.Trash-*
+.nfs*
+
+# ============================================================================
+# Editors & IDEs
+# ============================================================================
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+.history/
+*.vsix
+
+# JetBrains IDEs (IntelliJ, WebStorm, RustRover)
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.idea_modules/
+atlassian-ide-plugin.xml
+com_crashlytics_export_strings.xml
+crashlytics.properties
+crashlytics-build.properties
+fabric.properties
+
+# Vim
+*.swp
+*.swo
+*.swn
+*~
+.netrwhist
+Session.vim
+Sessionx.vim
+tags
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Sublime Text
+*.tmlanguage.cache
+*.tmPreferences.cache
+*.stTheme.cache
+*.sublime-workspace
+*.sublime-project
+sftp-config.json
+sftp-config-alt*.json
+Package Control.last-run
+Package Control.ca-list
+Package Control.ca-bundle
+Package Control.system-ca-bundle
+Package Control.cache/
+Package Control.ca-certs/
+Package Control.merged-ca-bundle
+Package Control.user-ca-bundle
+oscrypto-ca-bundle.crt
+bh_unicode_properties.cache
+GitHub.sublime-settings
+
+# Atom
+.atom-build.json
+
+# ============================================================================
+# Languages - Node.js / JavaScript / TypeScript
+# ============================================================================
+
+# Dependencies
+node_modules/
+jspm_packages/
+bower_components/
+web_modules/
+
+# Package managers
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.pnp
+.pnp.js
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# Testing
+coverage/
+*.lcov
+.nyc_output
+.grunt
+lib-cov
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# TypeScript cache
+*.tsbuildinfo
+
+# ESLint cache
+.eslintcache
+
+# Parcel cache
+.parcel-cache
+
+# Vite
+.vite/
+
+# Turborepo
+.turbo/
+
+# Vercel
+.vercel
+
+# ============================================================================
+# Languages - Rust
+# ============================================================================
+
+# Rust build artifacts
+target/
+Cargo.lock
+**/*.rs.bk
+*.pdb
+
+# Cargo
+.cargo/
+Cargo.lock
+
+# ============================================================================
+# Framework - Tauri
+# ============================================================================
+
+# Tauri build outputs
+src-tauri/target/
+src-tauri/Cargo.lock
+src-tauri/WixTools/
+src-tauri/gen/
+
+# Tauri bundler
+src-tauri/target/release/
+src-tauri/target/debug/
+
+# Platform-specific
+*.dmg
+*.pkg
+*.app
+*.exe
+*.msi
+*.deb
+*.rpm
+*.AppImage
+
+# ============================================================================
+# Framework - React / Vite
+# ============================================================================
+
+# Vite
+vite.config.ts.timestamp-*
+
+# React
+.react-refresh
+
+# Next.js (미래 대비)
+.next/
+next-env.d.ts
+
+# ============================================================================
+# Environment & Configuration
+# ============================================================================
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+
+# Local configuration
+*.local
+local.properties
+
+# ============================================================================
+# Development & Testing
+# ============================================================================
+
+# Debug
+debug/
+*.log
+*.stackdump
+
+# Test coverage
+coverage/
+*.lcov
+.nyc_output/
+
+# Benchmark
+benchmark/
+*.bench
+
+# Profiling
+*.prof
+*.profile
+
+# ============================================================================
+# Cache & Temporary
+# ============================================================================
+
+# General cache
+.cache/
+*.cache
+.temp/
+tmp/
+temp/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*~
+
+# Lock files (except Cargo.lock in libraries)
+*.lock
+
+# ============================================================================
+# Build Tools
+# ============================================================================
+
+# Webpack
+.webpack/
+
+# Rollup
+.rollup.cache/
+
+# esbuild
+.esbuild/
+
+# SWC
+.swc/
+
+# ============================================================================
+# Documentation
+# ============================================================================
+
+# Autogenerated docs (keep source .md files)
+docs/api/generated/
+.docusaurus/
+
+# ============================================================================
+# CI/CD
+# ============================================================================
+
+# GitHub Actions (keep workflows)
+# (nothing to ignore)
+
+# CircleCI
+.circleci/local/
+
+# ============================================================================
+# Security & Secrets
+# ============================================================================
+
+# API keys and secrets
+*.key
+*.pem
+*.p12
+*.pfx
+*.cer
+*.crt
+secrets.json
+credentials.json
+
+# SSH
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+
+# ============================================================================
+# Miscellaneous
+# ============================================================================
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Media (large files)
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.mp3
+*.wav
+
+# Database
+*.sqlite
+*.db
+
+# Certificates
+*.pem
+*.key
+*.csr
+*.crt
+*.cer
+*.p7b
+*.p7r
+*.spc
+
+# ============================================================================
+# Project Specific - BoltDown
+# ============================================================================
+
+# User preferences (keep .docs/ for documentation)
+.user/
+user-data/
+user-settings.json
+
+# Generated assets (keep source assets)
+public/generated/
+
+# Test fixtures (large files)
+tests/fixtures/large/
+
+# Benchmarks results
+benchmarks/results/
+
+# Performance profiles
+*.cpuprofile
+*.heapprofile
+*.heapsnapshot
+
+# ============================================================================
+# Keep These Files (Negation Rules)
+# ============================================================================
+
+# VS Code recommended settings
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Documentation
+!.docs/**
+
+# GitHub
+!.github/**
+
+# Husky
+!.husky/_/
+!.husky/pre-commit
+!.husky/commit-msg
+
+# Assets
+!src-tauri/icons/**
+!public/**
