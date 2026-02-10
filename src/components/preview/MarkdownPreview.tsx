@@ -1,10 +1,7 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { memo, useCallback, useEffect, useRef } from 'react'
 
 import { useMarkdownParser } from '@/hooks/useMarkdownParser'
-
-interface MarkdownPreviewProps {
-  content: string
-}
+import { useEditorStore } from '@/stores/editorStore'
 
 async function renderMermaidBlocks(container: HTMLElement) {
   const blocks = container.querySelectorAll<HTMLPreElement>('pre.mermaid-block')
@@ -60,7 +57,8 @@ function addCopyButtons(container: HTMLElement) {
   }
 }
 
-export default function MarkdownPreview({ content }: MarkdownPreviewProps) {
+export default memo(function MarkdownPreview() {
+  const content = useEditorStore(s => s.content)
   const html = useMarkdownParser(content)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -81,4 +79,4 @@ export default function MarkdownPreview({ content }: MarkdownPreviewProps) {
       dangerouslySetInnerHTML={{ __html: html }}
     />
   )
-}
+})

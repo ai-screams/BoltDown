@@ -22,13 +22,15 @@ interface EditorState {
 
 export const useEditorStore = create<EditorState>(set => ({
   content: '# Hello BoltDown!\n\nStart writing...',
-  setContent: content =>
+  setContent: content => {
+    const words = content.split(/\s+/).filter(Boolean).length
     set({
       content,
       isDirty: true,
-      wordCount: content.split(/\s+/).filter(Boolean).length,
-      readingTime: Math.max(1, Math.ceil(content.split(/\s+/).filter(Boolean).length / 225)),
-    }),
+      wordCount: words,
+      readingTime: Math.max(1, Math.ceil(words / 225)),
+    })
+  },
 
   filePath: null,
   fileName: 'Untitled.md',

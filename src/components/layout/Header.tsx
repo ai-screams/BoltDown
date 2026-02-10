@@ -14,25 +14,14 @@ import {
   Sun,
   Zap,
 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 
+import { useExport } from '@/hooks/useExport'
+import { useFileSystem } from '@/hooks/useFileSystem'
+import { useTheme } from '@/hooks/useTheme'
+import { useEditorStore } from '@/stores/editorStore'
 import type { EditorMode } from '@/types/editor'
-
-type Theme = 'light' | 'dark' | 'system'
-
-interface HeaderProps {
-  fileName: string
-  isDirty: boolean
-  mode: EditorMode
-  onModeChange: (mode: EditorMode) => void
-  onOpenFile: () => void
-  onSaveFile: () => void
-  theme: Theme
-  onCycleTheme: () => void
-  onExportHtml: () => void
-  onExportPdf: () => void
-  onCopyHtml: () => void
-}
 
 const modes: { mode: EditorMode; icon: typeof Columns2; label: string }[] = [
   { mode: 'split', icon: Columns2, label: 'Split' },
@@ -43,19 +32,19 @@ const modes: { mode: EditorMode; icon: typeof Columns2; label: string }[] = [
 const themeIcon = { light: Sun, dark: Moon, system: Monitor }
 const themeLabel = { light: 'Light', dark: 'Dark', system: 'System' }
 
-export default function Header({
-  fileName,
-  isDirty,
-  mode,
-  onModeChange,
-  onOpenFile,
-  onSaveFile,
-  theme,
-  onCycleTheme,
-  onExportHtml,
-  onExportPdf,
-  onCopyHtml,
-}: HeaderProps) {
+export default memo(function Header() {
+  const { fileName, isDirty, mode, setMode } = useEditorStore(
+    useShallow(s => ({
+      fileName: s.fileName,
+      isDirty: s.isDirty,
+      mode: s.mode,
+      setMode: s.setMode,
+    }))
+  )
+  const { openFile, saveFile } = useFileSystem()
+  const { theme, cycleTheme } = useTheme()
+  const { exportHtml, exportPdf, copyHtml } = useExport()
+
   const ThemeIcon = themeIcon[theme]
   const [exportOpen, setExportOpen] = useState(false)
   const exportRef = useRef<HTMLDivElement>(null)
@@ -84,14 +73,14 @@ export default function Header({
         </span>
         <div className="ml-2 flex items-center gap-0.5">
           <button
-            onClick={onOpenFile}
+            onClick={openFile}
             title="Open (Cmd+O)"
             className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
           >
             <FolderOpen className="h-4 w-4" />
           </button>
           <button
-            onClick={onSaveFile}
+            onClick={saveFile}
             title="Save (Cmd+S)"
             className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
           >
@@ -110,7 +99,7 @@ export default function Header({
               <div className="absolute left-0 top-full z-50 mt-1 w-40 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-600 dark:bg-gray-800">
                 <button
                   onClick={() => {
-                    onExportHtml()
+                    exportHtml()
                     setExportOpen(false)
                   }}
                   className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
@@ -120,7 +109,7 @@ export default function Header({
                 </button>
                 <button
                   onClick={() => {
-                    onExportPdf()
+                    exportPdf()
                     setExportOpen(false)
                   }}
                   className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
@@ -130,7 +119,7 @@ export default function Header({
                 </button>
                 <button
                   onClick={() => {
-                    void onCopyHtml()
+                    void copyHtml()
                     setExportOpen(false)
                   }}
                   className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
@@ -149,7 +138,7 @@ export default function Header({
           {modes.map(({ mode: m, icon: Icon, label }) => (
             <button
               key={m}
-              onClick={() => onModeChange(m)}
+              onClick={() => setMode(m)}
               title={label}
               className={clsx(
                 'flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
@@ -165,7 +154,7 @@ export default function Header({
         </div>
 
         <button
-          onClick={onCycleTheme}
+          onClick={cycleTheme}
           title={`Theme: ${themeLabel[theme]}`}
           className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
         >
@@ -174,4 +163,4 @@ export default function Header({
       </div>
     </header>
   )
-}
+})

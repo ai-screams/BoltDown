@@ -1,34 +1,31 @@
+import { memo } from 'react'
 import type { ReactNode } from 'react'
 
-import type { EditorMode } from '@/types/editor'
+import { useEditorStore } from '@/stores/editorStore'
 
 interface MainLayoutProps {
   editor: ReactNode
   preview: ReactNode
-  mode: EditorMode
+  toolbar: ReactNode
 }
 
-export default function MainLayout({ editor, preview, mode }: MainLayoutProps) {
-  // WYSIWYG: full-width editor, no separate preview
-  if (mode === 'wysiwyg') {
-    return <main className="flex flex-1 overflow-hidden">{editor}</main>
-  }
+export default memo(function MainLayout({ editor, preview, toolbar }: MainLayoutProps) {
+  const mode = useEditorStore(s => s.mode)
 
-  // Source: full-width editor
-  if (mode === 'source') {
-    return (
-      <main className="flex flex-1 overflow-hidden">
-        <div className="w-full overflow-hidden">{editor}</div>
-      </main>
-    )
-  }
-
-  // Split: 50/50
   return (
-    <main className="flex flex-1 overflow-hidden">
-      <div className="flex-1 overflow-hidden">{editor}</div>
-      <div className="w-px bg-gray-200 dark:bg-gray-700" />
-      <div className="flex-1 overflow-auto">{preview}</div>
+    <main className="flex flex-1 flex-col overflow-hidden">
+      {toolbar}
+      <div className="flex flex-1 overflow-hidden">
+        {mode === 'split' ? (
+          <>
+            <div className="flex-1 overflow-hidden">{editor}</div>
+            <div className="w-px bg-gray-200 dark:bg-gray-700" />
+            <div className="flex-1 overflow-auto">{preview}</div>
+          </>
+        ) : (
+          <div className="w-full overflow-hidden">{editor}</div>
+        )}
+      </div>
     </main>
   )
-}
+})
