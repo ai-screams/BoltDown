@@ -59,6 +59,9 @@ export default [
         MouseEvent: 'readonly',
         KeyboardEvent: 'readonly',
         MediaQueryListEvent: 'readonly',
+        requestAnimationFrame: 'readonly',
+        cancelAnimationFrame: 'readonly',
+        React: 'readonly',
       },
     },
     plugins: {
