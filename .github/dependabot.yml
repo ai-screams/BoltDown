@@ -15,6 +15,17 @@ updates:
       time: "09:00"
       timezone: "Asia/Seoul"
     open-pull-requests-limit: 10
+    ignore:
+      # ESLint 10.x has peer dependency issues, update manually in Phase 2
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@eslint/js"
+        update-types: ["version-update:semver-major"]
+      # commitlint 20.x, update after stability verification
+      - dependency-name: "@commitlint/cli"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@commitlint/config-conventional"
+        update-types: ["version-update:semver-major"]
     reviewers:
       - "ai-screams"
     commit-message:
