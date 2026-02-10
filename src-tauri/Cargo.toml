@@ -31,7 +31,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
 # File System
-notify = "6.1"  # 파일 변경 감지 (auto-save)
+notify = "8.2"  # 파일 변경 감지 (auto-save)
 
 # Image Processing (Phase 2)
 # image = "0.25"
