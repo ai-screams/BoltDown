@@ -1,5 +1,6 @@
 # Dependabot configuration for BoltDown
 # Auto-updates dependencies and creates PRs
+# CI stabilized — all ecosystems enabled
 
 version: 2
 
