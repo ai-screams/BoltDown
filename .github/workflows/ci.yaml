@@ -1,0 +1,36 @@
+# =============================================================================
+# CI Orchestrator — reusable workflow 호출만 담당
+# =============================================================================
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint & Format
+    uses: ./.github/workflows/quality-lint.yaml
+
+  security:
+    name: Security Scan
+    uses: ./.github/workflows/security-scan.yaml
+
+  test:
+    name: Test
+    needs: lint
+    uses: ./.github/workflows/quality-test.yaml
+
+  build:
+    name: Build
+    needs: lint
+    uses: ./.github/workflows/build.yaml
