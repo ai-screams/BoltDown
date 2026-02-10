@@ -41,7 +41,7 @@
   "dependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "zustand": "^4.5.0",
+    "zustand": "^5.0.11",
     "markdown-it": "^14.1.0",
     "katex": "^0.16.25",
     "mermaid": "^11.0.0",
