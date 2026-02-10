@@ -100,11 +100,8 @@ jobs:
         run: cd src-tauri && cargo audit
         continue-on-error: true
 
-      # Secret Detection
-      - name: Gitleaks scan
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Note: Secret Detection via GitHub Secret Scanning (free for organizations)
+      # Enable at: Repository Settings → Security → Secret scanning
 
   # ============================================================================
   # Job 3: Test (준비, 아직 테스트 없음)
