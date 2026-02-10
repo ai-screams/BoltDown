@@ -91,6 +91,215 @@
   }
 }
 
+/* Prism.js Syntax Highlighting */
+@layer components {
+  .prose pre {
+    @apply relative;
+  }
+
+  .prose pre code {
+    @apply bg-transparent p-0 text-sm;
+  }
+
+  /* Token colors (Tomorrow Night inspired) */
+  .token.comment,
+  .token.prolog,
+  .token.doctype,
+  .token.cdata {
+    color: #6a737d;
+  }
+  .token.punctuation {
+    color: #e1e4e8;
+  }
+  .token.property,
+  .token.tag,
+  .token.boolean,
+  .token.number,
+  .token.constant,
+  .token.symbol,
+  .token.deleted {
+    color: #f97583;
+  }
+  .token.selector,
+  .token.attr-name,
+  .token.string,
+  .token.char,
+  .token.builtin,
+  .token.inserted {
+    color: #9ecbff;
+  }
+  .token.operator,
+  .token.entity,
+  .token.url {
+    color: #79b8ff;
+  }
+  .token.atrule,
+  .token.attr-value,
+  .token.keyword {
+    color: #b392f0;
+  }
+  .token.function,
+  .token.class-name {
+    color: #e1e4e8;
+  }
+  .token.regex,
+  .token.important,
+  .token.variable {
+    color: #ffab70;
+  }
+
+  /* Light theme token overrides */
+  :root .token.comment,
+  :root .token.prolog,
+  :root .token.doctype,
+  :root .token.cdata {
+    color: #6a737d;
+  }
+  :root .token.punctuation {
+    color: #24292e;
+  }
+  :root .token.property,
+  :root .token.tag,
+  :root .token.boolean,
+  :root .token.number,
+  :root .token.constant,
+  :root .token.symbol,
+  :root .token.deleted {
+    color: #d73a49;
+  }
+  :root .token.selector,
+  :root .token.attr-name,
+  :root .token.string,
+  :root .token.char,
+  :root .token.builtin,
+  :root .token.inserted {
+    color: #032f62;
+  }
+  :root .token.operator,
+  :root .token.entity,
+  :root .token.url {
+    color: #005cc5;
+  }
+  :root .token.atrule,
+  :root .token.attr-value,
+  :root .token.keyword {
+    color: #6f42c1;
+  }
+  :root .token.function,
+  :root .token.class-name {
+    color: #6f42c1;
+  }
+  :root .token.regex,
+  :root .token.important,
+  :root .token.variable {
+    color: #e36209;
+  }
+
+  /* Dark theme token overrides */
+  .dark .token.punctuation {
+    color: #e1e4e8;
+  }
+  .dark .token.function,
+  .dark .token.class-name {
+    color: #e1e4e8;
+  }
+}
+
+/* Prose extras */
+@layer components {
+  .prose ul {
+    @apply mb-4 list-disc pl-6;
+  }
+
+  .prose ol {
+    @apply mb-4 list-decimal pl-6;
+  }
+
+  .prose li {
+    @apply mb-1;
+  }
+
+  .prose hr {
+    @apply my-6 border-gray-200 dark:border-gray-700;
+  }
+
+  .prose table {
+    @apply mb-4 w-full border-collapse;
+  }
+
+  .prose th {
+    @apply border border-gray-300 bg-gray-50 px-3 py-2 text-left font-semibold dark:border-gray-600 dark:bg-gray-800;
+  }
+
+  .prose td {
+    @apply border border-gray-300 px-3 py-2 dark:border-gray-600;
+  }
+
+  .prose img {
+    @apply my-4 max-w-full rounded;
+  }
+
+  .katex-block {
+    @apply my-4 overflow-x-auto text-center;
+  }
+
+  .mermaid-rendered {
+    @apply my-4 flex justify-center;
+  }
+
+  .mermaid-rendered svg {
+    @apply max-w-full;
+  }
+
+  .prose strong {
+    @apply font-bold;
+  }
+
+  .prose em {
+    @apply italic;
+  }
+}
+
+/* Custom Scrollbar */
+@layer base {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: #475569;
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+  }
+}
+
+/* CodeMirror full-height fix */
+@layer components {
+  .cm-editor {
+    height: 100% !important;
+  }
+
+  .cm-scroller {
+    overflow: auto !important;
+  }
+}
+
 /* Animations */
 @layer utilities {
   .animate-bolt {
@@ -105,5 +314,24 @@
     50% {
       transform: translateY(-4px);
     }
+  }
+}
+
+/* Print Styles */
+@media print {
+  header,
+  footer,
+  .cm-editor,
+  .cm-gutters {
+    display: none !important;
+  }
+
+  main {
+    display: block !important;
+  }
+
+  .prose {
+    max-width: 100% !important;
+    padding: 0 !important;
   }
 }

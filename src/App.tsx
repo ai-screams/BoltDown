@@ -1,48 +1,80 @@
-import { useState } from 'react'
+import { useEffect } from 'react'
+
+import { useExport } from '@/hooks/useExport'
+import { useFileSystem } from '@/hooks/useFileSystem'
+import { useTheme } from '@/hooks/useTheme'
+import { useEditorStore } from '@/stores/editorStore'
+import type { EditorMode } from '@/types/editor'
+import MarkdownEditor from '@components/editor/MarkdownEditor'
+import Footer from '@components/layout/Footer'
+import Header from '@components/layout/Header'
+import MainLayout from '@components/layout/MainLayout'
+import MarkdownPreview from '@components/preview/MarkdownPreview'
 
 function App() {
-  const [markdown, setMarkdown] = useState(
-    '# Hello BoltDown! ⚡\n\nStrike through your writing at the speed of light.'
-  )
+  const { content, setContent, fileName, isDirty, mode, setMode, wordCount, readingTime } =
+    useEditorStore()
+  const { openFile, saveFile, saveFileAs } = useFileSystem()
+  const { theme, cycleTheme, isDark } = useTheme()
+  const { exportHtml, exportPdf, copyHtml } = useExport()
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey
+
+      if (mod && e.key === '\\') {
+        e.preventDefault()
+        const cycle: EditorMode[] = ['split', 'source', 'wysiwyg']
+        const idx = cycle.indexOf(mode)
+        setMode(cycle[(idx + 1) % cycle.length]!)
+        return
+      }
+
+      if (mod && e.key === 'o') {
+        e.preventDefault()
+        void openFile()
+        return
+      }
+
+      if (mod && !e.shiftKey && e.key === 's') {
+        e.preventDefault()
+        void saveFile()
+        return
+      }
+
+      if (mod && e.shiftKey && e.key === 's') {
+        e.preventDefault()
+        void saveFileAs()
+        return
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [mode, setMode, openFile, saveFile, saveFileAs])
 
   return (
     <div className="flex h-screen flex-col bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">⚡</span>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">BoltDown</h1>
-          <span className="text-sm text-gray-500 dark:text-gray-400">Lightning-Fast Markdown</span>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex flex-1 overflow-hidden">
-        {/* Editor Pane */}
-        <div className="flex-1 border-r border-gray-200 dark:border-gray-700">
-          <textarea
-            value={markdown}
-            onChange={e => setMarkdown(e.target.value)}
-            className="h-full w-full resize-none bg-white p-4 font-mono text-gray-900 focus:outline-none dark:bg-gray-800 dark:text-white"
-            placeholder="Start writing in Markdown..."
-          />
-        </div>
-
-        {/* Preview Pane */}
-        <div className="flex-1 overflow-auto bg-white p-4 dark:bg-gray-800">
-          <div className="prose dark:prose-invert max-w-none">
-            <div dangerouslySetInnerHTML={{ __html: markdown }} />
-          </div>
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-gray-200 bg-white px-4 py-2 dark:border-gray-700 dark:bg-gray-800">
-        <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-          <span>Ready ⚡</span>
-          <span>{markdown.length} characters</span>
-        </div>
-      </footer>
+      <Header
+        fileName={fileName}
+        isDirty={isDirty}
+        mode={mode}
+        onModeChange={setMode}
+        onOpenFile={openFile}
+        onSaveFile={saveFile}
+        theme={theme}
+        onCycleTheme={cycleTheme}
+        onExportHtml={() => void exportHtml()}
+        onExportPdf={exportPdf}
+        onCopyHtml={() => void copyHtml()}
+      />
+      <MainLayout
+        mode={mode}
+        editor={
+          <MarkdownEditor value={content} onChange={setContent} isDark={isDark} mode={mode} />
+        }
+        preview={<MarkdownPreview content={content} />}
+      />
+      <Footer charCount={content.length} wordCount={wordCount} readingTime={readingTime} />
     </div>
   )
 }

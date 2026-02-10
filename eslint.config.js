@@ -49,6 +49,16 @@ export default [
         clearTimeout: 'readonly',
         setInterval: 'readonly',
         clearInterval: 'readonly',
+        navigator: 'readonly',
+        localStorage: 'readonly',
+        URL: 'readonly',
+        Blob: 'readonly',
+        ClipboardItem: 'readonly',
+        HTMLElement: 'readonly',
+        HTMLPreElement: 'readonly',
+        MouseEvent: 'readonly',
+        KeyboardEvent: 'readonly',
+        MediaQueryListEvent: 'readonly',
       },
     },
     plugins: {
@@ -60,6 +70,7 @@ export default [
     },
     rules: {
       // TypeScript
+      'no-unused-vars': 'off', // Use @typescript-eslint version instead
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': [
         'error',

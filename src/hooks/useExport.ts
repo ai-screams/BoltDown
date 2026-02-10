@@ -1,0 +1,96 @@
+import { useCallback } from 'react'
+
+import { useEditorStore } from '@/stores/editorStore'
+import { md } from '@/utils/markdownConfig'
+import { isTauri } from '@/utils/tauri'
+
+function buildStandaloneHtml(html: string, title: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${title}</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.25/dist/katex.min.css">
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+    color: #24292e;
+    line-height: 1.6;
+  }
+  h1 { font-size: 2em; margin: 0.67em 0; font-weight: 600; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
+  h2 { font-size: 1.5em; margin-top: 1.5em; font-weight: 600; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
+  h3 { font-size: 1.25em; margin-top: 1.25em; font-weight: 600; }
+  code { background: #f6f8fa; padding: 0.2em 0.4em; border-radius: 3px; font-size: 85%; }
+  pre { background: #f6f8fa; padding: 16px; border-radius: 6px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  blockquote { margin: 0; padding: 0 1em; color: #6a737d; border-left: 0.25em solid #dfe2e5; }
+  a { color: #0366d6; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  img { max-width: 100%; }
+  table { border-collapse: collapse; width: 100%; margin-bottom: 1em; }
+  th, td { padding: 6px 13px; border: 1px solid #dfe2e5; }
+  th { background: #f6f8fa; font-weight: 600; }
+  hr { height: 0.25em; padding: 0; margin: 24px 0; background-color: #e1e4e8; border: 0; }
+  ul, ol { padding-left: 2em; }
+  .katex-block { text-align: center; margin: 1em 0; }
+</style>
+</head>
+<body>
+${html}
+</body>
+</html>`
+}
+
+export function useExport() {
+  const { content, fileName } = useEditorStore()
+
+  const exportHtml = useCallback(async () => {
+    const html = md.render(content)
+    const title = fileName.replace(/\.[^.]+$/, '')
+    const fullHtml = buildStandaloneHtml(html, title)
+
+    if (isTauri()) {
+      const { invoke } = await import('@tauri-apps/api/core')
+      const path = await invoke<string | null>('save_file_dialog')
+      if (path) {
+        await invoke('write_file', { path, content: fullHtml })
+      }
+    } else {
+      // Browser fallback: download
+      const blob = new Blob([fullHtml], { type: 'text/html' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${title}.html`
+      a.click()
+      URL.revokeObjectURL(url)
+    }
+  }, [content, fileName])
+
+  const exportPdf = useCallback(() => {
+    window.print()
+  }, [])
+
+  const copyHtml = useCallback(async () => {
+    const html = md.render(content)
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': new Blob([html], { type: 'text/html' }),
+          'text/plain': new Blob([content], { type: 'text/plain' }),
+        }),
+      ])
+      return true
+    } catch {
+      // Fallback to text copy
+      await navigator.clipboard.writeText(content)
+      return false
+    }
+  }, [content])
+
+  return { exportHtml, exportPdf, copyHtml }
+}
