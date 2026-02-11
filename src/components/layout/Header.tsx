@@ -20,7 +20,6 @@ import { useExport } from '@/hooks/useExport'
 import { useFileSystem } from '@/hooks/useFileSystem'
 import { useTheme } from '@/hooks/useTheme'
 import { useEditorStore } from '@/stores/editorStore'
-import { useTabStore } from '@/stores/tabStore'
 import type { EditorMode } from '@/types/editor'
 
 const modes: { mode: EditorMode; icon: typeof Columns2; label: string }[] = [
@@ -32,25 +31,9 @@ const modes: { mode: EditorMode; icon: typeof Columns2; label: string }[] = [
 const themeIcon = { light: Sun, dark: Moon, system: Monitor }
 const themeLabel = { light: 'Light', dark: 'Dark', system: 'System' }
 
-function useActiveFileName() {
-  return useTabStore(s => {
-    const tab = s.tabs.find(t => t.id === s.activeTabId)
-    return tab?.fileName ?? 'Untitled.md'
-  })
-}
-
-function useActiveIsDirty() {
-  return useTabStore(s => {
-    const tab = s.tabs.find(t => t.id === s.activeTabId)
-    return tab ? tab.content !== tab.savedContent : false
-  })
-}
-
 export default memo(function Header() {
   const mode = useEditorStore(s => s.mode)
   const setMode = useEditorStore(s => s.setMode)
-  const fileName = useActiveFileName()
-  const isDirty = useActiveIsDirty()
   const { openFile, saveFile } = useFileSystem()
   const { theme, cycleTheme } = useTheme()
   const { exportHtml, exportPdf, copyHtml } = useExport()
@@ -76,23 +59,18 @@ export default memo(function Header() {
       <div className="flex items-center gap-2">
         <Zap className="h-5 w-5 text-electric-yellow" fill="currentColor" />
         <span className="text-sm font-semibold text-gray-900 dark:text-white">BoltDown</span>
-        <span className="text-gray-300 dark:text-gray-600">|</span>
-        <span className="text-sm text-gray-600 dark:text-gray-400">
-          {fileName}
-          {isDirty && <span className="ml-1 text-electric-yellow">●</span>}
-        </span>
         <div className="ml-2 flex items-center gap-0.5">
           <button
             onClick={openFile}
             title="Open (Cmd+O)"
-            className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+            className="rounded p-1.5 text-gray-500 transition-all duration-150 hover:scale-110 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
           >
             <FolderOpen className="h-4 w-4" />
           </button>
           <button
             onClick={saveFile}
             title="Save (Cmd+S)"
-            className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+            className="rounded p-1.5 text-gray-500 transition-all duration-150 hover:scale-110 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
           >
             <Save className="h-4 w-4" />
           </button>
@@ -101,7 +79,7 @@ export default memo(function Header() {
             <button
               onClick={() => setExportOpen(prev => !prev)}
               title="Export"
-              className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+              className="rounded p-1.5 text-gray-500 transition-all duration-150 hover:scale-110 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
             >
               <Download className="h-4 w-4" />
             </button>
@@ -151,7 +129,7 @@ export default memo(function Header() {
               onClick={() => setMode(m)}
               title={label}
               className={clsx(
-                'flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+                'flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95',
                 m === mode
                   ? 'bg-electric-yellow text-deep-blue shadow-sm'
                   : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
@@ -166,7 +144,7 @@ export default memo(function Header() {
         <button
           onClick={cycleTheme}
           title={`Theme: ${themeLabel[theme]}`}
-          className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+          className="rounded p-1.5 text-gray-500 transition-all duration-150 hover:scale-110 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
         >
           <ThemeIcon className="h-4 w-4" />
         </button>

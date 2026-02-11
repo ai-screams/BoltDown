@@ -46,7 +46,7 @@ export default memo(function TabBar() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={clsx(
-              'group flex h-8 w-[160px] shrink-0 items-center gap-1.5 border-r border-gray-200 px-3 text-xs dark:border-gray-700',
+              'group flex h-8 w-[160px] shrink-0 items-center gap-1.5 border-r border-gray-200 px-3 text-xs transition-colors duration-150 dark:border-gray-700',
               tab.id === activeTabId
                 ? 'bg-white text-gray-900 dark:bg-gray-800 dark:text-white'
                 : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200'
@@ -68,7 +68,7 @@ export default memo(function TabBar() {
         <button
           onClick={handleNewTab}
           title="New Tab (Cmd+N)"
-          className="flex h-8 w-8 flex-none items-center justify-center text-gray-400 hover:bg-gray-50 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+          className="flex h-8 w-8 flex-none items-center justify-center text-gray-400 transition-all duration-150 hover:scale-110 hover:bg-gray-50 hover:text-gray-600 active:scale-95 dark:hover:bg-gray-800 dark:hover:text-gray-300"
         >
           <Plus className="h-3.5 w-3.5" />
         </button>
