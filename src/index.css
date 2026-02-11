@@ -83,7 +83,7 @@
   }
 
   .prose a {
-    @apply text-electric-yellow underline hover:text-electric-dark;
+    @apply text-deep-blue underline hover:text-electric-dark dark:text-electric-yellow dark:hover:text-yellow-300;
   }
 
   .prose blockquote {
