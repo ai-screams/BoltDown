@@ -45,10 +45,14 @@ export function useFileSystem() {
   }, [openTab, addRecentFile])
 
   const saveFile = useCallback(async () => {
-    if (!isTauri()) return
-
     const { tab, activeTabId } = getActiveTab()
     if (!tab) return
+
+    if (!isTauri()) {
+      markClean(activeTabId, tab.content)
+      useEditorStore.getState().flashStatus('Saved')
+      return
+    }
 
     const { save } = await import('@tauri-apps/plugin-dialog')
     const { invoke } = await import('@tauri-apps/api/core')
@@ -67,10 +71,14 @@ export function useFileSystem() {
   }, [getActiveTab, markClean])
 
   const saveFileAs = useCallback(async () => {
-    if (!isTauri()) return
-
     const { tab, activeTabId } = getActiveTab()
     if (!tab) return
+
+    if (!isTauri()) {
+      markClean(activeTabId, tab.content)
+      useEditorStore.getState().flashStatus('Saved')
+      return
+    }
 
     const { save } = await import('@tauri-apps/plugin-dialog')
     const { invoke } = await import('@tauri-apps/api/core')
