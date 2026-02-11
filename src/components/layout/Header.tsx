@@ -84,13 +84,13 @@ export default memo(function Header() {
               <Download className="h-4 w-4" />
             </button>
             {exportOpen && (
-              <div className="absolute left-0 top-full z-50 mt-1 w-40 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-600 dark:bg-gray-800">
+              <div className="animate-dropdown absolute left-0 top-full z-50 mt-1 w-40 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-600 dark:bg-gray-800">
                 <button
                   onClick={() => {
                     exportHtml()
                     setExportOpen(false)
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                 >
                   <FileText className="h-3.5 w-3.5" />
                   Export HTML
@@ -100,7 +100,7 @@ export default memo(function Header() {
                     exportPdf()
                     setExportOpen(false)
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                 >
                   <Printer className="h-3.5 w-3.5" />
                   Print / PDF
@@ -110,7 +110,7 @@ export default memo(function Header() {
                     void copyHtml()
                     setExportOpen(false)
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                 >
                   <Clipboard className="h-3.5 w-3.5" />
                   Copy HTML

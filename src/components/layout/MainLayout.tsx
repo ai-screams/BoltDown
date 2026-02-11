@@ -64,10 +64,10 @@ export default memo(function MainLayout({ editor, preview, toolbar }: MainLayout
             <div
               onMouseDown={handleMouseDown}
               onDoubleClick={handleDoubleClick}
-              className={`w-1 flex-none cursor-col-resize transition-colors ${
+              className={`w-1 flex-none cursor-col-resize transition-all duration-150 ${
                 isDragging
-                  ? 'bg-electric-yellow'
-                  : 'bg-gray-200 hover:bg-electric-yellow/50 dark:bg-gray-700 dark:hover:bg-electric-yellow/50'
+                  ? 'w-1 bg-electric-yellow'
+                  : 'bg-gray-200 hover:w-1.5 hover:bg-electric-yellow/50 dark:bg-gray-700 dark:hover:bg-electric-yellow/50'
               }`}
             />
             <div className="flex-1 overflow-auto">{preview}</div>

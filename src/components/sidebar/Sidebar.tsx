@@ -69,7 +69,7 @@ export default memo(function Sidebar({ onFileOpen }: SidebarProps) {
       {isTauri() && (
         <button
           onClick={handleOpenFolder}
-          className="flex h-9 flex-none items-center justify-center gap-1.5 border-t border-gray-200 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+          className="flex h-9 flex-none items-center justify-center gap-1.5 border-t border-gray-200 text-xs text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
         >
           <FolderOpen className="h-3.5 w-3.5" />
           Open Folder

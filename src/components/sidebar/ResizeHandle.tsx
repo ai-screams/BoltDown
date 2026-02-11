@@ -43,10 +43,10 @@ export default memo(function ResizeHandle() {
   return (
     <div
       onMouseDown={handleMouseDown}
-      className={`w-1 flex-none cursor-col-resize transition-colors ${
+      className={`group relative w-1 flex-none cursor-col-resize transition-all duration-150 ${
         isDragging
-          ? 'bg-electric-yellow'
-          : 'bg-gray-200 hover:bg-electric-yellow/50 dark:bg-gray-700 dark:hover:bg-electric-yellow/50'
+          ? 'w-1 bg-electric-yellow'
+          : 'bg-gray-200 hover:w-1.5 hover:bg-electric-yellow/50 dark:bg-gray-700 dark:hover:bg-electric-yellow/50'
       }`}
     />
   )
