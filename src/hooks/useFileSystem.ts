@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 
+import { useEditorStore } from '@/stores/editorStore'
 import { useSidebarStore } from '@/stores/sidebarStore'
 import { useTabStore } from '@/stores/tabStore'
 import { isTauri } from '@/utils/tauri'
@@ -62,6 +63,7 @@ export function useFileSystem() {
     if (!path) return
     await invoke('write_file', { path, content: tab.content })
     markClean(activeTabId, tab.content)
+    useEditorStore.getState().flashStatus('Saved')
   }, [getActiveTab, markClean])
 
   const saveFileAs = useCallback(async () => {
@@ -79,6 +81,7 @@ export function useFileSystem() {
     if (!path) return
     await invoke('write_file', { path, content: tab.content })
     markClean(activeTabId, tab.content)
+    useEditorStore.getState().flashStatus('Saved')
   }, [getActiveTab, markClean])
 
   return { openFile, saveFile, saveFileAs }

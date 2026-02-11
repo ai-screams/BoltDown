@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 
+import { useEditorStore } from '@/stores/editorStore'
 import { useTabStore } from '@/stores/tabStore'
 import { md } from '@/utils/markdownConfig'
 import { isTauri } from '@/utils/tauri'
@@ -68,6 +69,7 @@ export function useExport() {
       })
       if (path) {
         await invoke('write_file', { path, content: fullHtml })
+        useEditorStore.getState().flashStatus('Exported HTML')
       }
     } else {
       const blob = new Blob([fullHtml], { type: 'text/html' })
@@ -77,6 +79,7 @@ export function useExport() {
       a.download = `${title}.html`
       a.click()
       URL.revokeObjectURL(url)
+      useEditorStore.getState().flashStatus('Exported HTML')
     }
   }, [])
 
@@ -96,9 +99,11 @@ export function useExport() {
           'text/plain': new Blob([tab.content], { type: 'text/plain' }),
         }),
       ])
+      useEditorStore.getState().flashStatus('Copied HTML')
       return true
     } catch {
       await navigator.clipboard.writeText(tab.content)
+      useEditorStore.getState().flashStatus('Copied as text')
       return false
     }
   }, [])
