@@ -48,15 +48,30 @@ function toggleWrap(view: EditorView, before: string, after: string) {
     doc.sliceString(outerFrom, from) === before &&
     doc.sliceString(to, outerTo) === after
   ) {
-    view.dispatch({
-      changes: [
-        { from: outerFrom, to: from, insert: '' },
-        { from: to, to: outerTo, insert: '' },
-      ],
-      selection: { anchor: outerFrom, head: outerFrom + (to - from) },
-    })
-    view.focus()
-    return
+    // Guard: for single-char markers (e.g. * for italic), count the full consecutive
+    // run to avoid stripping a char that belongs to a longer marker (e.g. ** for bold).
+    // Even count ⇒ marker not present (all chars paired as bold) ⇒ skip removal.
+    let shouldRemove = true
+    if (before === after && before.length === 1) {
+      const ch = before
+      let left = 0
+      for (let i = from - 1; i >= 0 && doc.sliceString(i, i + 1) === ch; i--) left++
+      let right = 0
+      for (let i = to; i < doc.length && doc.sliceString(i, i + 1) === ch; i++) right++
+      if (left % 2 === 0 || right % 2 === 0) shouldRemove = false
+    }
+
+    if (shouldRemove) {
+      view.dispatch({
+        changes: [
+          { from: outerFrom, to: from, insert: '' },
+          { from: to, to: outerTo, insert: '' },
+        ],
+        selection: { anchor: outerFrom, head: outerFrom + (to - from) },
+      })
+      view.focus()
+      return
+    }
   }
 
   // Case 3: No existing markers — wrap with markers
