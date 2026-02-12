@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback } from 'react'
+import { create } from 'zustand'
 
 type Theme = 'light' | 'dark' | 'system'
 
@@ -11,35 +12,44 @@ function applyTheme(theme: Theme) {
   document.documentElement.classList.toggle('dark', resolved === 'dark')
 }
 
-export function useTheme() {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    const stored = localStorage.getItem('boltdown-theme') as Theme | null
-    return stored ?? 'system'
+interface ThemeState {
+  theme: Theme
+  setTheme: (t: Theme) => void
+}
+
+const useThemeStore = create<ThemeState>(set => {
+  const stored = localStorage.getItem('boltdown-theme') as Theme | null
+  const initial = stored ?? 'system'
+  // Apply on store creation
+  applyTheme(initial)
+
+  // Listen for system theme changes
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    const { theme } = useThemeStore.getState()
+    if (theme === 'system') applyTheme('system')
+    // Force re-render by touching state
+    set(s => ({ ...s }))
   })
 
-  const setTheme = useCallback((t: Theme) => {
-    setThemeState(t)
-    localStorage.setItem('boltdown-theme', t)
-    applyTheme(t)
-  }, [])
+  return {
+    theme: initial,
+    setTheme: t => {
+      localStorage.setItem('boltdown-theme', t)
+      applyTheme(t)
+      set({ theme: t })
+    },
+  }
+})
+
+export function useTheme() {
+  const theme = useThemeStore(s => s.theme)
+  const setTheme = useThemeStore(s => s.setTheme)
 
   const cycleTheme = useCallback(() => {
     const order: Theme[] = ['light', 'dark', 'system']
     const idx = order.indexOf(theme)
     setTheme(order[(idx + 1) % order.length]!)
   }, [theme, setTheme])
-
-  // Apply on mount and listen for system changes
-  useEffect(() => {
-    applyTheme(theme)
-
-    if (theme === 'system') {
-      const mq = window.matchMedia('(prefers-color-scheme: dark)')
-      const handler = () => applyTheme('system')
-      mq.addEventListener('change', handler)
-      return () => mq.removeEventListener('change', handler)
-    }
-  }, [theme])
 
   const isDark = theme === 'dark' || (theme === 'system' && getSystemTheme() === 'dark')
 
