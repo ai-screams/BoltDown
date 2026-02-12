@@ -14,20 +14,22 @@ async function renderMermaidBlocks(container: HTMLElement) {
     securityLevel: 'loose',
   })
 
-  for (const block of blocks) {
-    const code = block.querySelector('code')?.textContent
-    if (!code || block.dataset['rendered'] === 'true') continue
+  await Promise.all(
+    Array.from(blocks).map(async block => {
+      const code = block.querySelector('code')?.textContent
+      if (!code || block.dataset['rendered'] === 'true') return
 
-    try {
-      const id = `mermaid-${Math.random().toString(36).slice(2, 9)}`
-      const { svg } = await mermaid.render(id, code)
-      block.innerHTML = svg
-      block.dataset['rendered'] = 'true'
-      block.classList.add('mermaid-rendered')
-    } catch {
-      // Leave as code block on error
-    }
-  }
+      try {
+        const id = `mermaid-${Math.random().toString(36).slice(2, 9)}`
+        const { svg } = await mermaid.render(id, code)
+        block.innerHTML = svg
+        block.dataset['rendered'] = 'true'
+        block.classList.add('mermaid-rendered')
+      } catch {
+        // Leave as code block on error
+      }
+    })
+  )
 }
 
 function addCopyButtons(container: HTMLElement) {

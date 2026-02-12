@@ -65,9 +65,13 @@ export function useFileSystem() {
       path = selected
     }
     if (!path) return
-    await invoke('write_file', { path, content: tab.content })
-    markClean(activeTabId, tab.content)
-    useEditorStore.getState().flashStatus('Saved')
+    try {
+      await invoke('write_file', { path, content: tab.content })
+      markClean(activeTabId, tab.content)
+      useEditorStore.getState().flashStatus('Saved')
+    } catch {
+      useEditorStore.getState().flashStatus('Save failed', 3000)
+    }
   }, [getActiveTab, markClean])
 
   const saveFileAs = useCallback(async () => {
@@ -87,9 +91,13 @@ export function useFileSystem() {
       defaultPath: tab.filePath ?? tab.fileName,
     })
     if (!path) return
-    await invoke('write_file', { path, content: tab.content })
-    markClean(activeTabId, tab.content)
-    useEditorStore.getState().flashStatus('Saved')
+    try {
+      await invoke('write_file', { path, content: tab.content })
+      markClean(activeTabId, tab.content)
+      useEditorStore.getState().flashStatus('Saved')
+    } catch {
+      useEditorStore.getState().flashStatus('Save failed', 3000)
+    }
   }, [getActiveTab, markClean])
 
   return { openFile, saveFile, saveFileAs }

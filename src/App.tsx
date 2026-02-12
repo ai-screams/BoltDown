@@ -40,6 +40,7 @@ function App() {
         addRecentFile(path, name)
       } catch {
         // File read error — silently ignore
+        console.warn('Failed to open file:', path)
       }
     },
     [openTab, addRecentFile]
