@@ -96,16 +96,45 @@ function NumberInput({
   step?: number
   onChange: (v: number) => void
 }) {
+  const [draft, setDraft] = useState(String(value))
+  const [focused, setFocused] = useState(false)
+
+  // Sync draft when value changes externally (e.g. reset)
+  useEffect(() => {
+    if (!focused) setDraft(String(value))
+  }, [value, focused])
+
+  const commit = () => {
+    const v = parseFloat(draft)
+    if (!Number.isNaN(v) && v >= min && v <= max) {
+      onChange(v)
+    } else {
+      setDraft(String(value))
+    }
+  }
+
   return (
     <input
       type="number"
-      value={value}
+      value={focused ? draft : String(value)}
       min={min}
       max={max}
       step={step ?? 1}
       onChange={e => {
-        const v = parseFloat(e.target.value)
+        const raw = e.target.value
+        setDraft(raw)
+        const v = parseFloat(raw)
         if (!Number.isNaN(v) && v >= min && v <= max) onChange(v)
+      }}
+      onFocus={() => setFocused(true)}
+      onBlur={() => {
+        setFocused(false)
+        commit()
+      }}
+      onKeyDown={e => {
+        if (e.key === 'Enter') {
+          e.currentTarget.blur()
+        }
       }}
       className="w-20 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 focus:border-electric-yellow focus:outline-none focus:ring-1 focus:ring-electric-yellow/50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
     />
