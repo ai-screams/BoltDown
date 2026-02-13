@@ -10,7 +10,7 @@ Reusable React hooks that bridge UI components with Tauri APIs, store state, and
 
 - `useFileSystem.ts` — File open/save/saveAs via Tauri dialog + invoke. Uses `getState()` to avoid stale closures. Returns `{ openFile, saveFile, saveFileAs }`.
 - `useMarkdownParser.ts` — Thin `useMemo` wrapper around markdown-it's `md.render()`. Returns rendered HTML string.
-- `useTheme.ts` — Light/Dark/System theme cycling with localStorage persistence and `matchMedia` listener. Returns `{ theme, setTheme, cycleTheme, isDark }`.
+- `useTheme.ts` — Zustand-backed theme store (singleton). Light/Dark/System cycling with localStorage persistence and `matchMedia` listener. Shared across all components via `useThemeStore`. Returns `{ theme, setTheme, cycleTheme, isDark }`.
 - `useExport.ts` — Export markdown as standalone HTML file (Tauri save or blob download), print/PDF via `window.print()`, copy HTML to clipboard. Returns `{ exportHtml, exportPdf, copyHtml }`.
 
 ## For AI Agents

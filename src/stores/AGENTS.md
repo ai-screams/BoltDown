@@ -8,7 +8,7 @@ Three independent Zustand stores following SRP. Each store manages a distinct do
 
 ## Key Files
 
-- `editorStore.ts` — Editor view mode (`'split' | 'source' | 'zen'`). Exports `useEditorStore` with `mode` and `setMode`.
+- `editorStore.ts` — Editor view mode (`'split' | 'source' | 'zen'`) and transient status messages. Exports `useEditorStore` with `mode`, `setMode`, `statusText`, and `flashStatus(text, ms)`.
 - `tabStore.ts` — Multi-tab document state. Manages `Tab[]`, `activeTabId`. Methods: `openTab`, `closeTab`, `closeOtherTabs`, `setActiveTab`, `updateContent`, `markClean`. Tab IDs are UUIDs.
 - `sidebarStore.ts` — Sidebar UI state (open/close, width, file tree data, recent files). Persists width to localStorage with 300ms debounce. Max 20 recent files. Exports `useSidebarStore`.
 

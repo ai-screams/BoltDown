@@ -15,7 +15,7 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 │  │  │ Sidebar │ │ Editor   │ │ Preview   │  │  │
 │  │  │ (tree)  │ │ (CM6)    │ │ (md-it)   │  │  │
 │  │  └─────────┘ └──────────┘ └───────────┘  │  │
-│  │        Zustand Stores (3 stores)          │  │
+│  │        Zustand Stores (4 stores)          │  │
 │  └───────────────────────────────────────────┘  │
 │              Rust IPC Commands                  │
 │         (read_file, write_file, list_dir)       │
@@ -56,20 +56,20 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 
 ## Tech Stack
 
-| Layer         | Technology                               |
-| ------------- | ---------------------------------------- |
-| Desktop Shell | Tauri 2.0 (Rust)                         |
-| UI Framework  | React 19 + TypeScript (strict)           |
-| Editor        | CodeMirror 6 (direct API)                |
-| Markdown      | markdown-it + KaTeX + Mermaid + Prism.js |
-| State         | Zustand (3 stores: editor, tab, sidebar) |
-| Styling       | Tailwind CSS (dark mode: class-based)    |
-| Icons         | lucide-react                             |
-| File Tree     | react-arborist                           |
-| Build         | Vite 5 + esbuild                         |
+| Layer         | Technology                                      |
+| ------------- | ----------------------------------------------- |
+| Desktop Shell | Tauri 2.0 (Rust)                                |
+| UI Framework  | React 19 + TypeScript (strict)                  |
+| Editor        | CodeMirror 6 (direct API)                       |
+| Markdown      | markdown-it + KaTeX + Mermaid + Prism.js        |
+| State         | Zustand (4 stores: editor, tab, sidebar, theme) |
+| Styling       | Tailwind CSS (dark mode: class-based)           |
+| Icons         | lucide-react                                    |
+| File Tree     | react-arborist                                  |
+| Build         | Vite 7 + esbuild                                |
 
 ## Git
 
-- Branch: `feat/phase1-3mode-editor`
+- Branch strategy: feature branches → PR → main
 - Commit style: Conventional Commits (`feat(editor):`, `fix(preview):`, etc.)
 - Pre-commit: Husky + lint-staged + commitlint
