@@ -69,7 +69,8 @@ export function useFileSystem() {
       await invoke('write_file', { path, content: tab.content })
       markClean(activeTabId, tab.content)
       useEditorStore.getState().flashStatus('Saved')
-    } catch {
+    } catch (e) {
+      console.error('Save failed:', e)
       useEditorStore.getState().flashStatus('Save failed', 3000)
     }
   }, [getActiveTab, markClean])
@@ -95,7 +96,8 @@ export function useFileSystem() {
       await invoke('write_file', { path, content: tab.content })
       markClean(activeTabId, tab.content)
       useEditorStore.getState().flashStatus('Saved')
-    } catch {
+    } catch (e) {
+      console.error('Save as failed:', e)
       useEditorStore.getState().flashStatus('Save failed', 3000)
     }
   }, [getActiveTab, markClean])

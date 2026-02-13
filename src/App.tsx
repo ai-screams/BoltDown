@@ -38,9 +38,8 @@ function App() {
         const text = await invoke<string>('read_file', { path })
         openTab(path, name, text)
         addRecentFile(path, name)
-      } catch {
-        // File read error — silently ignore
-        console.warn('Failed to open file:', path)
+      } catch (e) {
+        console.warn('Failed to open file:', path, e)
       }
     },
     [openTab, addRecentFile]
