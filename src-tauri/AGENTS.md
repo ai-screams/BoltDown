@@ -12,11 +12,13 @@ Rust backend providing desktop shell, native file system access, and IPC command
 - `src/lib.rs` — Shared utilities: `word_count`, `reading_time`, placeholder `markdown_to_html`
 - `Cargo.toml` — Rust dependencies (tauri 2.0, tokio, serde, notify); aggressive release optimizations (LTO, strip, opt-level=z)
 - `tauri.conf.json` — App config: window 1400x900 (min 800x600), CSP policy, asset protocol, bundle targets
+- `capabilities/default.json` — Tauri 2.0 ACL permissions: `core:default`, `dialog:default`, `shell:default`, `fs:default` scoped to `main` window
 - `build.rs` — Tauri build script
 
 ## Subdirectories
 
 - `src/` — Rust source code
+- `capabilities/` — Tauri 2.0 ACL permission definitions (required for all IPC access)
 - `icons/` — App icons (macOS .icns, Windows .ico, iOS, Android)
 
 ## IPC Commands
@@ -49,3 +51,4 @@ Rust backend providing desktop shell, native file system access, and IPC command
 
 - Frontend communicates via `@tauri-apps/api/core` invoke()
 - Frontend uses `@tauri-apps/plugin-dialog` for file picker
+- **Tauri 2.0 ACL**: All IPC commands require matching permission in `capabilities/default.json`. Without it, plugin commands silently fail.

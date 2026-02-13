@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) + **React 19** (TypeScript frontend) + **CodeMirror 6** (editor engine). Phase 1 MVP is fully implemented: 3-mode editing (Split/Source/Zen), multi-tab, file sidebar, dark mode, KaTeX/Mermaid, export.
+Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) + **React 19** (TypeScript frontend) + **CodeMirror 6** (editor engine). Phase 1 MVP complete. Phase 2 in progress: Settings System (4-category modal, Tauri persistence), Tauri 2.0 ACL capabilities, file save fixes (in-memory save, error handling), layout fixes (scrolling).
 
 ## Architecture Overview
 

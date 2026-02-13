@@ -8,7 +8,7 @@ Reusable React hooks that bridge UI components with Tauri APIs, store state, and
 
 ## Key Files
 
-- `useFileSystem.ts` — File open/save/saveAs via Tauri dialog + invoke. Uses `getState()` to avoid stale closures. Returns `{ openFile, saveFile, saveFileAs }`.
+- `useFileSystem.ts` — File open/save/saveAs via Tauri dialog + invoke. In-memory save for untitled docs (no file dialog), disk save for files with filePath. All Tauri paths wrapped in try-catch with `flashStatus` error feedback. Uses `getState()` to avoid stale closures. Requires `src-tauri/capabilities/default.json` for Tauri 2.0 ACL. Returns `{ openFile, saveFile, saveFileAs }`.
 - `useMarkdownParser.ts` — Thin `useMemo` wrapper around markdown-it's `md.render()`. Returns rendered HTML string.
 - `useExport.ts` — Export markdown as standalone HTML file (Tauri save or blob download), print/PDF via `window.print()`, copy HTML to clipboard. Returns `{ exportHtml, exportPdf, copyHtml }`.
 
