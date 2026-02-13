@@ -30,18 +30,23 @@ export function useFileSystem() {
       return
     }
 
-    const { open } = await import('@tauri-apps/plugin-dialog')
-    const { invoke } = await import('@tauri-apps/api/core')
-    const selected = await open({
-      filters: [{ name: 'Markdown', extensions: ['md', 'markdown', 'txt'] }],
-    })
-    if (!selected) return
-    const path = typeof selected === 'string' ? selected : selected[0]
-    if (!path) return
-    const text = await invoke<string>('read_file', { path })
-    const name = path.split(/[/\\]/).pop() ?? 'Untitled.md'
-    openTab(path, name, text)
-    addRecentFile(path, name)
+    try {
+      const { open } = await import('@tauri-apps/plugin-dialog')
+      const { invoke } = await import('@tauri-apps/api/core')
+      const selected = await open({
+        filters: [{ name: 'Markdown', extensions: ['md', 'markdown', 'txt'] }],
+      })
+      if (!selected) return
+      const path = typeof selected === 'string' ? selected : selected[0]
+      if (!path) return
+      const text = await invoke<string>('read_file', { path })
+      const name = path.split(/[/\\]/).pop() ?? 'Untitled.md'
+      openTab(path, name, text)
+      addRecentFile(path, name)
+    } catch (e) {
+      console.error('Open file failed:', e)
+      useEditorStore.getState().flashStatus('Open failed', 3000)
+    }
   }, [openTab, addRecentFile])
 
   const saveFile = useCallback(async () => {
@@ -54,24 +59,21 @@ export function useFileSystem() {
       return
     }
 
-    const { save } = await import('@tauri-apps/plugin-dialog')
-    const { invoke } = await import('@tauri-apps/api/core')
-    let path = tab.filePath
-    if (!path) {
-      const selected = await save({
-        filters: [{ name: 'Markdown', extensions: ['md'] }],
-        defaultPath: tab.fileName,
-      })
-      path = selected
+    if (!tab.filePath) {
+      markClean(activeTabId, tab.content)
+      useEditorStore.getState().flashStatus('Saved (in memory)')
+      return
     }
-    if (!path) return
+
     try {
-      await invoke('write_file', { path, content: tab.content })
+      const { invoke } = await import('@tauri-apps/api/core')
+      await invoke('write_file', { path: tab.filePath, content: tab.content })
       markClean(activeTabId, tab.content)
       useEditorStore.getState().flashStatus('Saved')
     } catch (e) {
-      console.error('Save failed:', e)
-      useEditorStore.getState().flashStatus('Save failed', 3000)
+      const msg = e instanceof Error ? e.message : String(e)
+      console.error('Save failed:', msg, e)
+      useEditorStore.getState().flashStatus(`Save failed: ${msg}`, 5000)
     }
   }, [getActiveTab, markClean])
 
@@ -85,14 +87,14 @@ export function useFileSystem() {
       return
     }
 
-    const { save } = await import('@tauri-apps/plugin-dialog')
-    const { invoke } = await import('@tauri-apps/api/core')
-    const path = await save({
-      filters: [{ name: 'Markdown', extensions: ['md'] }],
-      defaultPath: tab.filePath ?? tab.fileName,
-    })
-    if (!path) return
     try {
+      const { save } = await import('@tauri-apps/plugin-dialog')
+      const { invoke } = await import('@tauri-apps/api/core')
+      const path = await save({
+        filters: [{ name: 'Markdown', extensions: ['md'] }],
+        defaultPath: tab.filePath ?? tab.fileName,
+      })
+      if (!path) return
       await invoke('write_file', { path, content: tab.content })
       markClean(activeTabId, tab.content)
       useEditorStore.getState().flashStatus('Saved')
