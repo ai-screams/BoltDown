@@ -25,7 +25,7 @@ export default memo(function Footer() {
   const statusText = useEditorStore(s => s.statusText)
 
   return (
-    <footer className="flex h-8 items-center justify-between border-t border-gray-200 bg-white px-4 dark:border-gray-700 dark:bg-gray-800">
+    <footer className="flex h-8 flex-none items-center justify-between border-t border-gray-200 bg-white px-4 dark:border-gray-700 dark:bg-gray-800">
       <span className="text-xs text-thunder-gray">{statusText || 'Ready'}</span>
       <span className="text-xs tabular-nums text-thunder-gray">
         {wordCount.toLocaleString()} words · {readingTime} min read · {charCount.toLocaleString()}{' '}

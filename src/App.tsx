@@ -108,12 +108,12 @@ function App() {
 
   return (
     <EditorViewProvider>
-      <div className="flex h-screen flex-col bg-gray-50 dark:bg-gray-900">
+      <div className="flex h-screen flex-col overflow-hidden bg-gray-50 dark:bg-gray-900">
         <Header />
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex min-h-0 flex-1 overflow-hidden">
           <Sidebar onFileOpen={handleFileOpen} />
           {sidebarOpen && <ResizeHandle />}
-          <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {tabBar}
             <MainLayout toolbar={toolbar} editor={editor} preview={preview} />
           </div>

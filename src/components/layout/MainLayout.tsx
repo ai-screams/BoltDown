@@ -53,7 +53,7 @@ export default memo(function MainLayout({ editor, preview, toolbar }: MainLayout
   }, [])
 
   return (
-    <main className="flex flex-1 flex-col overflow-hidden">
+    <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {toolbar}
       <div ref={containerRef} className="flex flex-1 overflow-hidden">
         {mode === 'split' ? (

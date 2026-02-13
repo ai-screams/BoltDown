@@ -121,7 +121,7 @@ export default memo(function EditorToolbar() {
   }
 
   return (
-    <div className="flex h-9 items-center gap-0.5 border-b border-gray-200 bg-gray-50 px-2 dark:border-gray-700 dark:bg-gray-800/50">
+    <div className="flex h-9 flex-none items-center gap-0.5 border-b border-gray-200 bg-gray-50 px-2 dark:border-gray-700 dark:bg-gray-800/50">
       <IconButton
         icon={Bold}
         label="Bold"

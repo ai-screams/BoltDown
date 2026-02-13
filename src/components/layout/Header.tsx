@@ -63,7 +63,7 @@ export default memo(function Header() {
   }, [exportOpen])
 
   return (
-    <header className="flex h-12 items-center justify-between border-b border-gray-200 bg-white px-4 dark:border-gray-700 dark:bg-gray-800">
+    <header className="flex h-12 flex-none items-center justify-between border-b border-gray-200 bg-white px-4 dark:border-gray-700 dark:bg-gray-800">
       <div className="flex items-center gap-2">
         <Zap className="h-5 w-5 text-electric-yellow" fill="currentColor" />
         <span className="text-sm font-semibold text-gray-900 dark:text-white">BoltDown</span>
