@@ -98,7 +98,8 @@
   }
 
   .prose pre code {
-    @apply bg-transparent p-0 text-sm;
+    @apply bg-transparent p-0;
+    font-size: var(--preview-code-font-size, 14px);
   }
 
   /* Token colors (Tomorrow Night inspired) */

@@ -1,6 +1,8 @@
 // Prevents additional console window on Windows in release builds
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use tauri::Manager;
+
 // Tauri commands
 #[tauri::command]
 async fn read_file(path: String) -> Result<String, String> {
@@ -90,6 +92,41 @@ async fn list_directory(path: String) -> Result<Vec<FileEntry>, String> {
     Ok(entries)
 }
 
+#[tauri::command]
+async fn read_settings(app_handle: tauri::AppHandle) -> Result<String, String> {
+    let path = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to resolve app data dir: {}", e))?
+        .join("settings.json");
+
+    if !path.exists() {
+        return Ok("null".to_string());
+    }
+
+    tokio::fs::read_to_string(&path)
+        .await
+        .map_err(|e| format!("Failed to read settings: {}", e))
+}
+
+#[tauri::command]
+async fn write_settings(app_handle: tauri::AppHandle, settings: String) -> Result<(), String> {
+    let dir = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to resolve app data dir: {}", e))?;
+
+    tokio::fs::create_dir_all(&dir)
+        .await
+        .map_err(|e| format!("Failed to create settings dir: {}", e))?;
+
+    let path = dir.join("settings.json");
+
+    tokio::fs::write(&path, settings)
+        .await
+        .map_err(|e| format!("Failed to write settings: {}", e))
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
@@ -99,7 +136,9 @@ fn main() {
             greet,
             read_file,
             write_file,
-            list_directory
+            list_directory,
+            read_settings,
+            write_settings
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

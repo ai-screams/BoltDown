@@ -18,9 +18,10 @@ import { memo, useEffect, useRef, useState } from 'react'
 
 import { useExport } from '@/hooks/useExport'
 import { useFileSystem } from '@/hooks/useFileSystem'
-import { useTheme } from '@/hooks/useTheme'
 import { useEditorStore } from '@/stores/editorStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 import type { EditorMode } from '@/types/editor'
+import type { ThemeMode } from '@/types/settings'
 
 const modes: { mode: EditorMode; icon: typeof Columns2; label: string }[] = [
   { mode: 'split', icon: Columns2, label: 'Split' },
@@ -35,10 +36,17 @@ export default memo(function Header() {
   const mode = useEditorStore(s => s.mode)
   const setMode = useEditorStore(s => s.setMode)
   const { openFile, saveFile } = useFileSystem()
-  const { theme, cycleTheme } = useTheme()
+  const themeMode = useSettingsStore(s => s.settings.theme.mode)
+  const updateTheme = useSettingsStore(s => s.updateTheme)
   const { exportHtml, exportPdf, copyHtml } = useExport()
 
-  const ThemeIcon = themeIcon[theme]
+  const cycleTheme = () => {
+    const order: ThemeMode[] = ['light', 'dark', 'system']
+    const idx = order.indexOf(themeMode)
+    updateTheme({ mode: order[(idx + 1) % order.length]! })
+  }
+
+  const ThemeIcon = themeIcon[themeMode]
   const [exportOpen, setExportOpen] = useState(false)
   const exportRef = useRef<HTMLDivElement>(null)
 
@@ -143,7 +151,7 @@ export default memo(function Header() {
 
         <button
           onClick={cycleTheme}
-          title={`Theme: ${themeLabel[theme]}`}
+          title={`Theme: ${themeLabel[themeMode]}`}
           className="rounded p-1.5 text-gray-500 transition-all duration-150 hover:scale-110 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
         >
           <ThemeIcon className="h-4 w-4" />

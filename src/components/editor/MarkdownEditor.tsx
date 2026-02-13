@@ -12,8 +12,8 @@ import {
 import { memo, useEffect, useRef } from 'react'
 
 import { useEditorView } from '@/contexts/EditorViewContext'
-import { useTheme } from '@/hooks/useTheme'
 import { useEditorStore } from '@/stores/editorStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 import { useTabStore } from '@/stores/tabStore'
 
 import { markdownExtension } from './extensions/markdown'
@@ -26,7 +26,10 @@ function buildGutterExts(showGutter: boolean): Extension {
 
 export default memo(function MarkdownEditor() {
   const mode = useEditorStore(s => s.mode)
-  const { isDark } = useTheme()
+  const themeMode = useSettingsStore(s => s.settings.theme.mode)
+  const isDark =
+    themeMode === 'dark' ||
+    (themeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
   const editorViewRef = useEditorView()
 
   const activeTabId = useTabStore(s => s.activeTabId)

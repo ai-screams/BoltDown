@@ -1,8 +1,9 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { EditorViewProvider } from '@/contexts/EditorViewContext'
 import { useFileSystem } from '@/hooks/useFileSystem'
 import { useEditorStore } from '@/stores/editorStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 import { useSidebarStore } from '@/stores/sidebarStore'
 import { useTabStore } from '@/stores/tabStore'
 import type { EditorMode } from '@/types/editor'
@@ -13,6 +14,7 @@ import Footer from '@components/layout/Footer'
 import Header from '@components/layout/Header'
 import MainLayout from '@components/layout/MainLayout'
 import MarkdownPreview from '@components/preview/MarkdownPreview'
+import SettingsModal from '@components/settings/SettingsModal'
 import ResizeHandle from '@components/sidebar/ResizeHandle'
 import Sidebar from '@components/sidebar/Sidebar'
 
@@ -30,6 +32,13 @@ function App() {
   const toggleSidebar = useSidebarStore(s => s.toggle)
   const addRecentFile = useSidebarStore(s => s.addRecentFile)
   const openTab = useTabStore(s => s.openTab)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const loadSettings = useSettingsStore(s => s.loadSettings)
+
+  // Load persisted settings on mount
+  useEffect(() => {
+    void loadSettings()
+  }, [loadSettings])
 
   const handleFileOpen = useCallback(
     async (path: string, name: string) => {
@@ -86,6 +95,12 @@ function App() {
         void saveFileAs()
         return
       }
+
+      if (mod && e.key === ',') {
+        e.preventDefault()
+        setSettingsOpen(prev => !prev)
+        return
+      }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
@@ -105,6 +120,7 @@ function App() {
         </div>
         <Footer />
       </div>
+      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </EditorViewProvider>
   )
 }

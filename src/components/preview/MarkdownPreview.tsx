@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useRef } from 'react'
 
 import { useMarkdownParser } from '@/hooks/useMarkdownParser'
+import { useSettingsStore } from '@/stores/settingsStore'
 import { useTabStore } from '@/stores/tabStore'
 
 async function renderMermaidBlocks(container: HTMLElement) {
@@ -70,6 +71,7 @@ export default memo(function MarkdownPreview() {
   const content = useActiveTabContent()
   const html = useMarkdownParser(content)
   const containerRef = useRef<HTMLDivElement>(null)
+  const preview = useSettingsStore(s => s.settings.preview)
 
   const enhancePreview = useCallback(() => {
     if (!containerRef.current) return
@@ -81,10 +83,24 @@ export default memo(function MarkdownPreview() {
     enhancePreview()
   }, [html, enhancePreview])
 
+  // Apply code block font size via CSS custom property
+  useEffect(() => {
+    if (!containerRef.current) return
+    containerRef.current.style.setProperty(
+      '--preview-code-font-size',
+      `${preview.codeBlockFontSize}px`
+    )
+  }, [preview.codeBlockFontSize])
+
   return (
     <div
       ref={containerRef}
-      className="prose dark:prose-invert max-w-none p-6"
+      className="prose dark:prose-invert mx-auto p-6"
+      style={{
+        fontSize: `${preview.fontSize}px`,
+        lineHeight: preview.lineHeight,
+        maxWidth: `${preview.maxWidth}px`,
+      }}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   )
