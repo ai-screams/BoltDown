@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { EditorViewProvider } from '@/contexts/EditorViewContext'
+import { useAutoSave } from '@/hooks/useAutoSave'
 import { useFileSystem } from '@/hooks/useFileSystem'
 import { useEditorStore } from '@/stores/editorStore'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -28,6 +29,7 @@ function App() {
   const mode = useEditorStore(s => s.mode)
   const setMode = useEditorStore(s => s.setMode)
   const { openFile, saveFile, saveFileAs } = useFileSystem()
+  useAutoSave()
   const sidebarOpen = useSidebarStore(s => s.isOpen)
   const sidebarResizing = useSidebarStore(s => s.isResizing)
   const toggleSidebar = useSidebarStore(s => s.toggle)
