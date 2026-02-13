@@ -4,13 +4,14 @@
 
 ## Purpose
 
-Three independent Zustand stores following SRP. Each store manages a distinct domain of application state.
+Four independent Zustand stores following SRP. Each store manages a distinct domain of application state.
 
 ## Key Files
 
 - `editorStore.ts` — Editor view mode (`'split' | 'source' | 'zen'`) and transient status messages. Exports `useEditorStore` with `mode`, `setMode`, `statusText`, and `flashStatus(text, ms)`.
 - `tabStore.ts` — Multi-tab document state. Manages `Tab[]`, `activeTabId`. Methods: `openTab`, `closeTab`, `closeOtherTabs`, `setActiveTab`, `updateContent`, `markClean`. Tab IDs are UUIDs.
 - `sidebarStore.ts` — Sidebar UI state (open/close, width, file tree data, recent files). Persists width to localStorage with 300ms debounce. Max 20 recent files. Exports `useSidebarStore`.
+- `settingsStore.ts` — Application settings state (theme, editor, preview, general). Persists to Tauri appDataDir or localStorage with 500ms debounce. Module-level helpers: `debouncedSave`, `getSystemTheme`, `applyTheme`, `mergeWithDefaults`. Migrates legacy `boltdown-theme` key. Has `matchMedia` listener guard. Exports `useSettingsStore`.
 
 ## For AI Agents
 
@@ -45,3 +46,4 @@ const tab = tabs.find(t => t.id === activeTabId) // in closure
 - `tabStore` is consumed by: MarkdownEditor, TabBar, Header, Footer, App, useFileSystem, useExport
 - `editorStore` is consumed by: MarkdownEditor, Header, MainLayout, App
 - `sidebarStore` is consumed by: Sidebar, TabBar, ResizeHandle, App
+- `settingsStore` is consumed by: App, Header, MarkdownEditor, MarkdownPreview, SettingsModal

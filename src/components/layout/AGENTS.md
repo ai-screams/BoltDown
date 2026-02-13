@@ -8,7 +8,7 @@ Top-level layout components that compose the application structure: header, foot
 
 ## Key Files
 
-- `Header.tsx` — App header (h-12): logo (Zap icon + "BoltDown"), active filename + isDirty indicator, file operations (open/save/export dropdown), 3-mode toggle (Split/Source/Zen with icons), theme toggle (Sun/Moon/Monitor cycle). Uses split primitive selectors (`useActiveFileName()`, `useActiveIsDirty()`).
+- `Header.tsx` — App header (h-12): logo (Zap icon + "BoltDown"), active filename + isDirty indicator, file operations (open/save/export dropdown), 3-mode toggle (Split/Source/Zen with icons), theme mode display (via settingsStore), settings button (gear icon, Cmd+,). Uses `useSettingsStore` for theme state (migrated from useTheme hook in Phase 2). Uses split primitive selectors (`useActiveFileName()`, `useActiveIsDirty()`).
 - `Footer.tsx` — Status bar (h-8): word count, reading time (225 wpm), character count. Computed via `useActiveCharCount()` and `useActiveWordCount()` — primitive-returning Zustand selectors.
 - `MainLayout.tsx` — Flex-based split layout with draggable divider. Accepts `editor`, `preview`, `toolbar` ReactNode slots. Reads `editorStore.mode` to toggle panels. Divider uses requestAnimationFrame, clamps ratio 0.2–0.8, double-click resets to 50/50.
 

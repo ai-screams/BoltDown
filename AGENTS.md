@@ -18,7 +18,8 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 │  │        Zustand Stores (4 stores)          │  │
 │  └───────────────────────────────────────────┘  │
 │              Rust IPC Commands                  │
-│         (read_file, write_file, list_dir)       │
+│  (read_file, write_file, list_dir,              │
+│   read_settings, write_settings)                │
 └─────────────────────────────────────────────────┘
 ```
 
@@ -46,6 +47,7 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 ## For AI Agents
 
 - **Code style**: `semi: false`, `singleQuote: true`, `arrowParens: 'avoid'`, `printWidth: 100`
+- **Keyboard shortcuts**: Cmd+O (open), Cmd+S (save), Cmd+N (new tab), Cmd+/ (mode toggle), Shift+E (export), Cmd+, (settings)
 - **Path aliases**: `@/` → `src/`, `@components/` → `src/components/`, etc.
 - **Zustand pattern**: Always use primitive-returning selectors (not object destructuring)
 - **CM6 pattern**: Compartments in `useRef`, not module-level singletons
@@ -56,17 +58,17 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 
 ## Tech Stack
 
-| Layer         | Technology                                      |
-| ------------- | ----------------------------------------------- |
-| Desktop Shell | Tauri 2.0 (Rust)                                |
-| UI Framework  | React 19 + TypeScript (strict)                  |
-| Editor        | CodeMirror 6 (direct API)                       |
-| Markdown      | markdown-it + KaTeX + Mermaid + Prism.js        |
-| State         | Zustand (4 stores: editor, tab, sidebar, theme) |
-| Styling       | Tailwind CSS (dark mode: class-based)           |
-| Icons         | lucide-react                                    |
-| File Tree     | react-arborist                                  |
-| Build         | Vite 7 + esbuild                                |
+| Layer         | Technology                                         |
+| ------------- | -------------------------------------------------- |
+| Desktop Shell | Tauri 2.0 (Rust)                                   |
+| UI Framework  | React 19 + TypeScript (strict)                     |
+| Editor        | CodeMirror 6 (direct API)                          |
+| Markdown      | markdown-it + KaTeX + Mermaid + Prism.js           |
+| State         | Zustand (4 stores: editor, tab, sidebar, settings) |
+| Styling       | Tailwind CSS (dark mode: class-based)              |
+| Icons         | lucide-react                                       |
+| File Tree     | react-arborist                                     |
+| Build         | Vite 7 + esbuild                                   |
 
 ## Git
 
