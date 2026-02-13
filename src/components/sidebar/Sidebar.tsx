@@ -22,6 +22,7 @@ interface SidebarProps {
 export default memo(function Sidebar({ onFileOpen }: SidebarProps) {
   const isOpen = useSidebarStore(s => s.isOpen)
   const width = useSidebarStore(s => s.width)
+  const isResizing = useSidebarStore(s => s.isResizing)
   const activeTab = useSidebarStore(s => s.activeTab)
   const setActiveTab = useSidebarStore(s => s.setActiveTab)
   const setRootPath = useSidebarStore(s => s.setRootPath)
@@ -41,7 +42,10 @@ export default memo(function Sidebar({ onFileOpen }: SidebarProps) {
   return (
     <aside
       style={{ width: isOpen ? width : 0 }}
-      className="flex flex-col overflow-hidden border-r border-gray-200 bg-gray-50 transition-[width] duration-200 ease-in-out dark:border-gray-700 dark:bg-gray-900"
+      className={clsx(
+        'flex flex-col overflow-hidden border-r border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900',
+        !isResizing && 'transition-[width] duration-200 ease-in-out'
+      )}
     >
       <div className="flex h-8 flex-none items-center border-b border-gray-200 dark:border-gray-700">
         {tabs.map(({ key, label }) => (

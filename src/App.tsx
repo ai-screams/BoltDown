@@ -29,6 +29,7 @@ function App() {
   const setMode = useEditorStore(s => s.setMode)
   const { openFile, saveFile, saveFileAs } = useFileSystem()
   const sidebarOpen = useSidebarStore(s => s.isOpen)
+  const sidebarResizing = useSidebarStore(s => s.isResizing)
   const toggleSidebar = useSidebarStore(s => s.toggle)
   const addRecentFile = useSidebarStore(s => s.addRecentFile)
   const openTab = useTabStore(s => s.openTab)
@@ -120,6 +121,7 @@ function App() {
         </div>
         <Footer />
       </div>
+      {sidebarResizing && <div className="fixed inset-0 z-40 cursor-col-resize" />}
       <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </EditorViewProvider>
   )

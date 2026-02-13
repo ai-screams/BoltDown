@@ -47,6 +47,7 @@ function debouncedSaveWidth(width: number) {
 interface SidebarState {
   isOpen: boolean
   width: number
+  isResizing: boolean
   activeTab: SidebarTab
   rootPath: string | null
   treeData: FileTreeNode[]
@@ -55,6 +56,7 @@ interface SidebarState {
   toggle: () => void
   setOpen: (open: boolean) => void
   setWidth: (width: number) => void
+  setResizing: (resizing: boolean) => void
   setActiveTab: (tab: SidebarTab) => void
   setRootPath: (path: string) => void
   setTreeData: (data: FileTreeNode[]) => void
@@ -65,6 +67,7 @@ interface SidebarState {
 export const useSidebarStore = create<SidebarState>((set, get) => ({
   isOpen: false,
   width: loadWidth(),
+  isResizing: false,
   activeTab: 'files',
   rootPath: null,
   treeData: [],
@@ -76,6 +79,7 @@ export const useSidebarStore = create<SidebarState>((set, get) => ({
     debouncedSaveWidth(width)
     set({ width })
   },
+  setResizing: resizing => set({ isResizing: resizing }),
   setActiveTab: tab => set({ activeTab: tab }),
   setRootPath: path => set({ rootPath: path }),
   setTreeData: data => set({ treeData: data }),

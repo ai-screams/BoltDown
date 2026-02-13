@@ -359,7 +359,7 @@ export default memo(function SettingsModal({ isOpen, onClose }: SettingsModalPro
     <div
       ref={backdropRef}
       onClick={handleBackdropClick}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      className="z-60 fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm"
     >
       <div className="animate-dropdown flex h-[480px] w-[640px] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800">
         {/* Header */}

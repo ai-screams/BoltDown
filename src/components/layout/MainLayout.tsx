@@ -42,10 +42,12 @@ export default memo(function MainLayout({ editor, preview, toolbar }: MainLayout
       document.body.style.userSelect = ''
       document.removeEventListener('mousemove', onMouseMove)
       document.removeEventListener('mouseup', onMouseUp)
+      window.removeEventListener('blur', onMouseUp)
     }
 
     document.addEventListener('mousemove', onMouseMove)
     document.addEventListener('mouseup', onMouseUp)
+    window.addEventListener('blur', onMouseUp, { once: true })
   }, [])
 
   const handleDoubleClick = useCallback(() => {
@@ -56,6 +58,7 @@ export default memo(function MainLayout({ editor, preview, toolbar }: MainLayout
     <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {toolbar}
       <div ref={containerRef} className="flex flex-1 overflow-hidden">
+        {isDragging && <div className="fixed inset-0 z-40 cursor-col-resize" />}
         {mode === 'split' ? (
           <>
             <div className="overflow-hidden" style={{ width: `${splitRatio * 100}%` }}>
@@ -70,7 +73,7 @@ export default memo(function MainLayout({ editor, preview, toolbar }: MainLayout
                   : 'bg-gray-200 hover:w-1.5 hover:bg-electric-yellow/50 dark:bg-gray-700 dark:hover:bg-electric-yellow/50'
               }`}
             />
-            <div className="flex-1 overflow-auto">{preview}</div>
+            <div className="flex-1 overflow-auto overscroll-contain">{preview}</div>
           </>
         ) : (
           <div className="w-full overflow-hidden">{editor}</div>
