@@ -43,6 +43,9 @@ export function useFileSystem() {
       const name = path.split(/[/\\]/).pop() ?? 'Untitled.md'
       openTab(path, name, text)
       addRecentFile(path, name)
+
+      // Auto-load parent directory into sidebar file tree
+      await useSidebarStore.getState().loadParentDirectory(path, true)
     } catch (e) {
       console.error('Open file failed:', e)
       useEditorStore.getState().flashStatus('Open failed', 3000)

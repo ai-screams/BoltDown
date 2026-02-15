@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 
 import type { FileTreeNode, RecentFile, SidebarTab } from '@/types/sidebar'
+import { loadDirectoryEntries } from '@/utils/directoryLoader'
 
 const STORAGE_KEY_WIDTH = 'boltdown-sidebar-width'
 const STORAGE_KEY_RECENT = 'boltdown-recent-files'
@@ -62,6 +63,7 @@ interface SidebarState {
   setTreeData: (data: FileTreeNode[]) => void
   updateNodeChildren: (parentId: string, children: FileTreeNode[]) => void
   addRecentFile: (path: string, name: string) => void
+  loadParentDirectory: (filePath: string, openSidebar?: boolean) => Promise<void>
 }
 
 export const useSidebarStore = create<SidebarState>((set, get) => ({
@@ -90,5 +92,20 @@ export const useSidebarStore = create<SidebarState>((set, get) => ({
     const updated = [{ path, name, openedAt: Date.now() }, ...filtered].slice(0, MAX_RECENT)
     localStorage.setItem(STORAGE_KEY_RECENT, JSON.stringify(updated))
     set({ recentFiles: updated })
+  },
+  loadParentDirectory: async (filePath, openSidebar = false) => {
+    const dir = filePath.slice(0, filePath.lastIndexOf('/'))
+    if (!dir) return
+    const { rootPath } = get()
+    if (rootPath !== dir) {
+      set({ rootPath: dir })
+      try {
+        const entries = await loadDirectoryEntries(dir)
+        set({ treeData: entries })
+      } catch {
+        // Directory listing failed — file is already open, silently ignore
+      }
+    }
+    if (openSidebar) set({ isOpen: true })
   },
 }))

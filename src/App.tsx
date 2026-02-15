@@ -53,6 +53,9 @@ function App() {
         const text = await invoke<string>('read_file', { path })
         openTab(path, name, text)
         addRecentFile(path, name)
+
+        // Auto-load parent directory into sidebar file tree
+        await useSidebarStore.getState().loadParentDirectory(path)
       } catch (e) {
         console.warn('Failed to open file:', path, e)
       }
