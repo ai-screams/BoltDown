@@ -19,3 +19,4 @@ Application settings UI with categorized panels for theme, editor, preview, and 
 - NumberInput uses focused draft state pattern: shows draft value while focused, syncs with store value when blurred or on external reset
 - NumberInput allows real-time typing (onChange fires immediately if value is valid), blur commits final value
 - Adding a new settings category requires: new interface in `types/settings.ts`, new update method in `settingsStore.ts`, new panel component, add to `categories` and `panels` arrays
+- Editor settings are partially wired in runtime CM6 config: `focusMode`, `focusContextLines`, and `typewriterMode` are actively reconfigured; `tabSize`, `wordWrap`, and `lineNumbers` remain UI-visible but are not yet fully mapped to editor reconfiguration paths.

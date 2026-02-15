@@ -23,6 +23,12 @@ Five independent Zustand stores following SRP. Each store manages a distinct dom
 const mode = useEditorStore(s => s.mode)
 const activeTabId = useTabStore(s => s.activeTabId)
 
+// ✅ Good in high-frequency UI (Footer/status): derive primitives without custom equality callback
+const lineCount = useTabStore(s => {
+  const tab = s.tabs.find(t => t.id === s.activeTabId)
+  return (tab?.content ?? '').split('\n').length
+})
+
 // ❌ Object return — re-renders every time
 const { mode, fileName } = useEditorStore(s => ({ mode: s.mode, fileName: s.fileName }))
 ```
@@ -44,8 +50,8 @@ const tab = tabs.find(t => t.id === activeTabId) // in closure
 
 ## Dependencies
 
-- `tabStore` is consumed by: MarkdownEditor, TabBar, Header, Footer, App, useFileSystem, useExport
-- `editorStore` is consumed by: MarkdownEditor, Header, MainLayout, App
+- `tabStore` is consumed by: MarkdownEditor, TabBar, Header, Footer, App, useFileSystem, useExport, useAutoSave
+- `editorStore` is consumed by: MarkdownEditor, Header, MainLayout, App, FileTree, Footer, useAutoSave, useExport, useFileSystem
 - `sidebarStore` is consumed by: Sidebar, TabBar, ResizeHandle, MainLayout, App
-- `settingsStore` is consumed by: App, Header, MarkdownEditor, MarkdownPreview, SettingsModal
+- `settingsStore` is consumed by: App, Header, MarkdownEditor, MarkdownPreview, SettingsModal, useAutoSave
 - `findReplaceStore` is consumed by: App, FindReplaceModal
