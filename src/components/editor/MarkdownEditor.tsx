@@ -14,7 +14,6 @@ import { memo, useEffect, useRef } from 'react'
 import { useEditorView } from '@/contexts/EditorViewContext'
 import { useEditorStore } from '@/stores/editorStore'
 import { useSettingsStore } from '@/stores/settingsStore'
-import { useSidebarStore } from '@/stores/sidebarStore'
 import { useTabStore } from '@/stores/tabStore'
 import { isTauri } from '@/utils/tauri'
 
@@ -179,48 +178,6 @@ function getDroppedImagePathsFromDataTransfer(dataTransfer: DataTransfer): strin
   return Array.from(paths)
 }
 
-function getFileNameFromPath(filePath: string): string {
-  return filePath.split(/[/\\]/).pop() ?? filePath
-}
-
-async function ensureMarkdownPathForImageInsert(): Promise<string | null> {
-  if (!isTauri()) return null
-
-  const { tabs, activeTabId, renameTab, markClean } = useTabStore.getState()
-  const tab = tabs.find(t => t.id === activeTabId)
-  if (!tab) return null
-  if (tab.filePath) return tab.filePath
-
-  try {
-    const { save } = await import('@tauri-apps/plugin-dialog')
-    const path = await save({
-      filters: [{ name: 'Markdown', extensions: ['md'] }],
-      defaultPath: tab.fileName,
-    })
-    if (!path) return null
-
-    const { invoke } = await import('@tauri-apps/api/core')
-    await invoke('write_file', { path, content: tab.content })
-
-    const fileName = getFileNameFromPath(path)
-    renameTab(activeTabId, fileName, path)
-    markClean(activeTabId, tab.content)
-
-    const sidebarStore = useSidebarStore.getState()
-    sidebarStore.addRecentFile(path, fileName)
-    await sidebarStore.loadParentDirectory(path, true)
-
-    useEditorStore.getState().flashStatus('Saved current file to insert local image paths', 3000)
-    return path
-  } catch (error) {
-    console.error('Failed to save markdown file before image insert:', error)
-    useEditorStore
-      .getState()
-      .flashStatus('Image insert fallback: could not save current file', 4000)
-    return null
-  }
-}
-
 async function toImageMarkdown(
   file: File,
   markdownFilePath: string | null,
@@ -334,14 +291,14 @@ function dispatchImageSnippets(view: EditorView, snippets: string[], insertPos: 
   useEditorStore.getState().flashStatus(`Inserted ${snippets.length} ${imageWord}`)
 }
 
+function getActiveMarkdownFilePath(): string | null {
+  const { tabs, activeTabId } = useTabStore.getState()
+  const tab = tabs.find(t => t.id === activeTabId)
+  return tab?.filePath ?? null
+}
+
 async function insertDroppedImages(view: EditorView, files: File[], insertPos: number) {
-  const markdownFilePath = await ensureMarkdownPathForImageInsert()
-
-  if (isTauri() && !markdownFilePath) {
-    useEditorStore.getState().flashStatus('Save the document first to insert local images', 3000)
-    return
-  }
-
+  const markdownFilePath = getActiveMarkdownFilePath()
   const snippets: string[] = []
 
   for (const [index, file] of files.entries()) {
@@ -352,13 +309,7 @@ async function insertDroppedImages(view: EditorView, files: File[], insertPos: n
 }
 
 async function insertDroppedImagePaths(view: EditorView, paths: string[], insertPos: number) {
-  const markdownFilePath = await ensureMarkdownPathForImageInsert()
-
-  if (isTauri() && !markdownFilePath) {
-    useEditorStore.getState().flashStatus('Save the document first to insert local images', 3000)
-    return
-  }
-
+  const markdownFilePath = getActiveMarkdownFilePath()
   const snippets: string[] = []
 
   for (const [index, path] of paths.entries()) {
