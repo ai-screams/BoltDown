@@ -27,7 +27,7 @@ export const OutlinePanel = memo(() => {
 
   if (headings.length === 0) {
     return (
-      <div className="flex h-full flex-col items-center justify-center px-4 text-sm text-gray-500">
+      <div className="flex flex-1 flex-col items-center justify-center px-4 text-sm text-gray-500">
         <Hash className="mb-2 h-8 w-8 opacity-50" />
         <p>No headings found</p>
       </div>
@@ -35,7 +35,7 @@ export const OutlinePanel = memo(() => {
   }
 
   return (
-    <div className="flex flex-col text-xs">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto text-xs">
       {headings.map((heading, index) => {
         const indent = (heading.level - 1) * 12
         return (
