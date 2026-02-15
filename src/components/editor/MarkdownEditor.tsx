@@ -1,5 +1,5 @@
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
-import { bracketMatching, foldGutter, indentOnInput } from '@codemirror/language'
+import { bracketMatching, foldGutter, indentOnInput, syntaxTree } from '@codemirror/language'
 import { search } from '@codemirror/search'
 import { Compartment, EditorState, type Extension } from '@codemirror/state'
 import {
@@ -24,6 +24,78 @@ import { wysiwygPlugin } from './extensions/wysiwyg'
 
 function buildGutterExts(showGutter: boolean): Extension {
   return showGutter ? [lineNumbers(), foldGutter(), highlightActiveLineGutter()] : []
+}
+
+const orderedListMarkerRegex = /^(\s*)(\d+)([.)])(\s*)/
+const nestedListIndent = '  '
+
+function isInOrderedList(state: EditorState, pos: number): boolean {
+  let node = syntaxTree(state).resolve(pos, -1)
+
+  while (node) {
+    if (node.type.name === 'FencedCode' || node.type.name === 'InlineCode') {
+      return false
+    }
+    if (node.type.name === 'OrderedList') {
+      return true
+    }
+
+    const parent = node.parent
+    if (!parent) break
+    node = parent
+  }
+
+  return false
+}
+
+function indentOrderedListItem(view: EditorView): boolean {
+  const selection = view.state.selection.main
+  if (!selection.empty) return false
+  if (!isInOrderedList(view.state, selection.from)) return false
+
+  const doc = view.state.doc
+  const line = doc.lineAt(selection.from)
+  const currentMatch = orderedListMarkerRegex.exec(line.text)
+  if (!currentMatch) return false
+
+  const currentIndent = currentMatch[1]!
+  const currentNumber = Number(currentMatch[2])
+  const currentDelimiter = currentMatch[3]!
+  const currentSpace = currentMatch[4]!
+  if (!Number.isFinite(currentNumber)) return false
+
+  const changes: { from: number; to: number; insert: string }[] = []
+  changes.push({
+    from: line.from,
+    to: line.from + currentMatch[0].length,
+    insert: `${currentIndent}${nestedListIndent}1${currentDelimiter}${currentSpace}`,
+  })
+
+  let renumber = currentNumber
+
+  for (let lineNo = line.number + 1; lineNo <= doc.lines; lineNo++) {
+    const candidate = doc.line(lineNo)
+    const text = candidate.text
+
+    if (!text.trim()) break
+
+    const candidateIndent = text.match(/^\s*/)?.[0] ?? ''
+    if (candidateIndent.length < currentIndent.length) break
+
+    const siblingMatch = orderedListMarkerRegex.exec(text)
+    if (!siblingMatch) continue
+    if (siblingMatch[1] !== currentIndent) continue
+
+    changes.push({
+      from: candidate.from,
+      to: candidate.from + siblingMatch[0].length,
+      insert: `${currentIndent}${renumber}${siblingMatch[3]}${siblingMatch[4]}`,
+    })
+    renumber += 1
+  }
+
+  view.dispatch({ changes })
+  return true
 }
 
 export default memo(function MarkdownEditor() {
@@ -70,7 +142,12 @@ export default memo(function MarkdownEditor() {
     indentOnInput(),
     highlightActiveLine(),
     EditorView.lineWrapping,
-    keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
+    keymap.of([
+      { key: 'Tab', run: indentOrderedListItem },
+      ...defaultKeymap,
+      ...historyKeymap,
+      indentWithTab,
+    ]),
     EditorView.updateListener.of(update => {
       if (update.docChanged) {
         updateContent(activeTabIdRef.current, update.state.doc.toString())
