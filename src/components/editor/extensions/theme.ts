@@ -24,7 +24,14 @@ export const boltdownTheme = EditorView.theme(
       backgroundColor: '#f1f5f9',
     },
     '.cm-activeLine': {
-      backgroundColor: '#f8fafc80',
+      backgroundColor: 'rgba(250, 204, 21, 0.08)',
+      boxShadow: 'inset 3px 0 0 rgba(250, 204, 21, 0.85)',
+      borderRadius: '4px',
+      transition: 'background-color 120ms ease-out, box-shadow 120ms ease-out',
+    },
+    '&.cm-focused .cm-activeLine': {
+      backgroundColor: 'rgba(250, 204, 21, 0.14)',
+      boxShadow: 'inset 3px 0 0 rgba(250, 204, 21, 1)',
     },
     '.cm-selectionBackground': {
       backgroundColor: '#FACC1540 !important',
@@ -63,7 +70,14 @@ export const boltdownDarkTheme = EditorView.theme(
       backgroundColor: '#334155',
     },
     '.cm-activeLine': {
-      backgroundColor: '#1e293b80',
+      backgroundColor: 'rgba(250, 204, 21, 0.08)',
+      boxShadow: 'inset 3px 0 0 rgba(250, 204, 21, 0.85)',
+      borderRadius: '4px',
+      transition: 'background-color 120ms ease-out, box-shadow 120ms ease-out',
+    },
+    '&.cm-focused .cm-activeLine': {
+      backgroundColor: 'rgba(250, 204, 21, 0.14)',
+      boxShadow: 'inset 3px 0 0 rgba(250, 204, 21, 1)',
     },
     '.cm-selectionBackground': {
       backgroundColor: '#FACC1530 !important',

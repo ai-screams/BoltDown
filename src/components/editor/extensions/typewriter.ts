@@ -1,22 +1,8 @@
 import { type Extension } from '@codemirror/state'
 import { EditorView, ViewPlugin, type ViewUpdate, scrollPastEnd } from '@codemirror/view'
 
-const typewriterHighlightTheme = EditorView.theme({
-  '.cm-activeLine': {
-    backgroundColor: 'rgba(250, 204, 21, 0.08) !important',
-    boxShadow: 'inset 3px 0 0 rgba(250, 204, 21, 0.85)',
-    borderRadius: '4px',
-    transition: 'background-color 120ms ease-out, box-shadow 120ms ease-out',
-  },
-  '&.cm-focused .cm-activeLine': {
-    backgroundColor: 'rgba(250, 204, 21, 0.14) !important',
-    boxShadow: 'inset 3px 0 0 rgba(250, 204, 21, 1)',
-  },
-})
-
 export function typewriterExtension(): Extension {
   return [
-    typewriterHighlightTheme,
     // Keep cursor line centered on screen
     ViewPlugin.fromClass(
       class {
