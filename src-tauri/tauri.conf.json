@@ -35,7 +35,7 @@
         "fullscreen": false,
         "decorations": true,
         "center": true,
-        "dragDropEnabled": false,
+        "dragDropEnabled": true,
         "theme": "Light"
       }
     ],

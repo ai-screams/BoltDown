@@ -463,48 +463,74 @@ export default memo(function MarkdownEditor() {
     const state = EditorState.create({ doc: activeTab?.content ?? '', extensions })
     const view = new EditorView({ state, parent: containerRef.current })
 
-    const handleDragOver = (event: DragEvent) => {
-      const dataTransfer = event.dataTransfer
-      if (!dataTransfer || !hasFileDragType(dataTransfer)) return
+    // --- Drag-drop setup ---
+    let unlistenTauriDrop: (() => void) | null = null
 
-      event.preventDefault()
-      dataTransfer.dropEffect = 'copy'
-    }
+    if (isTauri()) {
+      // Tauri native drag-drop: provides real file paths (web File API does not)
+      void (async () => {
+        const { getCurrentWebview } = await import('@tauri-apps/api/webview')
+        unlistenTauriDrop = await getCurrentWebview().onDragDropEvent(event => {
+          if (event.payload.type !== 'drop') return
 
-    const handleDrop = (event: DragEvent) => {
-      const dataTransfer = event.dataTransfer
-      if (!dataTransfer || !hasFileDragType(dataTransfer)) return
+          const paths = event.payload.paths.filter(p => supportedImageExtensions.test(p))
+          if (paths.length === 0) return
 
-      event.preventDefault()
+          const { x, y } = event.payload.position
+          const cssX = x / window.devicePixelRatio
+          const cssY = y / window.devicePixelRatio
+          const insertPos = view.posAtCoords({ x: cssX, y: cssY }) ?? view.state.selection.main.head
 
-      const insertPos =
-        view.posAtCoords({ x: event.clientX, y: event.clientY }) ?? view.state.selection.main.head
-
-      const imageFiles = Array.from(dataTransfer.files).filter(isImageFile)
-      const imagePaths = getDroppedImagePathsFromDataTransfer(dataTransfer)
-      if (imagePaths.length > 0) {
-        void insertDroppedImagePaths(view, imagePaths, insertPos)
-        return
+          void insertDroppedImagePaths(view, paths, insertPos)
+        })
+      })()
+    } else {
+      // Browser fallback: HTML5 drag-drop (no file paths, data URL only)
+      const handleDragOver = (event: DragEvent) => {
+        const dataTransfer = event.dataTransfer
+        if (!dataTransfer || !hasFileDragType(dataTransfer)) return
+        event.preventDefault()
+        dataTransfer.dropEffect = 'copy'
       }
 
-      if (imageFiles.length > 0) {
-        void insertDroppedImages(view, imageFiles, insertPos)
-        return
+      const handleDrop = (event: DragEvent) => {
+        const dataTransfer = event.dataTransfer
+        if (!dataTransfer || !hasFileDragType(dataTransfer)) return
+        event.preventDefault()
+
+        const insertPos =
+          view.posAtCoords({ x: event.clientX, y: event.clientY }) ?? view.state.selection.main.head
+
+        const imageFiles = Array.from(dataTransfer.files).filter(isImageFile)
+        const imagePaths = getDroppedImagePathsFromDataTransfer(dataTransfer)
+        if (imagePaths.length > 0) {
+          void insertDroppedImagePaths(view, imagePaths, insertPos)
+          return
+        }
+
+        if (imageFiles.length > 0) {
+          void insertDroppedImages(view, imageFiles, insertPos)
+          return
+        }
+
+        useEditorStore.getState().flashStatus('Only image files are supported', 3000)
       }
 
-      useEditorStore.getState().flashStatus('Only image files are supported', 3000)
+      view.dom.addEventListener('dragover', handleDragOver)
+      view.dom.addEventListener('drop', handleDrop)
+      ;(view as EditorView & { __htmlDndCleanup?: () => void }).__htmlDndCleanup = () => {
+        view.dom.removeEventListener('dragover', handleDragOver)
+        view.dom.removeEventListener('drop', handleDrop)
+      }
     }
-
-    view.dom.addEventListener('dragover', handleDragOver)
-    view.dom.addEventListener('drop', handleDrop)
 
     viewRef.current = view
     editorViewRef.current = view
     prevTabIdRef.current = activeTabId
 
     return () => {
-      view.dom.removeEventListener('dragover', handleDragOver)
-      view.dom.removeEventListener('drop', handleDrop)
+      unlistenTauriDrop?.()
+      ;(view as EditorView & { __htmlDndCleanup?: () => void }).__htmlDndCleanup?.()
       view.destroy()
       viewRef.current = null
       editorViewRef.current = null
