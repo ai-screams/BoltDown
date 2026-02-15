@@ -1,40 +1,79 @@
 // Prevents additional console window on Windows in release builds
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::path::PathBuf;
 use tauri::Manager;
+
+/// Validate that a path does not contain traversal components after resolution.
+/// For destination paths where the file may not yet exist, validates the parent directory.
+fn validate_path(path_str: &str) -> Result<PathBuf, String> {
+    let path = PathBuf::from(path_str);
+
+    // Try to canonicalize directly (works for existing paths)
+    let canonical = path.canonicalize().or_else(|_| {
+        // For new files: canonicalize parent, then append the filename
+        let parent = path
+            .parent()
+            .ok_or_else(|| "Invalid path: no parent directory".to_string())?;
+        let file_name = path
+            .file_name()
+            .ok_or_else(|| "Invalid path: no file name".to_string())?;
+        parent
+            .canonicalize()
+            .map(|p| p.join(file_name))
+            .map_err(|e| format!("Parent directory does not exist: {}", e))
+    })?;
+
+    // Reject if any component is still a parent-dir reference
+    if canonical
+        .components()
+        .any(|c| c == std::path::Component::ParentDir)
+    {
+        return Err("Path traversal detected".to_string());
+    }
+
+    Ok(canonical)
+}
 
 // Tauri commands
 #[tauri::command]
 async fn read_file(path: String) -> Result<String, String> {
-    tokio::fs::read_to_string(&path)
+    let validated = validate_path(&path)?;
+    tokio::fs::read_to_string(&validated)
         .await
         .map_err(|e| format!("Failed to read file: {}", e))
 }
 
 #[tauri::command]
 async fn write_file(path: String, content: String) -> Result<(), String> {
-    tokio::fs::write(&path, content)
+    let validated = validate_path(&path)?;
+    tokio::fs::write(&validated, content)
         .await
         .map_err(|e| format!("Failed to write file: {}", e))
 }
 
 #[tauri::command]
 async fn rename_file(old_path: String, new_path: String) -> Result<(), String> {
-    tokio::fs::rename(&old_path, &new_path)
+    let validated_old = validate_path(&old_path)?;
+    let validated_new = validate_path(&new_path)?;
+    tokio::fs::rename(&validated_old, &validated_new)
         .await
         .map_err(|e| format!("Failed to rename file: {}", e))
 }
 
 #[tauri::command]
 async fn delete_file(path: String) -> Result<(), String> {
-    tokio::fs::remove_file(&path)
+    let validated = validate_path(&path)?;
+    tokio::fs::remove_file(&validated)
         .await
         .map_err(|e| format!("Failed to delete file: {}", e))
 }
 
 #[tauri::command]
 async fn copy_file(src_path: String, dest_path: String) -> Result<(), String> {
-    tokio::fs::copy(&src_path, &dest_path)
+    let validated_src = validate_path(&src_path)?;
+    let validated_dest = validate_path(&dest_path)?;
+    tokio::fs::copy(&validated_src, &validated_dest)
         .await
         .map(|_| ())
         .map_err(|e| format!("Failed to copy file: {}", e))
@@ -42,14 +81,10 @@ async fn copy_file(src_path: String, dest_path: String) -> Result<(), String> {
 
 #[tauri::command]
 async fn write_binary_file(dest_path: String, data: Vec<u8>) -> Result<(), String> {
-    tokio::fs::write(&dest_path, data)
+    let validated = validate_path(&dest_path)?;
+    tokio::fs::write(&validated, data)
         .await
         .map_err(|e| format!("Failed to write binary file: {}", e))
-}
-
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("⚡ Hello, {}! Welcome to BoltDown!", name)
 }
 
 #[derive(serde::Serialize)]
@@ -162,7 +197,6 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
-            greet,
             read_file,
             write_file,
             rename_file,

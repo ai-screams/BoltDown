@@ -73,7 +73,7 @@ function addCopyButtons(container: HTMLElement) {
 }
 
 function resolveImageSources(container: HTMLElement, markdownFilePath: string | null) {
-  const images = container.querySelectorAll<HTMLImageElement>('img')
+  const images = container.querySelectorAll<HTMLImageElement>('img:not([data-src-resolved])')
   for (const image of images) {
     const source = image.getAttribute('src')
     if (!source) continue
@@ -82,6 +82,7 @@ function resolveImageSources(container: HTMLElement, markdownFilePath: string | 
     if (resolved && resolved !== source) {
       image.src = resolved
     }
+    image.dataset['srcResolved'] = 'true'
   }
 }
 

@@ -2,25 +2,25 @@ import { convertFileSrc } from '@tauri-apps/api/core'
 
 import { isTauri } from './tauri'
 
-function toPosixPath(filePath: string): string {
+export function toPosixPath(filePath: string): string {
   return filePath.replace(/\\/g, '/')
 }
 
-function getDirectoryPath(filePath: string): string {
+export function getDirectoryPath(filePath: string): string {
   const slash = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'))
   if (slash === -1) return ''
   if (slash === 0) return filePath[0]!
   return filePath.slice(0, slash)
 }
 
-function joinPath(dir: string, name: string): string {
+export function joinPath(dir: string, name: string): string {
   if (!dir) return name
   const separator = dir.includes('\\') ? '\\' : '/'
   const needsSeparator = !dir.endsWith('/') && !dir.endsWith('\\')
   return `${dir}${needsSeparator ? separator : ''}${name}`
 }
 
-function isAbsoluteFilePath(filePath: string): boolean {
+export function isAbsoluteFilePath(filePath: string): boolean {
   return filePath.startsWith('/') || filePath.startsWith('\\\\') || /^[A-Za-z]:[\\/]/.test(filePath)
 }
 

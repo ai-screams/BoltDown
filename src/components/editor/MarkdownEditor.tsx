@@ -15,6 +15,7 @@ import { useEditorView } from '@/contexts/EditorViewContext'
 import { useEditorStore } from '@/stores/editorStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useTabStore } from '@/stores/tabStore'
+import { getDirectoryPath, joinPath, toPosixPath } from '@/utils/imagePath'
 import { isTauri } from '@/utils/tauri'
 
 import { focusExtension } from './extensions/focus'
@@ -37,32 +38,19 @@ function getSpellingContentAttributes(enabled: boolean) {
 const orderedListMarkerRegex = /^(\s*)(\d+)([.)])(\s*)/
 const nestedListIndent = '    '
 const supportedImageExtensions = /\.(png|jpe?g|gif|webp|svg|bmp|avif|ico)$/i
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024 // 10 MB
 
 function isImageFile(file: File): boolean {
   return file.type.startsWith('image/') || supportedImageExtensions.test(file.name)
 }
 
+// Allow Unicode letters (Korean, CJK, Latin extended, etc.)
 function sanitizeFileName(fileName: string): string {
-  const sanitized = fileName.replace(/[^a-zA-Z0-9._-]/g, '-')
+  const sanitized = fileName.replace(
+    /[^a-zA-Z0-9\u00C0-\u024F\uAC00-\uD7AF\u3040-\u30FF\u4E00-\u9FFF._-]/g,
+    '-'
+  )
   return sanitized || `image-${Date.now()}.png`
-}
-
-function getDirectoryPath(filePath: string): string {
-  const slash = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'))
-  if (slash === -1) return ''
-  if (slash === 0) return filePath[0]!
-  return filePath.slice(0, slash)
-}
-
-function joinPath(dir: string, name: string): string {
-  if (!dir) return name
-  const separator = dir.includes('\\') ? '\\' : '/'
-  const needsSeparator = !dir.endsWith('/') && !dir.endsWith('\\')
-  return `${dir}${needsSeparator ? separator : ''}${name}`
-}
-
-function toPosixPath(filePath: string): string {
-  return filePath.replace(/\\/g, '/')
 }
 
 function isPathInDirectory(filePath: string, directoryPath: string): boolean {
@@ -82,7 +70,8 @@ function buildDestinationImagePath(
 ): string {
   const markdownDir = getDirectoryPath(markdownFilePath)
   const safeName = sanitizeFileName(fileName)
-  const prefixedName = `${Date.now()}-${index + 1}-${safeName}`
+  const rand = Math.random().toString(36).slice(2, 6)
+  const prefixedName = `${Date.now()}-${index + 1}-${rand}-${safeName}`
   return joinPath(markdownDir, prefixedName)
 }
 
@@ -184,9 +173,10 @@ async function toImageMarkdown(
   index: number
 ): Promise<string> {
   const altText = normalizeAltText(file.name)
-  const sourcePath = isTauri() ? getDroppedFilePath(file) : null
 
   if (isTauri()) {
+    const sourcePath = getDroppedFilePath(file)
+
     if (markdownFilePath) {
       try {
         const markdownDir = getDirectoryPath(markdownFilePath)
@@ -205,6 +195,11 @@ async function toImageMarkdown(
             destPath: destinationPath,
           })
         } else {
+          if (file.size > MAX_IMAGE_SIZE) {
+            const sizeMb = (file.size / 1024 / 1024).toFixed(1)
+            useEditorStore.getState().flashStatus(`Image too large (${sizeMb}MB, max 10MB)`, 4000)
+            return `<!-- Image "${altText}" skipped: ${sizeMb}MB exceeds 10MB limit -->`
+          }
           const data = Array.from(new Uint8Array(await file.arrayBuffer()))
           await invoke('write_binary_file', {
             destPath: destinationPath,
@@ -240,7 +235,7 @@ async function toImageMarkdownFromPath(
   sourcePath: string,
   markdownFilePath: string | null,
   index: number
-) {
+): Promise<string> {
   const fileName = sourcePath.split(/[/\\]/).pop() ?? `image-${Date.now()}-${index + 1}.png`
   const altText = normalizeAltText(fileName)
 
@@ -274,16 +269,19 @@ async function toImageMarkdownFromPath(
 function dispatchImageSnippets(view: EditorView, snippets: string[], insertPos: number) {
   if (snippets.length === 0) return
 
-  const before = insertPos > 0 ? view.state.doc.sliceString(insertPos - 1, insertPos) : ''
+  // Clamp to valid range — doc may have changed during async image processing
+  const clampedPos = Math.min(insertPos, view.state.doc.length)
+
+  const before = clampedPos > 0 ? view.state.doc.sliceString(clampedPos - 1, clampedPos) : ''
   const after =
-    insertPos < view.state.doc.length ? view.state.doc.sliceString(insertPos, insertPos + 1) : ''
+    clampedPos < view.state.doc.length ? view.state.doc.sliceString(clampedPos, clampedPos + 1) : ''
   const prefix = before && before !== '\n' ? '\n' : ''
   const suffix = after && after !== '\n' ? '\n' : ''
   const insertText = `${prefix}${snippets.join('\n\n')}${suffix}`
 
   view.dispatch({
-    changes: { from: insertPos, to: insertPos, insert: insertText },
-    selection: { anchor: insertPos + insertText.length },
+    changes: { from: clampedPos, to: clampedPos, insert: insertText },
+    selection: { anchor: clampedPos + insertText.length },
     scrollIntoView: true,
   })
 
@@ -465,12 +463,15 @@ export default memo(function MarkdownEditor() {
 
     // --- Drag-drop setup ---
     let unlistenTauriDrop: (() => void) | null = null
+    let htmlDndCleanup: (() => void) | null = null
+    let cancelled = false
 
     if (isTauri()) {
       // Tauri native drag-drop: provides real file paths (web File API does not)
       void (async () => {
         const { getCurrentWebview } = await import('@tauri-apps/api/webview')
-        unlistenTauriDrop = await getCurrentWebview().onDragDropEvent(event => {
+        const unlisten = await getCurrentWebview().onDragDropEvent(event => {
+          if (cancelled) return
           if (event.payload.type !== 'drop') return
 
           const paths = event.payload.paths.filter(p => supportedImageExtensions.test(p))
@@ -483,6 +484,11 @@ export default memo(function MarkdownEditor() {
 
           void insertDroppedImagePaths(view, paths, insertPos)
         })
+        if (cancelled) {
+          unlisten()
+        } else {
+          unlistenTauriDrop = unlisten
+        }
       })()
     } else {
       // Browser fallback: HTML5 drag-drop (no file paths, data URL only)
@@ -518,7 +524,7 @@ export default memo(function MarkdownEditor() {
 
       view.dom.addEventListener('dragover', handleDragOver)
       view.dom.addEventListener('drop', handleDrop)
-      ;(view as EditorView & { __htmlDndCleanup?: () => void }).__htmlDndCleanup = () => {
+      htmlDndCleanup = () => {
         view.dom.removeEventListener('dragover', handleDragOver)
         view.dom.removeEventListener('drop', handleDrop)
       }
@@ -529,8 +535,9 @@ export default memo(function MarkdownEditor() {
     prevTabIdRef.current = activeTabId
 
     return () => {
+      cancelled = true
       unlistenTauriDrop?.()
-      ;(view as EditorView & { __htmlDndCleanup?: () => void }).__htmlDndCleanup?.()
+      htmlDndCleanup?.()
       view.destroy()
       viewRef.current = null
       editorViewRef.current = null
