@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) + **React 19** (TypeScript frontend) + **CodeMirror 6** (editor engine). Phase 1 MVP complete. Phase 2 in progress: Settings System (4-category modal, Tauri persistence), Tauri 2.0 ACL capabilities, file save fixes (in-memory save, error handling), layout fixes (scrolling).
+Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) + **React 19** (TypeScript frontend) + **CodeMirror 6** (editor engine). Phase 1 MVP complete. Phase 2 complete: Settings System (4-category modal, Tauri persistence), Find & Replace (Cmd+F/H, ReDoS protection, keyboard navigation), Tauri 2.0 ACL capabilities, file save fixes, layout fixes.
 
 ## Architecture Overview
 
@@ -15,7 +15,7 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 │  │  │ Sidebar │ │ Editor   │ │ Preview   │  │  │
 │  │  │ (tree)  │ │ (CM6)    │ │ (md-it)   │  │  │
 │  │  └─────────┘ └──────────┘ └───────────┘  │  │
-│  │        Zustand Stores (4 stores)          │  │
+│  │        Zustand Stores (5 stores)          │  │
 │  └───────────────────────────────────────────┘  │
 │              Rust IPC Commands                  │
 │  (read_file, write_file, list_dir,              │
@@ -47,7 +47,7 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 ## For AI Agents
 
 - **Code style**: `semi: false`, `singleQuote: true`, `arrowParens: 'avoid'`, `printWidth: 100`
-- **Keyboard shortcuts**: Cmd+O (open), Cmd+S (save), Cmd+N (new tab), Cmd+/ (mode toggle), Shift+E (export), Cmd+, (settings)
+- **Keyboard shortcuts**: Cmd+O (open), Cmd+S (save), Cmd+N (new tab), Cmd+/ (mode toggle), Shift+E (export), Cmd+, (settings), Cmd+F (find), Cmd+H (find & replace)
 - **Path aliases**: `@/` → `src/`, `@components/` → `src/components/`, etc.
 - **Zustand pattern**: Always use primitive-returning selectors (not object destructuring)
 - **CM6 pattern**: Compartments in `useRef`, not module-level singletons
@@ -58,17 +58,17 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 
 ## Tech Stack
 
-| Layer         | Technology                                         |
-| ------------- | -------------------------------------------------- |
-| Desktop Shell | Tauri 2.0 (Rust)                                   |
-| UI Framework  | React 19 + TypeScript (strict)                     |
-| Editor        | CodeMirror 6 (direct API)                          |
-| Markdown      | markdown-it + KaTeX + Mermaid + Prism.js           |
-| State         | Zustand (4 stores: editor, tab, sidebar, settings) |
-| Styling       | Tailwind CSS (dark mode: class-based)              |
-| Icons         | lucide-react                                       |
-| File Tree     | react-arborist                                     |
-| Build         | Vite 7 + esbuild                                   |
+| Layer         | Technology                                                      |
+| ------------- | --------------------------------------------------------------- |
+| Desktop Shell | Tauri 2.0 (Rust)                                                |
+| UI Framework  | React 19 + TypeScript (strict)                                  |
+| Editor        | CodeMirror 6 (direct API)                                       |
+| Markdown      | markdown-it + KaTeX + Mermaid + Prism.js                        |
+| State         | Zustand (5 stores: editor, tab, sidebar, settings, findReplace) |
+| Styling       | Tailwind CSS (dark mode: class-based)                           |
+| Icons         | lucide-react                                                    |
+| File Tree     | react-arborist                                                  |
+| Build         | Vite 7 + esbuild                                                |
 
 ## Git
 

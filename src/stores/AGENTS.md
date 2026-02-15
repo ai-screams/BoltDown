@@ -4,7 +4,7 @@
 
 ## Purpose
 
-Four independent Zustand stores following SRP. Each store manages a distinct domain of application state.
+Five independent Zustand stores following SRP. Each store manages a distinct domain of application state.
 
 ## Key Files
 
@@ -12,6 +12,7 @@ Four independent Zustand stores following SRP. Each store manages a distinct dom
 - `tabStore.ts` — Multi-tab document state. Manages `Tab[]`, `activeTabId`. Methods: `openTab`, `closeTab`, `closeOtherTabs`, `setActiveTab`, `updateContent`, `markClean`. Tab IDs are UUIDs.
 - `sidebarStore.ts` — Sidebar UI state (open/close, width, isResizing, file tree data, recent files). Persists width to localStorage with 300ms debounce. Max 20 recent files. Exports `useSidebarStore` with `setResizing(boolean)` for cross-component drag coordination.
 - `settingsStore.ts` — Application settings state (theme, editor, preview, general). Persists to Tauri appDataDir or localStorage with 500ms debounce. Module-level helpers: `debouncedSave`, `getSystemTheme`, `applyTheme`, `mergeWithDefaults`. Migrates legacy `boltdown-theme` key. Has `matchMedia` listener guard. Exports `useSettingsStore`.
+- `findReplaceStore.ts` — Find & Replace UI state (isOpen, showReplace, searchText, replaceText, caseSensitive, useRegex, wholeWord). Persists search preferences (not text) via Zustand persist middleware. Input length limits: 1000 chars (search), 10000 chars (replace). Exports `useFindReplaceStore`.
 
 ## For AI Agents
 
@@ -47,3 +48,4 @@ const tab = tabs.find(t => t.id === activeTabId) // in closure
 - `editorStore` is consumed by: MarkdownEditor, Header, MainLayout, App
 - `sidebarStore` is consumed by: Sidebar, TabBar, ResizeHandle, MainLayout, App
 - `settingsStore` is consumed by: App, Header, MarkdownEditor, MarkdownPreview, SettingsModal
+- `findReplaceStore` is consumed by: App, FindReplaceModal

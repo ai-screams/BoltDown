@@ -14,6 +14,7 @@ All React UI components organized by feature area. Every exported component uses
 - `sidebar/` — File tree, recent files, resize handle (see sidebar/AGENTS.md)
 - `common/` — Shared UI primitives (see common/AGENTS.md)
 - `settings/` — Settings modal and controls (see settings/AGENTS.md)
+- `findreplace/` — Find & Replace modal with CM6 integration (see findreplace/AGENTS.md)
 
 ## For AI Agents
 

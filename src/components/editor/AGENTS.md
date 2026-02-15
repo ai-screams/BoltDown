@@ -8,7 +8,7 @@ Core editing experience: CodeMirror 6 editor, tab management, formatting toolbar
 
 ## Key Files
 
-- `MarkdownEditor.tsx` — Direct CM6 EditorView management (not @uiw/react-codemirror wrapper). Creates EditorView once on mount, caches EditorState per tab in `Map<tabId, EditorState>` (preserves undo history, cursor, scroll). Uses `useRef(new Compartment())` for theme/wysiwyg/gutter compartments. Uses `useSettingsStore` for isDark theme derivation (migrated from useTheme in Phase 2).
+- `MarkdownEditor.tsx` — Direct CM6 EditorView management (not @uiw/react-codemirror wrapper). Creates EditorView once on mount, caches EditorState per tab in `Map<tabId, EditorState>` (preserves undo history, cursor, scroll). Uses `useRef(new Compartment())` for theme/wysiwyg/gutter compartments. Uses `useSettingsStore` for isDark theme derivation (migrated from useTheme in Phase 2). **Phase 2**: Removed built-in searchKeymap (replaced by custom FindReplaceModal UI). Exports EditorView via EditorViewContext for toolbar/find access.
 - `TabBar.tsx` — Horizontal tab bar: sidebar toggle button (leftmost fixed), scrollable tabs (`w-[160px] shrink-0`), new tab button (after last tab). Derives isDirty as `content !== savedContent`.
 - `EditorToolbar.tsx` — 14-button formatting toolbar. Three helper functions (`toggleWrap`, `insertAtLineStart`, `insertBlock`) manipulate CM6 EditorView state directly for bold, italic, headings, links, code, lists, etc.
 
