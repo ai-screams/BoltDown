@@ -1,28 +1,23 @@
+import { type Extension } from '@codemirror/state'
 import { EditorView, ViewPlugin, type ViewUpdate } from '@codemirror/view'
 
-class TypewriterPlugin {
-  private pendingScroll = false
+export function typewriterExtension(): Extension {
+  return ViewPlugin.fromClass(
+    class {
+      update(update: ViewUpdate) {
+        if (!update.selectionSet && !update.docChanged) return
 
-  update(update: ViewUpdate) {
-    if (update.selectionSet && !this.pendingScroll) {
-      this.pendingScroll = true
-      update.view.requestMeasure({
-        read: () => {
-          const { state } = update.view
-          const cursorPos = state.selection.main.head
-          return cursorPos
-        },
-        write: (cursorPos, view) => {
-          view.dispatch({
-            effects: EditorView.scrollIntoView(cursorPos, { y: 'center' }),
+        const head = update.state.selection.main.head
+        // Use requestAnimationFrame to break out of the update cycle
+        // and ensure DOM is ready for scroll calculation
+        requestAnimationFrame(() => {
+          // Guard: view may have been destroyed
+          if (!update.view.dom.parentNode) return
+          update.view.dispatch({
+            effects: EditorView.scrollIntoView(head, { y: 'center' }),
           })
-          this.pendingScroll = false
-        },
-      })
+        })
+      }
     }
-  }
-}
-
-export function typewriterExtension() {
-  return ViewPlugin.define(() => new TypewriterPlugin())
+  )
 }
