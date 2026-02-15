@@ -23,6 +23,33 @@ let mermaidConfigCache: { theme: 'dark' | 'default'; securityLevel: MermaidSecur
 let mermaidRenderCount = 0
 let mermaidRenderToken = 0
 
+function isDarkThemeActive() {
+  return document.documentElement.classList.contains('dark')
+}
+
+function getCodeBlockPalette() {
+  if (isDarkThemeActive()) {
+    return {
+      background: '#1e293b',
+      text: '#e2e8f0',
+      badge: '#94a3b8',
+    }
+  }
+
+  return {
+    background: '#f3f4f6',
+    text: '#111827',
+    badge: '#6b7280',
+  }
+}
+
+function scheduleEditorMeasure(view: EditorView) {
+  requestAnimationFrame(() => {
+    if (!view.dom.isConnected) return
+    view.requestMeasure()
+  })
+}
+
 function getMermaidTheme(): 'dark' | 'default' {
   return document.documentElement.classList.contains('dark') ? 'dark' : 'default'
 }
@@ -54,7 +81,8 @@ async function getMermaid(securityLevel: MermaidSecurityLevel) {
 async function renderMermaidInto(
   container: HTMLDivElement,
   code: string,
-  securityLevel: MermaidSecurityLevel
+  securityLevel: MermaidSecurityLevel,
+  onRendered?: () => void
 ) {
   const token = `${++mermaidRenderToken}`
   container.dataset.mermaidToken = token
@@ -66,17 +94,19 @@ async function renderMermaidInto(
 
     if (!container.isConnected || container.dataset.mermaidToken !== token) return
     container.innerHTML = svg
+    onRendered?.()
   } catch {
     if (!container.isConnected || container.dataset.mermaidToken !== token) return
 
+    const palette = getCodeBlockPalette()
     const pre = document.createElement('pre')
-    pre.style.cssText =
-      'background: #1e293b; color: #e2e8f0; border-radius: 6px; padding: 16px; overflow-x: auto; font-size: 0.875em; line-height: 1.6; margin: 0;'
+    pre.style.cssText = `background: ${palette.background}; color: ${palette.text}; border-radius: 6px; padding: 16px; overflow-x: auto; font-size: 0.875em; line-height: 1.6; margin: 0;`
     const codeEl = document.createElement('code')
     codeEl.textContent = code
     codeEl.style.cssText = 'font-family: monospace; white-space: pre;'
     pre.appendChild(codeEl)
     container.replaceChildren(pre)
+    onRendered?.()
   }
 }
 
@@ -96,10 +126,25 @@ function createRangeChecker(ranges: DocRange[]) {
   }
 }
 
+function isSelectionInRange(selection: { from: number; to: number }, from: number, to: number) {
+  if (selection.from === selection.to) {
+    return selection.from >= from && selection.from < to
+  }
+
+  return selection.from < to && selection.to > from
+}
+
+function isCursorOnRangeLine(state: EditorState, cursorLine: number, from: number, to: number) {
+  const startLine = state.doc.lineAt(from).number
+  const endLine = state.doc.lineAt(Math.max(from, to - 1)).number
+  return cursorLine >= startLine && cursorLine <= endLine
+}
+
 function appendMathDecorations(
   state: EditorState,
   decorations: Range<Decoration>[],
   cursor: { from: number; to: number },
+  cursorLine: number,
   codeRanges: DocRange[]
 ) {
   const doc = state.doc
@@ -128,7 +173,11 @@ function appendMathDecorations(
       const matchTo = line.to
       blockMathRanges.push({ from: matchFrom, to: matchTo })
 
-      if (!(cursor.from >= matchFrom && cursor.to <= matchTo)) {
+      const isActive =
+        isSelectionInRange(cursor, matchFrom, matchTo) ||
+        isCursorOnRangeLine(state, cursorLine, matchFrom, matchTo)
+
+      if (!isActive) {
         decorations.push(
           Decoration.replace({
             widget: new BlockMathWidget(blockLines.join('\n')),
@@ -160,7 +209,11 @@ function appendMathDecorations(
       const matchTo = matchFrom + match[0].length
 
       if (isInExcludedRange(matchFrom) || isInExcludedRange(matchTo - 1)) continue
-      if (cursor.from >= matchFrom && cursor.to <= matchTo) continue
+
+      const isActive =
+        isSelectionInRange(cursor, matchFrom, matchTo) ||
+        isCursorOnRangeLine(state, cursorLine, matchFrom, matchTo)
+      if (isActive) continue
 
       decorations.push(
         Decoration.replace({
@@ -192,20 +245,35 @@ class ImageWidget extends WidgetType {
   ) {
     super()
   }
-  toDOM() {
-    const wrapper = document.createElement('div')
+  toDOM(view: EditorView) {
+    const wrapper = document.createElement('span')
     wrapper.className = 'cm-image-widget'
+    wrapper.style.cssText = 'display: inline-block; max-width: 100%; padding: 4px 0;'
+
     const img = document.createElement('img')
-    img.src = this.url
+
+    const syncLayout = () => scheduleEditorMeasure(view)
+    img.addEventListener('load', syncLayout, { once: true })
+    img.addEventListener('error', syncLayout, { once: true })
+
     img.alt = this.alt
+    img.style.display = 'block'
     img.style.maxWidth = '100%'
     img.style.borderRadius = '4px'
-    img.style.margin = '4px 0'
+    img.src = this.url
+
+    if (img.complete) {
+      syncLayout()
+    }
+
     wrapper.appendChild(img)
     return wrapper
   }
   eq(other: ImageWidget) {
     return this.url === other.url && this.alt === other.alt
+  }
+  ignoreEvent() {
+    return false
   }
 }
 
@@ -239,7 +307,7 @@ class BlockMathWidget extends WidgetType {
   toDOM() {
     const div = document.createElement('div')
     div.className = 'cm-block-math-widget'
-    div.style.cssText = 'text-align: center; margin: 12px 0; padding: 8px 0;'
+    div.style.cssText = 'text-align: center; padding: 12px 0;'
     div.innerHTML = katex.renderToString(this.content, {
       throwOnError: false,
       strict: 'ignore',
@@ -263,7 +331,7 @@ class TableWidget extends WidgetType {
   toDOM() {
     const wrapper = document.createElement('div')
     wrapper.className = 'cm-table-widget'
-    wrapper.style.cssText = 'margin: 8px 0; overflow-x: auto;'
+    wrapper.style.cssText = 'padding: 8px 0; overflow-x: auto;'
 
     const lines = this.tableText.split('\n').filter(l => l.trim())
     if (lines.length < 2) {
@@ -339,20 +407,19 @@ class CodeBlockWidget extends WidgetType {
   toDOM() {
     const wrapper = document.createElement('div')
     wrapper.className = 'cm-codeblock-widget'
-    wrapper.style.cssText = 'position: relative; margin: 8px 0;'
+    wrapper.style.cssText = 'position: relative; padding: 8px 0;'
+    const palette = getCodeBlockPalette()
 
     // Language badge
     if (this.language) {
       const badge = document.createElement('span')
       badge.textContent = this.language
-      badge.style.cssText =
-        'position: absolute; top: 6px; right: 10px; font-size: 0.7em; color: #94a3b8; font-family: monospace; text-transform: uppercase; letter-spacing: 0.05em;'
+      badge.style.cssText = `position: absolute; top: 6px; right: 10px; font-size: 0.7em; color: ${palette.badge}; font-family: monospace; text-transform: uppercase; letter-spacing: 0.05em;`
       wrapper.appendChild(badge)
     }
 
     const pre = document.createElement('pre')
-    pre.style.cssText =
-      'background: #1e293b; color: #e2e8f0; border-radius: 6px; padding: 16px; overflow-x: auto; font-size: 0.875em; line-height: 1.6; margin: 0;'
+    pre.style.cssText = `background: ${palette.background}; color: ${palette.text}; border-radius: 6px; padding: 16px; overflow-x: auto; font-size: 0.875em; line-height: 1.6; margin: 0;`
     const codeEl = document.createElement('code')
 
     const grammar = Prism.languages[this.language]
@@ -383,18 +450,24 @@ class MermaidWidget extends WidgetType {
     super()
   }
 
-  toDOM() {
+  toDOM(view: EditorView) {
     const wrapper = document.createElement('div')
     wrapper.className = 'cm-mermaid-widget'
-    wrapper.style.cssText =
-      'margin: 8px 0; border-radius: 6px; padding: 8px; background: rgba(148, 163, 184, 0.08); overflow-x: auto;'
+    wrapper.style.cssText = 'padding: 8px 0;'
+
+    const panel = document.createElement('div')
+    panel.style.cssText =
+      'border-radius: 6px; padding: 8px; background: rgba(148, 163, 184, 0.08); overflow-x: auto;'
+    wrapper.appendChild(panel)
 
     const loading = document.createElement('div')
     loading.textContent = 'Rendering Mermaid diagram...'
-    loading.style.cssText = 'color: #64748b; font-size: 0.8em; text-align: center; padding: 8px 0;'
-    wrapper.appendChild(loading)
+    loading.style.cssText = `color: ${isDarkThemeActive() ? '#94a3b8' : '#64748b'}; font-size: 0.8em; text-align: center; padding: 8px 0;`
+    panel.appendChild(loading)
 
-    void renderMermaidInto(wrapper, this.code, this.securityLevel)
+    void renderMermaidInto(panel, this.code, this.securityLevel, () => {
+      scheduleEditorMeasure(view)
+    })
 
     return wrapper
   }
@@ -423,13 +496,17 @@ function buildDecorations(
 ): DecorationSet {
   const decorations: Range<Decoration>[] = []
   const cursor = state.selection.main
+  const cursorLine = state.doc.lineAt(cursor.head).number
   const codeRanges: DocRange[] = []
+  const hrBorderColor = isDarkThemeActive() ? '#374151' : '#e5e7eb'
   const tree = ensureSyntaxTree(state, state.doc.length, 50) ?? syntaxTree(state)
 
   tree.iterate({
     enter(node) {
       const { from, to } = node
-      const cursorInRange = cursor.from >= from && cursor.to <= to
+      const cursorInRange = isSelectionInRange(cursor, from, to)
+      const cursorOnNodeLine = isCursorOnRangeLine(state, cursorLine, from, to)
+      const revealNode = cursorInRange || cursorOnNodeLine
 
       // Collect code ranges for math exclusion
       if (node.name === 'FencedCode' || node.name === 'InlineCode') {
@@ -437,7 +514,7 @@ function buildDecorations(
       }
 
       // Headings: style the line when cursor is outside
-      if (node.name.startsWith('ATXHeading') && !cursorInRange) {
+      if (node.name.startsWith('ATXHeading') && !revealNode) {
         const levelMatch = /ATXHeading(\d)/.exec(node.name)
         const level = levelMatch?.[1] ?? '1'
         const lineText = state.sliceDoc(from, to)
@@ -457,7 +534,7 @@ function buildDecorations(
       }
 
       // Bold (**text** or __text__)
-      if (node.name === 'StrongEmphasis' && !cursorInRange) {
+      if (node.name === 'StrongEmphasis' && !revealNode) {
         const text = state.sliceDoc(from, to)
         const marker = text.startsWith('**') ? '**' : '__'
         const mLen = marker.length
@@ -476,7 +553,7 @@ function buildDecorations(
       }
 
       // Italic (*text* or _text_)
-      if (node.name === 'Emphasis' && !cursorInRange) {
+      if (node.name === 'Emphasis' && !revealNode) {
         const text = state.sliceDoc(from, to)
         const marker = text.startsWith('*') ? '*' : '_'
         const mLen = marker.length
@@ -492,7 +569,7 @@ function buildDecorations(
       }
 
       // Inline code
-      if (node.name === 'InlineCode' && !cursorInRange) {
+      if (node.name === 'InlineCode' && !revealNode) {
         const text = state.sliceDoc(from, to)
         if (text.startsWith('`') && text.endsWith('`')) {
           decorations.push(Decoration.replace({}).range(from, from + 1))
@@ -509,7 +586,7 @@ function buildDecorations(
       }
 
       // Images: ![alt](url)
-      if (node.name === 'Image' && !cursorInRange) {
+      if (node.name === 'Image' && !revealNode) {
         const text = state.sliceDoc(from, to)
         const imgMatch = /!\[([^\]]*)\]\(([^)]+)\)/.exec(text)
         if (imgMatch) {
@@ -524,7 +601,7 @@ function buildDecorations(
       }
 
       // Strikethrough: ~~text~~
-      if (node.name === 'Strikethrough' && !cursorInRange) {
+      if (node.name === 'Strikethrough' && !revealNode) {
         const text = state.sliceDoc(from, to)
         if (text.startsWith('~~') && text.endsWith('~~')) {
           decorations.push(Decoration.replace({}).range(from, from + 2))
@@ -538,19 +615,18 @@ function buildDecorations(
       }
 
       // Horizontal rule
-      if (node.name === 'HorizontalRule' && !cursorInRange) {
+      if (node.name === 'HorizontalRule' && !revealNode) {
         decorations.push(
           Decoration.line({
             attributes: {
-              style:
-                'border-bottom: 1px solid #d1d5db; margin: 8px 0; line-height: 0.5; color: transparent;',
+              style: `border-bottom: 1px solid ${hrBorderColor}; padding: 12px 0; line-height: 1; color: transparent;`,
             },
           }).range(state.doc.lineAt(from).from)
         )
       }
 
       // Links: [text](url)
-      if (node.name === 'Link' && !cursorInRange) {
+      if (node.name === 'Link' && !revealNode) {
         const linkMarks = node.node.getChildren('LinkMark')
         const urlNode = node.node.getChildren('URL')
         // LinkMarks: [0]='[', [1]=']', [2]='(', [3]=')'
@@ -575,8 +651,8 @@ function buildDecorations(
 
       // Bullet lists: replace - with bullet widget
       if (node.name === 'ListItem' && node.node.parent?.type.name === 'BulletList') {
-        const itemCursorInRange = cursor.from >= from && cursor.to <= to
-        if (!itemCursorInRange) {
+        const itemCursorInRange = isSelectionInRange(cursor, from, to)
+        if (!itemCursorInRange && !cursorOnNodeLine) {
           const listMark = node.node.getChildren('ListMark')
           if (listMark.length > 0) {
             const mark = listMark[0]!
@@ -600,8 +676,8 @@ function buildDecorations(
 
       // Ordered lists: style the number marker
       if (node.name === 'ListItem' && node.node.parent?.type.name === 'OrderedList') {
-        const itemCursorInRange = cursor.from >= from && cursor.to <= to
-        if (!itemCursorInRange) {
+        const itemCursorInRange = isSelectionInRange(cursor, from, to)
+        if (!itemCursorInRange && !cursorOnNodeLine) {
           const listMark = node.node.getChildren('ListMark')
           if (listMark.length > 0) {
             const mark = listMark[0]!
@@ -625,7 +701,7 @@ function buildDecorations(
       }
 
       // Blockquotes: hide > marks, add left border
-      if (node.name === 'Blockquote' && !cursorInRange) {
+      if (node.name === 'Blockquote' && !revealNode) {
         // Hide all QuoteMark children
         const quoteMarks = node.node.getChildren('QuoteMark')
         for (const qm of quoteMarks) {
@@ -672,7 +748,7 @@ function buildDecorations(
       }
 
       // Tables: replace with rendered HTML table
-      if (node.name === 'Table' && !cursorInRange) {
+      if (node.name === 'Table' && !revealNode) {
         const tableText = state.sliceDoc(from, to)
         decorations.push(
           Decoration.replace({
@@ -683,7 +759,7 @@ function buildDecorations(
       }
 
       // Fenced code blocks: replace with syntax-highlighted block
-      if (node.name === 'FencedCode' && !cursorInRange) {
+      if (node.name === 'FencedCode' && !revealNode) {
         const codeInfoNode = node.node.getChildren('CodeInfo')
         const codeTextNode = node.node.getChildren('CodeText')
         const language =
@@ -710,7 +786,7 @@ function buildDecorations(
 
   // Math detection (separate pass after tree walk to avoid code ranges)
   codeRanges.sort((a, b) => a.from - b.from)
-  appendMathDecorations(state, decorations, cursor, codeRanges)
+  appendMathDecorations(state, decorations, cursor, cursorLine, codeRanges)
 
   return Decoration.set(decorations, true)
 }
