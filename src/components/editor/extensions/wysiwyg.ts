@@ -1,4 +1,4 @@
-import { syntaxTree } from '@codemirror/language'
+import { ensureSyntaxTree, syntaxTree } from '@codemirror/language'
 import { StateField, type EditorState, type Range } from '@codemirror/state'
 import { Decoration, type DecorationSet, EditorView, WidgetType } from '@codemirror/view'
 import katex from 'katex'
@@ -18,6 +18,7 @@ import 'prismjs/components/prism-typescript'
 let mermaidModulePromise: Promise<(typeof import('mermaid'))['default']> | null = null
 let mermaidThemeCache: 'dark' | 'default' | null = null
 let mermaidRenderCount = 0
+let mermaidRenderToken = 0
 
 function getMermaidTheme(): 'dark' | 'default' {
   return document.documentElement.classList.contains('dark') ? 'dark' : 'default'
@@ -44,15 +45,18 @@ async function getMermaid() {
 }
 
 async function renderMermaidInto(container: HTMLDivElement, code: string) {
+  const token = `${++mermaidRenderToken}`
+  container.dataset.mermaidToken = token
+
   try {
     const mermaid = await getMermaid()
     const id = `cm-mermaid-${mermaidRenderCount++}`
     const { svg } = await mermaid.render(id, code)
 
-    if (!container.isConnected) return
+    if (!container.isConnected || container.dataset.mermaidToken !== token) return
     container.innerHTML = svg
   } catch {
-    if (!container.isConnected) return
+    if (!container.isConnected || container.dataset.mermaidToken !== token) return
 
     const pre = document.createElement('pre')
     pre.style.cssText =
@@ -62,6 +66,97 @@ async function renderMermaidInto(container: HTMLDivElement, code: string) {
     codeEl.style.cssText = 'font-family: monospace; white-space: pre;'
     pre.appendChild(codeEl)
     container.replaceChildren(pre)
+  }
+}
+
+type DocRange = { from: number; to: number }
+
+function createRangeChecker(ranges: DocRange[]) {
+  let idx = 0
+
+  return (pos: number) => {
+    while (idx < ranges.length && ranges[idx]!.to <= pos) {
+      idx += 1
+    }
+
+    if (idx >= ranges.length) return false
+    const range = ranges[idx]!
+    return pos >= range.from && pos < range.to
+  }
+}
+
+function appendMathDecorations(
+  state: EditorState,
+  decorations: Range<Decoration>[],
+  cursor: { from: number; to: number },
+  codeRanges: DocRange[]
+) {
+  const doc = state.doc
+  const blockMathRanges: DocRange[] = []
+  const isInCodeRange = createRangeChecker(codeRanges)
+
+  let blockStart: number | null = null
+  let blockLines: string[] = []
+
+  // Block math pass: $$ line, content lines, $$ line
+  for (let lineNo = 1; lineNo <= doc.lines; lineNo++) {
+    const line = doc.line(lineNo)
+    const trimmed = line.text.trim()
+    const lineInCode = isInCodeRange(line.from)
+
+    if (blockStart === null) {
+      if (!lineInCode && trimmed === '$$') {
+        blockStart = line.from
+        blockLines = []
+      }
+      continue
+    }
+
+    if (!lineInCode && trimmed === '$$') {
+      const matchFrom = blockStart
+      const matchTo = line.to
+      blockMathRanges.push({ from: matchFrom, to: matchTo })
+
+      if (!(cursor.from >= matchFrom && cursor.to <= matchTo)) {
+        decorations.push(
+          Decoration.replace({
+            widget: new BlockMathWidget(blockLines.join('\n')),
+            block: true,
+          }).range(matchFrom, matchTo)
+        )
+      }
+
+      blockStart = null
+      continue
+    }
+
+    blockLines.push(line.text)
+  }
+
+  const excludedRanges = [...codeRanges, ...blockMathRanges].sort((a, b) => a.from - b.from)
+  const isInExcludedRange = createRangeChecker(excludedRanges)
+
+  // Inline math pass: $...$ (not $$)
+  const inlineMathRegex = /(?<!\$)\$(?!\$)(.+?)\$(?!\$)/g
+
+  for (let lineNo = 1; lineNo <= doc.lines; lineNo++) {
+    const line = doc.line(lineNo)
+    inlineMathRegex.lastIndex = 0
+
+    let match: RegExpExecArray | null
+    while ((match = inlineMathRegex.exec(line.text)) !== null) {
+      const matchFrom = line.from + match.index
+      const matchTo = matchFrom + match[0].length
+
+      if (isInExcludedRange(matchFrom) || isInExcludedRange(matchTo - 1)) continue
+      if (cursor.from >= matchFrom && cursor.to <= matchTo) continue
+
+      decorations.push(
+        Decoration.replace({
+          widget: new InlineMathWidget(match[1]!),
+        }).range(matchFrom, matchTo)
+      )
+    }
   }
 }
 
@@ -311,9 +406,10 @@ const headingStyles: Record<string, string> = {
 function buildDecorations(state: EditorState): DecorationSet {
   const decorations: Range<Decoration>[] = []
   const cursor = state.selection.main
-  const codeRanges: { from: number; to: number }[] = []
+  const codeRanges: DocRange[] = []
+  const tree = ensureSyntaxTree(state, state.doc.length, 50) ?? syntaxTree(state)
 
-  syntaxTree(state).iterate({
+  tree.iterate({
     enter(node) {
       const { from, to } = node
       const cursorInRange = cursor.from >= from && cursor.to <= to
@@ -564,6 +660,7 @@ function buildDecorations(state: EditorState): DecorationSet {
         decorations.push(
           Decoration.replace({
             widget: new TableWidget(tableText),
+            block: true,
           }).range(from, to)
         )
       }
@@ -587,6 +684,7 @@ function buildDecorations(state: EditorState): DecorationSet {
         decorations.push(
           Decoration.replace({
             widget,
+            block: true,
           }).range(from, to)
         )
       }
@@ -594,40 +692,8 @@ function buildDecorations(state: EditorState): DecorationSet {
   })
 
   // Math detection (separate pass after tree walk to avoid code ranges)
-  const doc = state.doc.toString()
-  const isInCodeRange = (pos: number) => codeRanges.some(r => pos >= r.from && pos < r.to)
-
-  // Block math: $$\n...\n$$
-  const blockMathRegex = /\$\$\n([\s\S]+?)\n\$\$/g
-  let blockMatch: RegExpExecArray | null
-  while ((blockMatch = blockMathRegex.exec(doc)) !== null) {
-    const matchFrom = blockMatch.index
-    const matchTo = matchFrom + blockMatch[0].length
-    if (isInCodeRange(matchFrom)) continue
-    if (cursor.from >= matchFrom && cursor.to <= matchTo) continue
-    const content = blockMatch[1]!
-    decorations.push(
-      Decoration.replace({
-        widget: new BlockMathWidget(content),
-      }).range(matchFrom, matchTo)
-    )
-  }
-
-  // Inline math: $...$ (not $$)
-  const inlineMathRegex = /(?<!\$)\$(?!\$)(.+?)\$(?!\$)/g
-  let inlineMatch: RegExpExecArray | null
-  while ((inlineMatch = inlineMathRegex.exec(doc)) !== null) {
-    const matchFrom = inlineMatch.index
-    const matchTo = matchFrom + inlineMatch[0].length
-    if (isInCodeRange(matchFrom)) continue
-    if (cursor.from >= matchFrom && cursor.to <= matchTo) continue
-    const content = inlineMatch[1]!
-    decorations.push(
-      Decoration.replace({
-        widget: new InlineMathWidget(content),
-      }).range(matchFrom, matchTo)
-    )
-  }
+  codeRanges.sort((a, b) => a.from - b.from)
+  appendMathDecorations(state, decorations, cursor, codeRanges)
 
   return Decoration.set(decorations, true)
 }
