@@ -321,6 +321,18 @@
   }
 }
 
+/* Focus Mode line dimming */
+@layer components {
+  .cm-focus-dimmed {
+    opacity: 0.3;
+    transition: opacity 200ms ease-out;
+  }
+  .cm-focus-context {
+    opacity: 0.6;
+    transition: opacity 200ms ease-out;
+  }
+}
+
 /* CodeMirror full-height fix */
 @layer components {
   .cm-editor {

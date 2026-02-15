@@ -91,6 +91,7 @@ interface TabState {
   setActiveTab: (id: string) => void
   updateContent: (id: string, content: string) => void
   markClean: (id: string, content: string) => void
+  renameTab: (id: string, newFileName: string, newFilePath: string | null) => void
 }
 
 export const useTabStore = create<TabState>((set, get) => ({
@@ -146,6 +147,14 @@ export const useTabStore = create<TabState>((set, get) => ({
   markClean: (id, content) => {
     set(s => ({
       tabs: s.tabs.map(t => (t.id === id ? { ...t, savedContent: content } : t)),
+    }))
+  },
+
+  renameTab: (id, newFileName, newFilePath) => {
+    set(s => ({
+      tabs: s.tabs.map(t =>
+        t.id === id ? { ...t, fileName: newFileName, filePath: newFilePath } : t
+      ),
     }))
   },
 }))

@@ -13,6 +13,9 @@ export interface EditorSettings {
   tabSize: number // 2 | 4 | 8, default 2
   wordWrap: boolean // default true
   lineNumbers: boolean // default true
+  focusMode: boolean // default false
+  focusContextLines: number // 0–3, default 0
+  typewriterMode: boolean // default false
 }
 
 export interface PreviewSettings {
@@ -48,6 +51,9 @@ export const DEFAULT_EDITOR: EditorSettings = {
   tabSize: 2,
   wordWrap: true,
   lineNumbers: true,
+  focusMode: false,
+  focusContextLines: 0,
+  typewriterMode: false,
 }
 
 export const DEFAULT_PREVIEW: PreviewSettings = {

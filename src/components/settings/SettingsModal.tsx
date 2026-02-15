@@ -234,6 +234,25 @@ function EditorPanel() {
       <SettingRow label="Line Numbers" description="Show line numbers">
         <Toggle checked={editor.lineNumbers} onChange={v => updateEditor({ lineNumbers: v })} />
       </SettingRow>
+      <SettingRow label="Focus Mode" description="Dim lines except cursor line">
+        <Toggle checked={editor.focusMode} onChange={v => updateEditor({ focusMode: v })} />
+      </SettingRow>
+      {editor.focusMode && (
+        <SettingRow label="Focus Context Lines" description="Bright lines around cursor (0-3)">
+          <NumberInput
+            value={editor.focusContextLines}
+            min={0}
+            max={3}
+            onChange={v => updateEditor({ focusContextLines: v })}
+          />
+        </SettingRow>
+      )}
+      <SettingRow label="Typewriter Mode" description="Keep cursor line vertically centered">
+        <Toggle
+          checked={editor.typewriterMode}
+          onChange={v => updateEditor({ typewriterMode: v })}
+        />
+      </SettingRow>
     </div>
   )
 }

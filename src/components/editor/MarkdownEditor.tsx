@@ -16,8 +16,10 @@ import { useEditorStore } from '@/stores/editorStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useTabStore } from '@/stores/tabStore'
 
+import { focusExtension } from './extensions/focus'
 import { markdownExtension } from './extensions/markdown'
 import { boltdownDarkTheme, boltdownTheme } from './extensions/theme'
+import { typewriterExtension } from './extensions/typewriter'
 import { wysiwygPlugin } from './extensions/wysiwyg'
 
 function buildGutterExts(showGutter: boolean): Extension {
@@ -32,6 +34,10 @@ export default memo(function MarkdownEditor() {
     (themeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
   const editorViewRef = useEditorView()
 
+  const focusMode = useSettingsStore(s => s.settings.editor.focusMode)
+  const focusContextLines = useSettingsStore(s => s.settings.editor.focusContextLines)
+  const typewriterMode = useSettingsStore(s => s.settings.editor.typewriterMode)
+
   const activeTabId = useTabStore(s => s.activeTabId)
   const updateContent = useTabStore(s => s.updateContent)
 
@@ -45,6 +51,8 @@ export default memo(function MarkdownEditor() {
   const themeCompRef = useRef(new Compartment())
   const wysiwygCompRef = useRef(new Compartment())
   const gutterCompRef = useRef(new Compartment())
+  const focusCompRef = useRef(new Compartment())
+  const typewriterCompRef = useRef(new Compartment())
 
   activeTabIdRef.current = activeTabId
 
@@ -54,6 +62,8 @@ export default memo(function MarkdownEditor() {
     themeCompRef.current.of(isDark ? boltdownDarkTheme : boltdownTheme),
     wysiwygCompRef.current.of(mode === 'zen' ? wysiwygPlugin : []),
     gutterCompRef.current.of(buildGutterExts(mode !== 'zen')),
+    focusCompRef.current.of(focusMode ? focusExtension(focusContextLines) : []),
+    typewriterCompRef.current.of(typewriterMode ? typewriterExtension() : []),
     history(),
     search(),
     bracketMatching(),
@@ -111,6 +121,8 @@ export default memo(function MarkdownEditor() {
           themeCompRef.current.reconfigure(isDark ? boltdownDarkTheme : boltdownTheme),
           wysiwygCompRef.current.reconfigure(mode === 'zen' ? wysiwygPlugin : []),
           gutterCompRef.current.reconfigure(buildGutterExts(mode !== 'zen')),
+          focusCompRef.current.reconfigure(focusMode ? focusExtension(focusContextLines) : []),
+          typewriterCompRef.current.reconfigure(typewriterMode ? typewriterExtension() : []),
         ],
       })
     } else {
@@ -158,6 +170,16 @@ export default memo(function MarkdownEditor() {
       ],
     })
   }, [mode])
+
+  // Focus and Typewriter mode reconfiguration
+  useEffect(() => {
+    viewRef.current?.dispatch({
+      effects: [
+        focusCompRef.current.reconfigure(focusMode ? focusExtension(focusContextLines) : []),
+        typewriterCompRef.current.reconfigure(typewriterMode ? typewriterExtension() : []),
+      ],
+    })
+  }, [focusMode, focusContextLines, typewriterMode])
 
   return <div ref={containerRef} className="h-full [&_.cm-editor]:h-full" />
 })
