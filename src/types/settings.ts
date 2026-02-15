@@ -13,6 +13,7 @@ export interface EditorSettings {
   lineHeight: number // 1.2–2.4, default 1.6
   tabSize: number // 2 | 4 | 8, default 2
   wordWrap: boolean // default true
+  spellcheck: boolean // default true
   lineNumbers: boolean // default true
   focusMode: boolean // default false
   focusContextLines: number // 0–3, default 0
@@ -52,6 +53,7 @@ export const DEFAULT_EDITOR: EditorSettings = {
   lineHeight: 1.6,
   tabSize: 2,
   wordWrap: true,
+  spellcheck: true,
   lineNumbers: true,
   focusMode: false,
   focusContextLines: 0,

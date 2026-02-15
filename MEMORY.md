@@ -27,3 +27,10 @@
 - Typewriter mode: drag-select around cursor does not force-scroll during drag.
 - Preview/Zen math: no repeated KaTeX strict warnings for display-mode newline content.
 - Footer: counts update normally with no Zustand deprecation warning.
+
+## 2026-02-16 — Backlog Notes
+
+### Open issue
+
+- Spellcheck setting now toggles `spellcheck` + `writingsuggestions` on the CodeMirror content DOM, but inline misspelling underlines remain inconsistent on macOS Tauri WebView.
+- Manual spell-check action can still run, so this is tracked as a follow-up for native menu + WebView behavior validation (and optional internal dictionary pipeline if needed).

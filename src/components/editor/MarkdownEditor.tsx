@@ -15,6 +15,7 @@ import { useEditorView } from '@/contexts/EditorViewContext'
 import { useEditorStore } from '@/stores/editorStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useTabStore } from '@/stores/tabStore'
+import { isTauri } from '@/utils/tauri'
 
 import { focusExtension } from './extensions/focus'
 import { markdownExtension } from './extensions/markdown'
@@ -26,8 +27,142 @@ function buildGutterExts(showGutter: boolean): Extension {
   return showGutter ? [lineNumbers(), foldGutter(), highlightActiveLineGutter()] : []
 }
 
+function getSpellingContentAttributes(enabled: boolean) {
+  return {
+    spellcheck: enabled ? 'true' : 'false',
+    writingsuggestions: enabled ? 'true' : 'false',
+  }
+}
+
 const orderedListMarkerRegex = /^(\s*)(\d+)([.)])(\s*)/
 const nestedListIndent = '    '
+const supportedImageExtensions = /\.(png|jpe?g|gif|webp|svg|bmp|avif|ico)$/i
+
+function isImageFile(file: File): boolean {
+  return file.type.startsWith('image/') || supportedImageExtensions.test(file.name)
+}
+
+function sanitizeFileName(fileName: string): string {
+  const sanitized = fileName.replace(/[^a-zA-Z0-9._-]/g, '-')
+  return sanitized || `image-${Date.now()}.png`
+}
+
+function getDirectoryPath(filePath: string): string {
+  const slash = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'))
+  return slash === -1 ? '' : filePath.slice(0, slash)
+}
+
+function joinPath(dir: string, name: string): string {
+  if (!dir) return name
+  const separator = dir.includes('\\') ? '\\' : '/'
+  const needsSeparator = !dir.endsWith('/') && !dir.endsWith('\\')
+  return `${dir}${needsSeparator ? separator : ''}${name}`
+}
+
+function toPosixPath(filePath: string): string {
+  return filePath.replace(/\\/g, '/')
+}
+
+function getMarkdownImagePath(markdownFilePath: string, imageFilePath: string): string {
+  const markdownDir = toPosixPath(getDirectoryPath(markdownFilePath))
+  const targetPath = toPosixPath(imageFilePath)
+
+  if (markdownDir && targetPath.startsWith(`${markdownDir}/`)) {
+    return `./${encodeURI(targetPath.slice(markdownDir.length + 1))}`
+  }
+
+  return encodeURI(targetPath)
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result)
+      } else {
+        reject(new Error('FileReader returned non-string result'))
+      }
+    }
+    reader.onerror = () => reject(reader.error ?? new Error('Failed to read image file'))
+    reader.readAsDataURL(file)
+  })
+}
+
+function getDroppedFilePath(file: File): string | null {
+  const candidate = (file as File & { path?: string }).path
+  return typeof candidate === 'string' && candidate.length > 0 ? candidate : null
+}
+
+async function toImageMarkdown(file: File, markdownFilePath: string | null, index: number) {
+  const altText = (file.name.replace(/\.[^.]+$/, '') || 'image')
+    .split('[')
+    .join('')
+    .split(']')
+    .join('')
+
+  if (isTauri() && markdownFilePath) {
+    const sourcePath = getDroppedFilePath(file)
+    if (sourcePath) {
+      try {
+        const markdownDir = getDirectoryPath(markdownFilePath)
+        const sourcePosix = toPosixPath(sourcePath)
+        const markdownDirPosix = toPosixPath(markdownDir)
+
+        if (markdownDirPosix && sourcePosix.startsWith(`${markdownDirPosix}/`)) {
+          const existingPath = getMarkdownImagePath(markdownFilePath, sourcePath)
+          return `![${altText}](<${existingPath}>)`
+        }
+
+        const safeName = sanitizeFileName(file.name)
+        const prefixedName = `${Date.now()}-${index + 1}-${safeName}`
+        const destinationPath = joinPath(markdownDir, prefixedName)
+        const { invoke } = await import('@tauri-apps/api/core')
+
+        await invoke('copy_file', {
+          srcPath: sourcePath,
+          destPath: destinationPath,
+        })
+
+        const relativePath = getMarkdownImagePath(markdownFilePath, destinationPath)
+        return `![${altText}](<${relativePath}>)`
+      } catch (error) {
+        console.error('Failed to copy dropped image, fallback to data URL:', error)
+      }
+    }
+  }
+
+  const dataUrl = await readFileAsDataUrl(file)
+  return `![${altText}](<${dataUrl}>)`
+}
+
+async function insertDroppedImages(view: EditorView, files: File[], insertPos: number) {
+  const { tabs, activeTabId } = useTabStore.getState()
+  const tab = tabs.find(t => t.id === activeTabId)
+  const snippets: string[] = []
+
+  for (const [index, file] of files.entries()) {
+    snippets.push(await toImageMarkdown(file, tab?.filePath ?? null, index))
+  }
+
+  if (snippets.length === 0) return
+
+  const before = insertPos > 0 ? view.state.doc.sliceString(insertPos - 1, insertPos) : ''
+  const after =
+    insertPos < view.state.doc.length ? view.state.doc.sliceString(insertPos, insertPos + 1) : ''
+  const prefix = before && before !== '\n' ? '\n' : ''
+  const suffix = after && after !== '\n' ? '\n' : ''
+  const insertText = `${prefix}${snippets.join('\n\n')}${suffix}`
+
+  view.dispatch({
+    changes: { from: insertPos, to: insertPos, insert: insertText },
+    selection: { anchor: insertPos + insertText.length },
+    scrollIntoView: true,
+  })
+
+  const imageWord = snippets.length === 1 ? 'image' : 'images'
+  useEditorStore.getState().flashStatus(`Inserted ${snippets.length} ${imageWord}`)
+}
 
 function isInOrderedList(state: EditorState, pos: number): boolean {
   let node = syntaxTree(state).resolve(pos, -1)
@@ -108,6 +243,7 @@ export default memo(function MarkdownEditor() {
 
   const focusMode = useSettingsStore(s => s.settings.editor.focusMode)
   const focusContextLines = useSettingsStore(s => s.settings.editor.focusContextLines)
+  const spellcheck = useSettingsStore(s => s.settings.editor.spellcheck)
   const typewriterMode = useSettingsStore(s => s.settings.editor.typewriterMode)
   const mermaidSecurityLevel = useSettingsStore(s => s.settings.preview.mermaidSecurityLevel)
 
@@ -125,6 +261,7 @@ export default memo(function MarkdownEditor() {
   const wysiwygCompRef = useRef(new Compartment())
   const gutterCompRef = useRef(new Compartment())
   const focusCompRef = useRef(new Compartment())
+  const spellcheckCompRef = useRef(new Compartment())
   const typewriterCompRef = useRef(new Compartment())
 
   activeTabIdRef.current = activeTabId
@@ -136,6 +273,9 @@ export default memo(function MarkdownEditor() {
     wysiwygCompRef.current.of(mode === 'zen' ? wysiwygExtension(mermaidSecurityLevel) : []),
     gutterCompRef.current.of(buildGutterExts(mode !== 'zen')),
     focusCompRef.current.of(focusMode ? focusExtension(focusContextLines) : []),
+    spellcheckCompRef.current.of(
+      EditorView.contentAttributes.of(getSpellingContentAttributes(spellcheck))
+    ),
     typewriterCompRef.current.of(typewriterMode ? typewriterExtension() : []),
     history(),
     search(),
@@ -143,6 +283,33 @@ export default memo(function MarkdownEditor() {
     indentOnInput(),
     highlightActiveLine(),
     EditorView.lineWrapping,
+    EditorView.domEventHandlers({
+      dragover: event => {
+        const files = event.dataTransfer?.files
+        if (!files || files.length === 0) return false
+        const hasImage = Array.from(files).some(isImageFile)
+        if (!hasImage) return false
+
+        event.preventDefault()
+        if (event.dataTransfer) {
+          event.dataTransfer.dropEffect = 'copy'
+        }
+        return true
+      },
+      drop: (event, view) => {
+        const files = event.dataTransfer?.files
+        if (!files || files.length === 0) return false
+
+        const images = Array.from(files).filter(isImageFile)
+        if (images.length === 0) return false
+
+        event.preventDefault()
+        const insertPos =
+          view.posAtCoords({ x: event.clientX, y: event.clientY }) ?? view.state.selection.main.head
+        void insertDroppedImages(view, images, insertPos)
+        return true
+      },
+    }),
     keymap.of([
       { key: 'Tab', run: indentOrderedListItem },
       ...defaultKeymap,
@@ -202,6 +369,9 @@ export default memo(function MarkdownEditor() {
           ),
           gutterCompRef.current.reconfigure(buildGutterExts(mode !== 'zen')),
           focusCompRef.current.reconfigure(focusMode ? focusExtension(focusContextLines) : []),
+          spellcheckCompRef.current.reconfigure(
+            EditorView.contentAttributes.of(getSpellingContentAttributes(spellcheck))
+          ),
           typewriterCompRef.current.reconfigure(typewriterMode ? typewriterExtension() : []),
         ],
       })
@@ -253,15 +423,18 @@ export default memo(function MarkdownEditor() {
     })
   }, [mode, mermaidSecurityLevel])
 
-  // Focus and Typewriter mode reconfiguration
+  // Focus, Spellcheck, and Typewriter mode reconfiguration
   useEffect(() => {
     viewRef.current?.dispatch({
       effects: [
         focusCompRef.current.reconfigure(focusMode ? focusExtension(focusContextLines) : []),
+        spellcheckCompRef.current.reconfigure(
+          EditorView.contentAttributes.of(getSpellingContentAttributes(spellcheck))
+        ),
         typewriterCompRef.current.reconfigure(typewriterMode ? typewriterExtension() : []),
       ],
     })
-  }, [focusMode, focusContextLines, typewriterMode])
+  }, [focusMode, focusContextLines, spellcheck, typewriterMode])
 
   return <div ref={containerRef} className="h-full [&_.cm-editor]:h-full" />
 })

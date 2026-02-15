@@ -241,6 +241,9 @@ function EditorPanel() {
       <SettingRow label="Word Wrap" description="Wrap long lines in the editor">
         <Toggle checked={editor.wordWrap} onChange={v => updateEditor({ wordWrap: v })} />
       </SettingRow>
+      <SettingRow label="Spellcheck" description="Underline misspelled words while typing">
+        <Toggle checked={editor.spellcheck} onChange={v => updateEditor({ spellcheck: v })} />
+      </SettingRow>
       <SettingRow label="Line Numbers" description="Show line numbers">
         <Toggle checked={editor.lineNumbers} onChange={v => updateEditor({ lineNumbers: v })} />
       </SettingRow>
