@@ -23,11 +23,13 @@ export default memo(function FileTree({ onFileOpen }: FileTreeProps) {
 
   const treeRef = useRef<TreeApi<FileTreeNode>>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const [containerHeight, setContainerHeight] = useState(400)
+  const [containerHeight, setContainerHeight] = useState(0)
 
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
+    // Measure immediately to avoid flash of incorrect height
+    setContainerHeight(el.clientHeight)
     const observer = new ResizeObserver(entries => {
       const entry = entries[0]
       if (entry) setContainerHeight(entry.contentRect.height)
@@ -159,25 +161,27 @@ export default memo(function FileTree({ onFileOpen }: FileTreeProps) {
 
   return (
     <div ref={containerRef} className="flex-1 overflow-hidden">
-      <Tree<FileTreeNode>
-        ref={treeRef}
-        data={treeData}
-        openByDefault={false}
-        width={width - 16}
-        height={containerHeight}
-        rowHeight={28}
-        indent={16}
-        overscanCount={5}
-        disableDrag
-        disableDrop
-        disableEdit
-        onToggle={handleToggle}
-        onActivate={handleActivate}
-      >
-        {props => (
-          <FileTreeNodeComponent {...props} onDelete={deleteFile} onDuplicate={duplicateFile} />
-        )}
-      </Tree>
+      {containerHeight > 0 && (
+        <Tree<FileTreeNode>
+          ref={treeRef}
+          data={treeData}
+          openByDefault={false}
+          width={width - 16}
+          height={containerHeight}
+          rowHeight={28}
+          indent={16}
+          overscanCount={5}
+          disableDrag
+          disableDrop
+          disableEdit
+          onToggle={handleToggle}
+          onActivate={handleActivate}
+        >
+          {props => (
+            <FileTreeNodeComponent {...props} onDelete={deleteFile} onDuplicate={duplicateFile} />
+          )}
+        </Tree>
+      )}
     </div>
   )
 })

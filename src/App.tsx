@@ -46,6 +46,15 @@ function App() {
     void loadSettings()
   }, [loadSettings])
 
+  // Sync sidebar file tree when active tab changes
+  const activeTabId = useTabStore(s => s.activeTabId)
+  useEffect(() => {
+    const tab = useTabStore.getState().tabs.find(t => t.id === activeTabId)
+    if (tab?.filePath) {
+      void useSidebarStore.getState().loadParentDirectory(tab.filePath)
+    }
+  }, [activeTabId])
+
   const handleFileOpen = useCallback(
     async (path: string, name: string) => {
       try {

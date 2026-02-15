@@ -1,4 +1,5 @@
-import { ChevronDown, ChevronRight, Copy, File, Folder, FolderOpen, Trash2 } from 'lucide-react'
+import { FileIcon, FolderIcon } from '@react-symbols/icons/utils'
+import { ChevronDown, ChevronRight, Copy, Trash2 } from 'lucide-react'
 import { memo, useEffect, useState } from 'react'
 import type { NodeRendererProps } from 'react-arborist'
 
@@ -7,25 +8,6 @@ import type { FileTreeNode } from '@/types/sidebar'
 interface FileTreeNodeProps extends NodeRendererProps<FileTreeNode> {
   onDelete?: (path: string) => void
   onDuplicate?: (path: string) => void
-}
-
-const extColors: Record<string, string> = {
-  md: 'text-blue-500',
-  markdown: 'text-blue-500',
-  ts: 'text-blue-600',
-  tsx: 'text-blue-600',
-  js: 'text-yellow-500',
-  jsx: 'text-yellow-500',
-  json: 'text-yellow-500',
-  rs: 'text-orange-500',
-  toml: 'text-orange-400',
-  css: 'text-purple-500',
-  html: 'text-red-500',
-}
-
-function getExtColor(name: string): string {
-  const ext = name.split('.').pop()?.toLowerCase()
-  return ext ? (extColors[ext] ?? 'text-gray-400') : 'text-gray-400'
 }
 
 function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeNodeProps) {
@@ -88,16 +70,16 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
             ) : (
               <ChevronRight className="h-3.5 w-3.5 flex-none text-gray-400" />
             )}
-            {node.isOpen ? (
-              <FolderOpen className="h-3.5 w-3.5 flex-none text-yellow-500" />
-            ) : (
-              <Folder className="h-3.5 w-3.5 flex-none text-yellow-500" />
-            )}
+            <span className="flex-none" style={{ width: 16, height: 16 }}>
+              <FolderIcon folderName={name} />
+            </span>
           </>
         ) : (
           <>
             <span className="w-3.5 flex-none" />
-            <File className={`h-3.5 w-3.5 flex-none ${getExtColor(name)}`} />
+            <span className="flex-none" style={{ width: 16, height: 16 }}>
+              <FileIcon fileName={name} autoAssign />
+            </span>
           </>
         )}
         <span className="flex-1 truncate text-gray-700 dark:text-gray-300">{name}</span>
