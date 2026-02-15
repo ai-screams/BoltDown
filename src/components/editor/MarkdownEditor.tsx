@@ -27,7 +27,7 @@ function buildGutterExts(showGutter: boolean): Extension {
 }
 
 const orderedListMarkerRegex = /^(\s*)(\d+)([.)])(\s*)/
-const nestedListIndent = '  '
+const nestedListIndent = '    '
 
 function isInOrderedList(state: EditorState, pos: number): boolean {
   let node = syntaxTree(state).resolve(pos, -1)
