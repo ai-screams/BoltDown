@@ -4,6 +4,8 @@ import { Decoration, type DecorationSet, EditorView, WidgetType } from '@codemir
 import katex from 'katex'
 import Prism from 'prismjs'
 
+import type { MermaidSecurityLevel } from '@/types/settings'
+
 import 'prismjs/components/prism-bash'
 import 'prismjs/components/prism-css'
 import 'prismjs/components/prism-javascript'
@@ -16,7 +18,8 @@ import 'prismjs/components/prism-tsx'
 import 'prismjs/components/prism-typescript'
 
 let mermaidModulePromise: Promise<(typeof import('mermaid'))['default']> | null = null
-let mermaidThemeCache: 'dark' | 'default' | null = null
+let mermaidConfigCache: { theme: 'dark' | 'default'; securityLevel: MermaidSecurityLevel } | null =
+  null
 let mermaidRenderCount = 0
 let mermaidRenderToken = 0
 
@@ -24,7 +27,7 @@ function getMermaidTheme(): 'dark' | 'default' {
   return document.documentElement.classList.contains('dark') ? 'dark' : 'default'
 }
 
-async function getMermaid() {
+async function getMermaid(securityLevel: MermaidSecurityLevel) {
   if (!mermaidModulePromise) {
     mermaidModulePromise = import('mermaid').then(mod => mod.default)
   }
@@ -32,24 +35,32 @@ async function getMermaid() {
   const mermaid = await mermaidModulePromise
   const theme = getMermaidTheme()
 
-  if (mermaidThemeCache !== theme) {
+  if (
+    !mermaidConfigCache ||
+    mermaidConfigCache.theme !== theme ||
+    mermaidConfigCache.securityLevel !== securityLevel
+  ) {
     mermaid.initialize({
       startOnLoad: false,
       theme,
-      securityLevel: 'loose',
+      securityLevel,
     })
-    mermaidThemeCache = theme
+    mermaidConfigCache = { theme, securityLevel }
   }
 
   return mermaid
 }
 
-async function renderMermaidInto(container: HTMLDivElement, code: string) {
+async function renderMermaidInto(
+  container: HTMLDivElement,
+  code: string,
+  securityLevel: MermaidSecurityLevel
+) {
   const token = `${++mermaidRenderToken}`
   container.dataset.mermaidToken = token
 
   try {
-    const mermaid = await getMermaid()
+    const mermaid = await getMermaid(securityLevel)
     const id = `cm-mermaid-${mermaidRenderCount++}`
     const { svg } = await mermaid.render(id, code)
 
@@ -365,7 +376,10 @@ class CodeBlockWidget extends WidgetType {
 }
 
 class MermaidWidget extends WidgetType {
-  constructor(private code: string) {
+  constructor(
+    private code: string,
+    private securityLevel: MermaidSecurityLevel
+  ) {
     super()
   }
 
@@ -380,13 +394,13 @@ class MermaidWidget extends WidgetType {
     loading.style.cssText = 'color: #64748b; font-size: 0.8em; text-align: center; padding: 8px 0;'
     wrapper.appendChild(loading)
 
-    void renderMermaidInto(wrapper, this.code)
+    void renderMermaidInto(wrapper, this.code, this.securityLevel)
 
     return wrapper
   }
 
   eq(other: MermaidWidget) {
-    return this.code === other.code
+    return this.code === other.code && this.securityLevel === other.securityLevel
   }
   ignoreEvent() {
     return false
@@ -403,7 +417,10 @@ const headingStyles: Record<string, string> = {
   '6': 'font-size: 0.9em; font-weight: 600; line-height: 1.5; color: #6b7280;',
 }
 
-function buildDecorations(state: EditorState): DecorationSet {
+function buildDecorations(
+  state: EditorState,
+  mermaidSecurityLevel: MermaidSecurityLevel
+): DecorationSet {
   const decorations: Range<Decoration>[] = []
   const cursor = state.selection.main
   const codeRanges: DocRange[] = []
@@ -678,7 +695,7 @@ function buildDecorations(state: EditorState): DecorationSet {
         const normalizedLanguage = language.toLowerCase()
         const widget =
           normalizedLanguage === 'mermaid'
-            ? new MermaidWidget(code)
+            ? new MermaidWidget(code, mermaidSecurityLevel)
             : new CodeBlockWidget(code, language)
 
         decorations.push(
@@ -698,17 +715,19 @@ function buildDecorations(state: EditorState): DecorationSet {
   return Decoration.set(decorations, true)
 }
 
-const wysiwygDecorations = StateField.define<DecorationSet>({
-  create(state) {
-    return buildDecorations(state)
-  },
-  update(decorations, tr) {
-    if (tr.docChanged || tr.selection) {
-      return buildDecorations(tr.state)
-    }
-    return decorations
-  },
-  provide: field => EditorView.decorations.from(field),
-})
+export function wysiwygExtension(mermaidSecurityLevel: MermaidSecurityLevel = 'strict') {
+  const wysiwygDecorations = StateField.define<DecorationSet>({
+    create(state) {
+      return buildDecorations(state, mermaidSecurityLevel)
+    },
+    update(decorations, tr) {
+      if (tr.docChanged || tr.selection) {
+        return buildDecorations(tr.state, mermaidSecurityLevel)
+      }
+      return decorations
+    },
+    provide: field => EditorView.decorations.from(field),
+  })
 
-export const wysiwygPlugin = wysiwygDecorations
+  return wysiwygDecorations
+}

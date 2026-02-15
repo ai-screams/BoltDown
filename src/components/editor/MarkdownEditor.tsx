@@ -20,7 +20,7 @@ import { focusExtension } from './extensions/focus'
 import { markdownExtension } from './extensions/markdown'
 import { boltdownDarkTheme, boltdownTheme } from './extensions/theme'
 import { typewriterExtension } from './extensions/typewriter'
-import { wysiwygPlugin } from './extensions/wysiwyg'
+import { wysiwygExtension } from './extensions/wysiwyg'
 
 function buildGutterExts(showGutter: boolean): Extension {
   return showGutter ? [lineNumbers(), foldGutter(), highlightActiveLineGutter()] : []
@@ -109,6 +109,7 @@ export default memo(function MarkdownEditor() {
   const focusMode = useSettingsStore(s => s.settings.editor.focusMode)
   const focusContextLines = useSettingsStore(s => s.settings.editor.focusContextLines)
   const typewriterMode = useSettingsStore(s => s.settings.editor.typewriterMode)
+  const mermaidSecurityLevel = useSettingsStore(s => s.settings.preview.mermaidSecurityLevel)
 
   const activeTabId = useTabStore(s => s.activeTabId)
   const updateContent = useTabStore(s => s.updateContent)
@@ -132,7 +133,7 @@ export default memo(function MarkdownEditor() {
   const buildExtensions = (): Extension[] => [
     markdownExtension(),
     themeCompRef.current.of(isDark ? boltdownDarkTheme : boltdownTheme),
-    wysiwygCompRef.current.of(mode === 'zen' ? wysiwygPlugin : []),
+    wysiwygCompRef.current.of(mode === 'zen' ? wysiwygExtension(mermaidSecurityLevel) : []),
     gutterCompRef.current.of(buildGutterExts(mode !== 'zen')),
     focusCompRef.current.of(focusMode ? focusExtension(focusContextLines) : []),
     typewriterCompRef.current.of(typewriterMode ? typewriterExtension() : []),
@@ -196,7 +197,9 @@ export default memo(function MarkdownEditor() {
       view.dispatch({
         effects: [
           themeCompRef.current.reconfigure(isDark ? boltdownDarkTheme : boltdownTheme),
-          wysiwygCompRef.current.reconfigure(mode === 'zen' ? wysiwygPlugin : []),
+          wysiwygCompRef.current.reconfigure(
+            mode === 'zen' ? wysiwygExtension(mermaidSecurityLevel) : []
+          ),
           gutterCompRef.current.reconfigure(buildGutterExts(mode !== 'zen')),
           focusCompRef.current.reconfigure(focusMode ? focusExtension(focusContextLines) : []),
           typewriterCompRef.current.reconfigure(typewriterMode ? typewriterExtension() : []),
@@ -242,11 +245,13 @@ export default memo(function MarkdownEditor() {
     if (!view) return
     view.dispatch({
       effects: [
-        wysiwygCompRef.current.reconfigure(mode === 'zen' ? wysiwygPlugin : []),
+        wysiwygCompRef.current.reconfigure(
+          mode === 'zen' ? wysiwygExtension(mermaidSecurityLevel) : []
+        ),
         gutterCompRef.current.reconfigure(buildGutterExts(mode !== 'zen')),
       ],
     })
-  }, [mode])
+  }, [mode, mermaidSecurityLevel])
 
   // Focus and Typewriter mode reconfiguration
   useEffect(() => {

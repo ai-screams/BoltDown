@@ -1,4 +1,5 @@
 export type ThemeMode = 'light' | 'dark' | 'system'
+export type MermaidSecurityLevel = 'strict' | 'loose'
 
 export type FontFamily = 'jetbrains-mono' | 'fira-code' | 'consolas' | 'system-mono'
 
@@ -23,6 +24,7 @@ export interface PreviewSettings {
   lineHeight: number // 1.2–2.4, default 1.6
   codeBlockFontSize: number // 10–20, default 14
   maxWidth: number // 600–1200, default 800 (px)
+  mermaidSecurityLevel: MermaidSecurityLevel // default strict
 }
 
 export interface GeneralSettings {
@@ -61,6 +63,7 @@ export const DEFAULT_PREVIEW: PreviewSettings = {
   lineHeight: 1.6,
   codeBlockFontSize: 14,
   maxWidth: 800,
+  mermaidSecurityLevel: 'strict',
 }
 
 export const DEFAULT_GENERAL: GeneralSettings = {

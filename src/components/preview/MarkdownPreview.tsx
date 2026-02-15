@@ -3,28 +3,39 @@ import { memo, useCallback, useEffect, useRef } from 'react'
 import { useMarkdownParser } from '@/hooks/useMarkdownParser'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useTabStore } from '@/stores/tabStore'
+import type { MermaidSecurityLevel } from '@/types/settings'
 
-async function renderMermaidBlocks(container: HTMLElement) {
+let previewRenderToken = 0
+
+async function renderMermaidBlocks(container: HTMLElement, securityLevel: MermaidSecurityLevel) {
   const blocks = container.querySelectorAll<HTMLPreElement>('pre.mermaid-block')
   if (blocks.length === 0) return
+
+  const token = `${++previewRenderToken}`
+  container.dataset['mermaidToken'] = token
+  const theme = document.documentElement.classList.contains('dark') ? 'dark' : 'default'
+  const configKey = `${theme}:${securityLevel}`
 
   const mermaid = (await import('mermaid')).default
   mermaid.initialize({
     startOnLoad: false,
-    theme: document.documentElement.classList.contains('dark') ? 'dark' : 'default',
-    securityLevel: 'loose',
+    theme,
+    securityLevel,
   })
 
   await Promise.all(
     Array.from(blocks).map(async block => {
       const code = block.querySelector('code')?.textContent
-      if (!code || block.dataset['rendered'] === 'true') return
+      if (!code || block.dataset['renderedConfig'] === configKey) return
 
       try {
         const id = `mermaid-${Math.random().toString(36).slice(2, 9)}`
         const { svg } = await mermaid.render(id, code)
+
+        if (!container.isConnected || container.dataset['mermaidToken'] !== token) return
+
         block.innerHTML = svg
-        block.dataset['rendered'] = 'true'
+        block.dataset['renderedConfig'] = configKey
         block.classList.add('mermaid-rendered')
       } catch {
         // Leave as code block on error
@@ -75,9 +86,9 @@ export default memo(function MarkdownPreview() {
 
   const enhancePreview = useCallback(() => {
     if (!containerRef.current) return
-    void renderMermaidBlocks(containerRef.current)
+    void renderMermaidBlocks(containerRef.current, preview.mermaidSecurityLevel)
     addCopyButtons(containerRef.current)
-  }, [])
+  }, [preview.mermaidSecurityLevel])
 
   useEffect(() => {
     enhancePreview()

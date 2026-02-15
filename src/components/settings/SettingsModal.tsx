@@ -3,7 +3,12 @@ import { Eye, Keyboard, Monitor, Moon, Palette, RotateCcw, Settings, Sun, X } fr
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 
 import { useSettingsStore } from '@/stores/settingsStore'
-import type { FontFamily, SettingsCategory, ThemeMode } from '@/types/settings'
+import type {
+  FontFamily,
+  MermaidSecurityLevel,
+  SettingsCategory,
+  ThemeMode,
+} from '@/types/settings'
 
 // --- Category definitions ---
 
@@ -191,6 +196,11 @@ const tabSizeOptions = [
   { value: '8', label: '8' },
 ]
 
+const mermaidSecurityOptions: { value: MermaidSecurityLevel; label: string }[] = [
+  { value: 'strict', label: 'Strict (Recommended)' },
+  { value: 'loose', label: 'Loose (Compat)' },
+]
+
 function EditorPanel() {
   const editor = useSettingsStore(s => s.settings.editor)
   const updateEditor = useSettingsStore(s => s.updateEditor)
@@ -295,6 +305,16 @@ function PreviewPanel() {
           max={1200}
           step={50}
           onChange={v => updatePreview({ maxWidth: v })}
+        />
+      </SettingRow>
+      <SettingRow
+        label="Mermaid Security"
+        description="Strict is safer. Loose allows broader diagram HTML behavior"
+      >
+        <Select
+          value={preview.mermaidSecurityLevel}
+          options={mermaidSecurityOptions}
+          onChange={v => updatePreview({ mermaidSecurityLevel: v })}
         />
       </SettingRow>
     </div>
