@@ -336,6 +336,12 @@ function dispatchImageSnippets(view: EditorView, snippets: string[], insertPos: 
 
 async function insertDroppedImages(view: EditorView, files: File[], insertPos: number) {
   const markdownFilePath = await ensureMarkdownPathForImageInsert()
+
+  if (isTauri() && !markdownFilePath) {
+    useEditorStore.getState().flashStatus('Save the document first to insert local images', 3000)
+    return
+  }
+
   const snippets: string[] = []
 
   for (const [index, file] of files.entries()) {
@@ -347,6 +353,12 @@ async function insertDroppedImages(view: EditorView, files: File[], insertPos: n
 
 async function insertDroppedImagePaths(view: EditorView, paths: string[], insertPos: number) {
   const markdownFilePath = await ensureMarkdownPathForImageInsert()
+
+  if (isTauri() && !markdownFilePath) {
+    useEditorStore.getState().flashStatus('Save the document first to insert local images', 3000)
+    return
+  }
+
   const snippets: string[] = []
 
   for (const [index, path] of paths.entries()) {
