@@ -38,6 +38,7 @@ function App() {
   const addRecentFile = useSidebarStore(s => s.addRecentFile)
   const openTab = useTabStore(s => s.openTab)
   const openFindReplace = useFindReplaceStore(s => s.open)
+  const findReplaceOpen = useFindReplaceStore(s => s.isOpen)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const loadSettings = useSettingsStore(s => s.loadSettings)
 
@@ -75,6 +76,20 @@ function App() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey
+
+      // Escape exits zen mode (skip if any modal is open)
+      if (
+        mode === 'zen' &&
+        e.key === 'Escape' &&
+        !mod &&
+        !e.shiftKey &&
+        !findReplaceOpen &&
+        !settingsOpen
+      ) {
+        e.preventDefault()
+        setMode('source')
+        return
+      }
 
       if (mod && e.shiftKey && e.key === 'e') {
         e.preventDefault()
@@ -134,21 +149,34 @@ function App() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [mode, setMode, openFile, saveFile, saveFileAs, toggleSidebar, openTab, openFindReplace])
+  }, [
+    mode,
+    setMode,
+    openFile,
+    saveFile,
+    saveFileAs,
+    toggleSidebar,
+    openTab,
+    openFindReplace,
+    findReplaceOpen,
+    settingsOpen,
+  ])
 
   return (
     <EditorViewProvider>
       <div className="flex h-screen flex-col overflow-hidden bg-gray-50 dark:bg-gray-900">
-        <Header />
+        <div className={mode === 'zen' ? 'zen-slide-up' : 'zen-slide-down'}>
+          <Header />
+        </div>
         <div className="flex min-h-0 flex-1 overflow-hidden">
-          <Sidebar onFileOpen={handleFileOpen} />
-          {sidebarOpen && <ResizeHandle />}
+          {mode !== 'zen' && <Sidebar onFileOpen={handleFileOpen} />}
+          {mode !== 'zen' && sidebarOpen && <ResizeHandle />}
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            {tabBar}
+            <div className={mode === 'zen' ? 'zen-slide-up' : 'zen-slide-down'}>{tabBar}</div>
             <MainLayout toolbar={toolbar} editor={editor} preview={preview} />
           </div>
         </div>
-        <Footer />
+        <Footer className={mode === 'zen' ? 'zen-footer-dim' : ''} />
       </div>
       {sidebarResizing && <div className="fixed inset-0 z-40 cursor-col-resize" />}
       <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
