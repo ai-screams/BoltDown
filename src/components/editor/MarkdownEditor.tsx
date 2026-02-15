@@ -14,6 +14,7 @@ import { memo, useEffect, useRef } from 'react'
 import { useEditorView } from '@/contexts/EditorViewContext'
 import { useEditorStore } from '@/stores/editorStore'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { useSidebarStore } from '@/stores/sidebarStore'
 import { useTabStore } from '@/stores/tabStore'
 import { isTauri } from '@/utils/tauri'
 
@@ -49,7 +50,9 @@ function sanitizeFileName(fileName: string): string {
 
 function getDirectoryPath(filePath: string): string {
   const slash = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'))
-  return slash === -1 ? '' : filePath.slice(0, slash)
+  if (slash === -1) return ''
+  if (slash === 0) return filePath[0]!
+  return filePath.slice(0, slash)
 }
 
 function joinPath(dir: string, name: string): string {
@@ -63,12 +66,34 @@ function toPosixPath(filePath: string): string {
   return filePath.replace(/\\/g, '/')
 }
 
+function isPathInDirectory(filePath: string, directoryPath: string): boolean {
+  const path = toPosixPath(filePath)
+  const dir = toPosixPath(directoryPath)
+  if (!dir) return false
+  if (path === dir) return true
+
+  const normalizedDir = dir.endsWith('/') ? dir : `${dir}/`
+  return path.startsWith(normalizedDir)
+}
+
+function buildDestinationImagePath(
+  markdownFilePath: string,
+  fileName: string,
+  index: number
+): string {
+  const markdownDir = getDirectoryPath(markdownFilePath)
+  const safeName = sanitizeFileName(fileName)
+  const prefixedName = `${Date.now()}-${index + 1}-${safeName}`
+  return joinPath(markdownDir, prefixedName)
+}
+
 function getMarkdownImagePath(markdownFilePath: string, imageFilePath: string): string {
   const markdownDir = toPosixPath(getDirectoryPath(markdownFilePath))
   const targetPath = toPosixPath(imageFilePath)
 
-  if (markdownDir && targetPath.startsWith(`${markdownDir}/`)) {
-    return `./${encodeURI(targetPath.slice(markdownDir.length + 1))}`
+  if (isPathInDirectory(targetPath, markdownDir)) {
+    const normalizedDir = markdownDir.endsWith('/') ? markdownDir : `${markdownDir}/`
+    return `./${encodeURI(targetPath.slice(normalizedDir.length))}`
   }
 
   return encodeURI(targetPath)
@@ -94,57 +119,202 @@ function getDroppedFilePath(file: File): string | null {
   return typeof candidate === 'string' && candidate.length > 0 ? candidate : null
 }
 
-async function toImageMarkdown(file: File, markdownFilePath: string | null, index: number) {
-  const altText = (file.name.replace(/\.[^.]+$/, '') || 'image')
-    .split('[')
-    .join('')
-    .split(']')
-    .join('')
+function hasFileDragType(dataTransfer: DataTransfer): boolean {
+  if (dataTransfer.files.length > 0) return true
+  return Array.from(dataTransfer.types).some(type => type === 'Files' || type === 'text/uri-list')
+}
 
-  if (isTauri() && markdownFilePath) {
-    const sourcePath = getDroppedFilePath(file)
-    if (sourcePath) {
+function normalizeAltText(fileName: string): string {
+  return (fileName.replace(/\.[^.]+$/, '') || 'image').split('[').join('').split(']').join('')
+}
+
+function parseFilePathFromText(text: string): string | null {
+  const value = text.trim()
+  if (!value) return null
+
+  if (value.startsWith('file://')) {
+    try {
+      const url = new URL(value)
+      if (url.protocol !== 'file:') return null
+
+      let path = decodeURIComponent(url.pathname)
+      if (/^\/[A-Za-z]:\//.test(path)) {
+        path = path.slice(1)
+      }
+
+      if (url.hostname && url.hostname !== 'localhost') {
+        return `//${url.hostname}${path}`
+      }
+
+      return path
+    } catch {
+      return null
+    }
+  }
+
+  if (value.startsWith('/') || value.startsWith('\\\\') || /^[A-Za-z]:[\\/]/.test(value)) {
+    return value
+  }
+
+  return null
+}
+
+function getDroppedImagePathsFromDataTransfer(dataTransfer: DataTransfer): string[] {
+  const paths = new Set<string>()
+  const uriList = dataTransfer.getData('text/uri-list')
+
+  for (const line of uriList.split('\n')) {
+    const path = parseFilePathFromText(line)
+    if (path && supportedImageExtensions.test(path)) {
+      paths.add(path)
+    }
+  }
+
+  const plainText = dataTransfer.getData('text/plain')
+  const plainPath = parseFilePathFromText(plainText)
+  if (plainPath && supportedImageExtensions.test(plainPath)) {
+    paths.add(plainPath)
+  }
+
+  return Array.from(paths)
+}
+
+function getFileNameFromPath(filePath: string): string {
+  return filePath.split(/[/\\]/).pop() ?? filePath
+}
+
+async function ensureMarkdownPathForImageInsert(): Promise<string | null> {
+  if (!isTauri()) return null
+
+  const { tabs, activeTabId, renameTab, markClean } = useTabStore.getState()
+  const tab = tabs.find(t => t.id === activeTabId)
+  if (!tab) return null
+  if (tab.filePath) return tab.filePath
+
+  try {
+    const { save } = await import('@tauri-apps/plugin-dialog')
+    const path = await save({
+      filters: [{ name: 'Markdown', extensions: ['md'] }],
+      defaultPath: tab.fileName,
+    })
+    if (!path) return null
+
+    const { invoke } = await import('@tauri-apps/api/core')
+    await invoke('write_file', { path, content: tab.content })
+
+    const fileName = getFileNameFromPath(path)
+    renameTab(activeTabId, fileName, path)
+    markClean(activeTabId, tab.content)
+
+    const sidebarStore = useSidebarStore.getState()
+    sidebarStore.addRecentFile(path, fileName)
+    await sidebarStore.loadParentDirectory(path, true)
+
+    useEditorStore.getState().flashStatus('Saved current file to insert local image paths', 3000)
+    return path
+  } catch (error) {
+    console.error('Failed to save markdown file before image insert:', error)
+    useEditorStore
+      .getState()
+      .flashStatus('Image insert fallback: could not save current file', 4000)
+    return null
+  }
+}
+
+async function toImageMarkdown(
+  file: File,
+  markdownFilePath: string | null,
+  index: number
+): Promise<string> {
+  const altText = normalizeAltText(file.name)
+  const sourcePath = isTauri() ? getDroppedFilePath(file) : null
+
+  if (isTauri()) {
+    if (markdownFilePath) {
       try {
         const markdownDir = getDirectoryPath(markdownFilePath)
-        const sourcePosix = toPosixPath(sourcePath)
-        const markdownDirPosix = toPosixPath(markdownDir)
 
-        if (markdownDirPosix && sourcePosix.startsWith(`${markdownDirPosix}/`)) {
+        if (sourcePath && isPathInDirectory(sourcePath, markdownDir)) {
           const existingPath = getMarkdownImagePath(markdownFilePath, sourcePath)
           return `![${altText}](<${existingPath}>)`
         }
 
-        const safeName = sanitizeFileName(file.name)
-        const prefixedName = `${Date.now()}-${index + 1}-${safeName}`
-        const destinationPath = joinPath(markdownDir, prefixedName)
+        const destinationPath = buildDestinationImagePath(markdownFilePath, file.name, index)
         const { invoke } = await import('@tauri-apps/api/core')
 
-        await invoke('copy_file', {
-          srcPath: sourcePath,
-          destPath: destinationPath,
-        })
+        if (sourcePath) {
+          await invoke('copy_file', {
+            srcPath: sourcePath,
+            destPath: destinationPath,
+          })
+        } else {
+          const data = Array.from(new Uint8Array(await file.arrayBuffer()))
+          await invoke('write_binary_file', {
+            destPath: destinationPath,
+            data,
+          })
+        }
 
         const relativePath = getMarkdownImagePath(markdownFilePath, destinationPath)
         return `![${altText}](<${relativePath}>)`
       } catch (error) {
-        console.error('Failed to copy dropped image, fallback to data URL:', error)
+        console.error(
+          'Failed to persist dropped image, fallback to source path or data URL:',
+          error
+        )
       }
+    }
+
+    if (sourcePath) {
+      return `![${altText}](<${encodeURI(toPosixPath(sourcePath))}>)`
     }
   }
 
   const dataUrl = await readFileAsDataUrl(file)
+  if (isTauri()) {
+    useEditorStore
+      .getState()
+      .flashStatus('Inserted embedded image data (save file first for local image paths)', 4000)
+  }
   return `![${altText}](<${dataUrl}>)`
 }
 
-async function insertDroppedImages(view: EditorView, files: File[], insertPos: number) {
-  const { tabs, activeTabId } = useTabStore.getState()
-  const tab = tabs.find(t => t.id === activeTabId)
-  const snippets: string[] = []
+async function toImageMarkdownFromPath(
+  sourcePath: string,
+  markdownFilePath: string | null,
+  index: number
+) {
+  const fileName = sourcePath.split(/[/\\]/).pop() ?? `image-${Date.now()}-${index + 1}.png`
+  const altText = normalizeAltText(fileName)
 
-  for (const [index, file] of files.entries()) {
-    snippets.push(await toImageMarkdown(file, tab?.filePath ?? null, index))
+  if (isTauri() && markdownFilePath) {
+    try {
+      const markdownDir = getDirectoryPath(markdownFilePath)
+
+      if (isPathInDirectory(sourcePath, markdownDir)) {
+        const existingPath = getMarkdownImagePath(markdownFilePath, sourcePath)
+        return `![${altText}](<${existingPath}>)`
+      }
+
+      const destinationPath = buildDestinationImagePath(markdownFilePath, fileName, index)
+      const { invoke } = await import('@tauri-apps/api/core')
+
+      await invoke('copy_file', {
+        srcPath: sourcePath,
+        destPath: destinationPath,
+      })
+
+      const relativePath = getMarkdownImagePath(markdownFilePath, destinationPath)
+      return `![${altText}](<${relativePath}>)`
+    } catch (error) {
+      console.error('Failed to copy dropped image path:', error)
+    }
   }
 
+  return `![${altText}](<${encodeURI(toPosixPath(sourcePath))}>)`
+}
+
+function dispatchImageSnippets(view: EditorView, snippets: string[], insertPos: number) {
   if (snippets.length === 0) return
 
   const before = insertPos > 0 ? view.state.doc.sliceString(insertPos - 1, insertPos) : ''
@@ -162,6 +332,28 @@ async function insertDroppedImages(view: EditorView, files: File[], insertPos: n
 
   const imageWord = snippets.length === 1 ? 'image' : 'images'
   useEditorStore.getState().flashStatus(`Inserted ${snippets.length} ${imageWord}`)
+}
+
+async function insertDroppedImages(view: EditorView, files: File[], insertPos: number) {
+  const markdownFilePath = await ensureMarkdownPathForImageInsert()
+  const snippets: string[] = []
+
+  for (const [index, file] of files.entries()) {
+    snippets.push(await toImageMarkdown(file, markdownFilePath, index))
+  }
+
+  dispatchImageSnippets(view, snippets, insertPos)
+}
+
+async function insertDroppedImagePaths(view: EditorView, paths: string[], insertPos: number) {
+  const markdownFilePath = await ensureMarkdownPathForImageInsert()
+  const snippets: string[] = []
+
+  for (const [index, path] of paths.entries()) {
+    snippets.push(await toImageMarkdownFromPath(path, markdownFilePath, index))
+  }
+
+  dispatchImageSnippets(view, snippets, insertPos)
 }
 
 function isInOrderedList(state: EditorState, pos: number): boolean {
@@ -283,33 +475,6 @@ export default memo(function MarkdownEditor() {
     indentOnInput(),
     highlightActiveLine(),
     EditorView.lineWrapping,
-    EditorView.domEventHandlers({
-      dragover: event => {
-        const files = event.dataTransfer?.files
-        if (!files || files.length === 0) return false
-        const hasImage = Array.from(files).some(isImageFile)
-        if (!hasImage) return false
-
-        event.preventDefault()
-        if (event.dataTransfer) {
-          event.dataTransfer.dropEffect = 'copy'
-        }
-        return true
-      },
-      drop: (event, view) => {
-        const files = event.dataTransfer?.files
-        if (!files || files.length === 0) return false
-
-        const images = Array.from(files).filter(isImageFile)
-        if (images.length === 0) return false
-
-        event.preventDefault()
-        const insertPos =
-          view.posAtCoords({ x: event.clientX, y: event.clientY }) ?? view.state.selection.main.head
-        void insertDroppedImages(view, images, insertPos)
-        return true
-      },
-    }),
     keymap.of([
       { key: 'Tab', run: indentOrderedListItem },
       ...defaultKeymap,
@@ -334,11 +499,49 @@ export default memo(function MarkdownEditor() {
     const extensions = buildExtensions()
     const state = EditorState.create({ doc: activeTab?.content ?? '', extensions })
     const view = new EditorView({ state, parent: containerRef.current })
+
+    const handleDragOver = (event: DragEvent) => {
+      const dataTransfer = event.dataTransfer
+      if (!dataTransfer || !hasFileDragType(dataTransfer)) return
+
+      event.preventDefault()
+      dataTransfer.dropEffect = 'copy'
+    }
+
+    const handleDrop = (event: DragEvent) => {
+      const dataTransfer = event.dataTransfer
+      if (!dataTransfer || !hasFileDragType(dataTransfer)) return
+
+      event.preventDefault()
+
+      const insertPos =
+        view.posAtCoords({ x: event.clientX, y: event.clientY }) ?? view.state.selection.main.head
+
+      const imageFiles = Array.from(dataTransfer.files).filter(isImageFile)
+      const imagePaths = getDroppedImagePathsFromDataTransfer(dataTransfer)
+      if (imagePaths.length > 0) {
+        void insertDroppedImagePaths(view, imagePaths, insertPos)
+        return
+      }
+
+      if (imageFiles.length > 0) {
+        void insertDroppedImages(view, imageFiles, insertPos)
+        return
+      }
+
+      useEditorStore.getState().flashStatus('Only image files are supported', 3000)
+    }
+
+    view.dom.addEventListener('dragover', handleDragOver)
+    view.dom.addEventListener('drop', handleDrop)
+
     viewRef.current = view
     editorViewRef.current = view
     prevTabIdRef.current = activeTabId
 
     return () => {
+      view.dom.removeEventListener('dragover', handleDragOver)
+      view.dom.removeEventListener('drop', handleDrop)
       view.destroy()
       viewRef.current = null
       editorViewRef.current = null

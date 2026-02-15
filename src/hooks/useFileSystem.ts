@@ -8,6 +8,7 @@ import { isTauri } from '@/utils/tauri'
 export function useFileSystem() {
   const openTab = useTabStore(s => s.openTab)
   const markClean = useTabStore(s => s.markClean)
+  const renameTab = useTabStore(s => s.renameTab)
   const addRecentFile = useSidebarStore(s => s.addRecentFile)
 
   const getActiveTab = useCallback(() => {
@@ -99,13 +100,17 @@ export function useFileSystem() {
       })
       if (!path) return
       await invoke('write_file', { path, content: tab.content })
+      const name = path.split(/[/\\]/).pop() ?? tab.fileName
+      renameTab(activeTabId, name, path)
+      addRecentFile(path, name)
+      await useSidebarStore.getState().loadParentDirectory(path, true)
       markClean(activeTabId, tab.content)
       useEditorStore.getState().flashStatus('Saved')
     } catch (e) {
       console.error('Save as failed:', e)
       useEditorStore.getState().flashStatus('Save failed', 3000)
     }
-  }, [getActiveTab, markClean])
+  }, [getActiveTab, markClean, renameTab, addRecentFile])
 
   const deleteFile = useCallback(async (filePath: string) => {
     if (!isTauri()) return false

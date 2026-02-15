@@ -41,6 +41,13 @@ async fn copy_file(src_path: String, dest_path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+async fn write_binary_file(dest_path: String, data: Vec<u8>) -> Result<(), String> {
+    tokio::fs::write(&dest_path, data)
+        .await
+        .map_err(|e| format!("Failed to write binary file: {}", e))
+}
+
+#[tauri::command]
 fn greet(name: &str) -> String {
     format!("⚡ Hello, {}! Welcome to BoltDown!", name)
 }
@@ -161,6 +168,7 @@ fn main() {
             rename_file,
             delete_file,
             copy_file,
+            write_binary_file,
             list_directory,
             read_settings,
             write_settings

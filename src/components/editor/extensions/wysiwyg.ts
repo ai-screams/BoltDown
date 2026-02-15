@@ -4,7 +4,9 @@ import { Decoration, type DecorationSet, EditorView, WidgetType } from '@codemir
 import katex from 'katex'
 import Prism from 'prismjs'
 
+import { useTabStore } from '@/stores/tabStore'
 import type { MermaidSecurityLevel } from '@/types/settings'
+import { resolveImageSrcForDisplay } from '@/utils/imagePath'
 
 import 'prismjs/components/prism-bash'
 import 'prismjs/components/prism-css'
@@ -260,7 +262,9 @@ class ImageWidget extends WidgetType {
     img.style.display = 'block'
     img.style.maxWidth = '100%'
     img.style.borderRadius = '4px'
-    img.src = this.url
+    const { tabs, activeTabId } = useTabStore.getState()
+    const activeTab = tabs.find(t => t.id === activeTabId)
+    img.src = resolveImageSrcForDisplay(this.url, activeTab?.filePath ?? null)
 
     if (img.complete) {
       syncLayout()

@@ -4,6 +4,7 @@ import { useMarkdownParser } from '@/hooks/useMarkdownParser'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useTabStore } from '@/stores/tabStore'
 import type { MermaidSecurityLevel } from '@/types/settings'
+import { resolveImageSrcForDisplay } from '@/utils/imagePath'
 
 let previewRenderToken = 0
 
@@ -71,6 +72,19 @@ function addCopyButtons(container: HTMLElement) {
   }
 }
 
+function resolveImageSources(container: HTMLElement, markdownFilePath: string | null) {
+  const images = container.querySelectorAll<HTMLImageElement>('img')
+  for (const image of images) {
+    const source = image.getAttribute('src')
+    if (!source) continue
+
+    const resolved = resolveImageSrcForDisplay(source, markdownFilePath)
+    if (resolved && resolved !== source) {
+      image.src = resolved
+    }
+  }
+}
+
 function useActiveTabContent(): string {
   return useTabStore(s => {
     const tab = s.tabs.find(t => t.id === s.activeTabId)
@@ -78,17 +92,26 @@ function useActiveTabContent(): string {
   })
 }
 
+function useActiveTabFilePath(): string | null {
+  return useTabStore(s => {
+    const tab = s.tabs.find(t => t.id === s.activeTabId)
+    return tab?.filePath ?? null
+  })
+}
+
 export default memo(function MarkdownPreview() {
   const content = useActiveTabContent()
+  const markdownFilePath = useActiveTabFilePath()
   const html = useMarkdownParser(content)
   const containerRef = useRef<HTMLDivElement>(null)
   const preview = useSettingsStore(s => s.settings.preview)
 
   const enhancePreview = useCallback(() => {
     if (!containerRef.current) return
+    resolveImageSources(containerRef.current, markdownFilePath)
     void renderMermaidBlocks(containerRef.current, preview.mermaidSecurityLevel)
     addCopyButtons(containerRef.current)
-  }, [preview.mermaidSecurityLevel])
+  }, [markdownFilePath, preview.mermaidSecurityLevel])
 
   useEffect(() => {
     enhancePreview()
