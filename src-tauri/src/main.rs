@@ -26,6 +26,21 @@ async fn rename_file(old_path: String, new_path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+async fn delete_file(path: String) -> Result<(), String> {
+    tokio::fs::remove_file(&path)
+        .await
+        .map_err(|e| format!("Failed to delete file: {}", e))
+}
+
+#[tauri::command]
+async fn copy_file(src_path: String, dest_path: String) -> Result<(), String> {
+    tokio::fs::copy(&src_path, &dest_path)
+        .await
+        .map(|_| ())
+        .map_err(|e| format!("Failed to copy file: {}", e))
+}
+
+#[tauri::command]
 fn greet(name: &str) -> String {
     format!("⚡ Hello, {}! Welcome to BoltDown!", name)
 }
@@ -144,6 +159,8 @@ fn main() {
             read_file,
             write_file,
             rename_file,
+            delete_file,
+            copy_file,
             list_directory,
             read_settings,
             write_settings

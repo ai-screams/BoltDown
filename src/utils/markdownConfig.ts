@@ -129,3 +129,7 @@ md.renderer.rules['math_block'] = (tokens, idx) => {
     return `<pre><code>${escapeHtml(tokens[idx]!.content)}</code></pre>`
   }
 }
+
+// Register TOC plugin
+import { tocPlugin } from './tocPlugin'
+md.use(tocPlugin)

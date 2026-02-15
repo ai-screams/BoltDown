@@ -104,5 +104,75 @@ export function useFileSystem() {
     }
   }, [getActiveTab, markClean])
 
-  return { openFile, saveFile, saveFileAs }
+  const deleteFile = useCallback(async (filePath: string) => {
+    if (!isTauri()) return false
+    try {
+      const { ask } = await import('@tauri-apps/plugin-dialog')
+      const fileName = filePath.split('/').pop() ?? filePath
+      const confirmed = await ask(`Delete "${fileName}"? This cannot be undone.`, {
+        title: 'Delete File',
+        kind: 'warning',
+      })
+      if (!confirmed) return false
+
+      const { invoke } = await import('@tauri-apps/api/core')
+      await invoke('delete_file', { path: filePath })
+
+      // Close any tab with this file
+      const { tabs, closeTab } = useTabStore.getState()
+      const tab = tabs.find(t => t.filePath === filePath)
+      if (tab) closeTab(tab.id)
+
+      return true
+    } catch (e) {
+      const flashStatus = useEditorStore.getState().flashStatus
+      flashStatus(`Delete failed: ${e}`)
+      return false
+    }
+  }, [])
+
+  const duplicateFile = useCallback(async (filePath: string) => {
+    if (!isTauri()) return null
+    try {
+      const { invoke } = await import('@tauri-apps/api/core')
+
+      // Generate copy name: "file.md" → "file (copy).md"
+      const lastSlash = filePath.lastIndexOf('/')
+      const dir = filePath.slice(0, lastSlash + 1)
+      const fullName = filePath.slice(lastSlash + 1)
+      const dotIdx = fullName.lastIndexOf('.')
+      const name = dotIdx > 0 ? fullName.slice(0, dotIdx) : fullName
+      const ext = dotIdx > 0 ? fullName.slice(dotIdx) : ''
+
+      // Find available name
+      let copyName = `${name} (copy)${ext}`
+      let copyPath = `${dir}${copyName}`
+      let counter = 2
+      while (true) {
+        try {
+          await invoke<string>('read_file', { path: copyPath })
+          // File exists, try next
+          copyName = `${name} (copy ${counter})${ext}`
+          copyPath = `${dir}${copyName}`
+          counter++
+        } catch {
+          break // File doesn't exist, use this name
+        }
+      }
+
+      await invoke('copy_file', { srcPath: filePath, destPath: copyPath })
+
+      // Read and open the copy in a new tab
+      const content = await invoke<string>('read_file', { path: copyPath })
+      useTabStore.getState().openTab(copyPath, copyName, content)
+
+      return copyPath
+    } catch (e) {
+      const flashStatus = useEditorStore.getState().flashStatus
+      flashStatus(`Duplicate failed: ${e}`)
+      return null
+    }
+  }, [])
+
+  return { openFile, saveFile, saveFileAs, deleteFile, duplicateFile }
 }

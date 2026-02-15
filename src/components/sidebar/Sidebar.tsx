@@ -8,11 +8,13 @@ import { loadDirectoryEntries } from '@/utils/directoryLoader'
 import { isTauri } from '@/utils/tauri'
 
 import FileTree from './FileTree'
+import { OutlinePanel } from './OutlinePanel'
 import RecentFiles from './RecentFiles'
 
 const tabs: { key: SidebarTab; label: string }[] = [
   { key: 'files', label: 'FILES' },
   { key: 'recent', label: 'RECENT' },
+  { key: 'outline', label: 'OUTLINE' },
 ]
 
 interface SidebarProps {
@@ -66,8 +68,10 @@ export default memo(function Sidebar({ onFileOpen }: SidebarProps) {
 
       {activeTab === 'files' ? (
         <FileTree onFileOpen={onFileOpen} />
-      ) : (
+      ) : activeTab === 'recent' ? (
         <RecentFiles onFileOpen={onFileOpen} />
+      ) : (
+        <OutlinePanel />
       )}
 
       {isTauri() && (
