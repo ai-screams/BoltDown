@@ -4,6 +4,7 @@ import { EditorViewProvider } from '@/contexts/EditorViewContext'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useFileSystem } from '@/hooks/useFileSystem'
 import { useEditorStore } from '@/stores/editorStore'
+import { useFindReplaceStore } from '@/stores/findReplaceStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useSidebarStore } from '@/stores/sidebarStore'
 import { useTabStore } from '@/stores/tabStore'
@@ -11,6 +12,7 @@ import type { EditorMode } from '@/types/editor'
 import EditorToolbar from '@components/editor/EditorToolbar'
 import MarkdownEditor from '@components/editor/MarkdownEditor'
 import TabBar from '@components/editor/TabBar'
+import FindReplaceModal from '@components/findreplace/FindReplaceModal'
 import Footer from '@components/layout/Footer'
 import Header from '@components/layout/Header'
 import MainLayout from '@components/layout/MainLayout'
@@ -35,6 +37,7 @@ function App() {
   const toggleSidebar = useSidebarStore(s => s.toggle)
   const addRecentFile = useSidebarStore(s => s.addRecentFile)
   const openTab = useTabStore(s => s.openTab)
+  const openFindReplace = useFindReplaceStore(s => s.open)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const loadSettings = useSettingsStore(s => s.loadSettings)
 
@@ -104,10 +107,22 @@ function App() {
         setSettingsOpen(prev => !prev)
         return
       }
+
+      if (mod && !e.shiftKey && e.key === 'f') {
+        e.preventDefault()
+        openFindReplace(false)
+        return
+      }
+
+      if (mod && !e.shiftKey && e.key === 'h') {
+        e.preventDefault()
+        openFindReplace(true)
+        return
+      }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [mode, setMode, openFile, saveFile, saveFileAs, toggleSidebar, openTab])
+  }, [mode, setMode, openFile, saveFile, saveFileAs, toggleSidebar, openTab, openFindReplace])
 
   return (
     <EditorViewProvider>
@@ -125,6 +140,7 @@ function App() {
       </div>
       {sidebarResizing && <div className="fixed inset-0 z-40 cursor-col-resize" />}
       <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <FindReplaceModal />
     </EditorViewProvider>
   )
 }

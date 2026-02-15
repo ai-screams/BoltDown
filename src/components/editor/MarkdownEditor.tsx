@@ -1,6 +1,6 @@
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
 import { bracketMatching, foldGutter, indentOnInput } from '@codemirror/language'
-import { search, searchKeymap } from '@codemirror/search'
+import { search } from '@codemirror/search'
 import { Compartment, EditorState, type Extension } from '@codemirror/state'
 import {
   EditorView,
@@ -60,7 +60,7 @@ export default memo(function MarkdownEditor() {
     indentOnInput(),
     highlightActiveLine(),
     EditorView.lineWrapping,
-    keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
+    keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
     EditorView.updateListener.of(update => {
       if (update.docChanged) {
         updateContent(activeTabIdRef.current, update.state.doc.toString())
