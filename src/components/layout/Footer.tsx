@@ -12,25 +12,19 @@ function useActiveCharCount() {
 }
 
 function useActiveWordCount() {
-  return useTabStore(
-    s => {
-      const tab = s.tabs.find(t => t.id === s.activeTabId)
-      const content = tab?.content ?? ''
-      return content.split(/\s+/).filter(Boolean).length
-    },
-    (a, b) => a === b
-  )
+  return useTabStore(s => {
+    const tab = s.tabs.find(t => t.id === s.activeTabId)
+    const content = tab?.content ?? ''
+    return content.split(/\s+/).filter(Boolean).length
+  })
 }
 
 function useActiveLineCount() {
-  return useTabStore(
-    s => {
-      const tab = s.tabs.find(t => t.id === s.activeTabId)
-      const content = tab?.content ?? ''
-      return content.split('\n').length
-    },
-    (a, b) => a === b
-  )
+  return useTabStore(s => {
+    const tab = s.tabs.find(t => t.id === s.activeTabId)
+    const content = tab?.content ?? ''
+    return content.split('\n').length
+  })
 }
 
 export default memo(function Footer({ className }: { className?: string }) {

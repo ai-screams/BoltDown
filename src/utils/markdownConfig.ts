@@ -113,7 +113,10 @@ md.block.ruler.before('fence', 'math_block', mathBlock, {
 
 md.renderer.rules['math_inline'] = (tokens, idx) => {
   try {
-    return katex.renderToString(tokens[idx]!.content, { throwOnError: false })
+    return katex.renderToString(tokens[idx]!.content, {
+      throwOnError: false,
+      strict: 'ignore',
+    })
   } catch {
     return `<code>${escapeHtml(tokens[idx]!.content)}</code>`
   }
@@ -123,6 +126,7 @@ md.renderer.rules['math_block'] = (tokens, idx) => {
   try {
     return `<div class="katex-block">${katex.renderToString(tokens[idx]!.content, {
       throwOnError: false,
+      strict: 'ignore',
       displayMode: true,
     })}</div>`
   } catch {
