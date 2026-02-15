@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) + **React 19** (TypeScript frontend) + **CodeMirror 6** (editor engine). Phase 1 MVP complete. Phase 2 complete: Settings System (4-category modal, Tauri persistence), Find & Replace (Cmd+F/H, ReDoS protection, keyboard navigation), Tauri 2.0 ACL capabilities, file save fixes, layout fixes.
+Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) + **React 19** (TypeScript frontend) + **CodeMirror 6** (editor engine). Phase 1 MVP complete. Phase 2 complete: Settings System (4-category modal, Tauri persistence), Find & Replace (Cmd+F/H, ReDoS protection, keyboard navigation), Tauri 2.0 ACL capabilities, file save fixes, layout fixes, sidebar improvements (file/outline tabs, auto-sync, file tree icons).
 
 ## Architecture Overview
 
@@ -25,12 +25,12 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 
 ## Key Directories
 
-| Directory    | Purpose                                                  |
-| ------------ | -------------------------------------------------------- |
-| `src/`       | React frontend — components, stores, hooks, types, utils |
-| `src-tauri/` | Rust backend — Tauri commands, app config, icons         |
-| `.docs/`     | Documentation — ADR, PRD, brand guidelines, wiki         |
-| `tests/`     | E2E tests (Playwright, placeholder)                      |
+| Directory    | Purpose                                                    |
+| ------------ | ---------------------------------------------------------- |
+| `src/`       | React frontend — components, stores, hooks, types, utils   |
+| `src-tauri/` | Rust backend — Tauri commands, app config, icons           |
+| `.docs/`     | Documentation — ADR, PRD, brand guidelines, wiki, planning |
+| `tests/`     | E2E tests (Playwright, placeholder)                        |
 
 ## Configuration Files
 
@@ -44,14 +44,39 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 | `.prettierrc`          | No semi, single quote, 100 width, Tailwind class sort             |
 | `commitlint.config.js` | Conventional Commits enforcement                                  |
 
+## Key Components & Stores
+
+### Stores (Zustand)
+
+- `editorStore.ts` — Editor mode (split/source/zen), status messages, flash notifications
+- `tabStore.ts` — Tab management (open/close/switch), content, filePath, dirty state tracking
+- `sidebarStore.ts` — Sidebar state (open/width/resizing), active tab (files/outline/recent), file tree data, recent files. **Action**: `loadParentDirectory(filePath, openSidebar?)` loads directory entries and optionally opens sidebar
+- `settingsStore.ts` — User preferences (theme, font, autosave, preview, editor settings), Tauri persistence
+- `findReplaceStore.ts` — Find & replace state (query, replace text, case/regex/whole word, current match)
+
+### Components
+
+- `Sidebar.tsx` — Three tabs: Files (file tree), Outline (heading navigator), Recent (recent files list)
+- `FileTree.tsx` — react-arborist tree with lazy directory loading. `containerHeight` starts at 0, measures via ResizeObserver, Tree only renders when height > 0 (prevents render errors)
+- `FileTreeNode.tsx` — File/folder icons via `@react-symbols/icons/utils`: `FileIcon` with `autoAssign` prop, `FolderIcon` with `folderName` prop. Context menu for delete/duplicate
+- `OutlinePanel.tsx` — Uses `flex-1 + min-h-0 + overflow-y-auto` for proper flex layout. Extracts headings from active tab via `useOutline` hook, click scrolls editor to line
+- `App.tsx` — Watches `activeTabId` (useEffect), syncs sidebar via `sidebarStore.loadParentDirectory(tab.filePath)` when tab changes
+
+### Utilities
+
+- `tocPlugin.ts` — Custom markdown-it plugin. Adds slug-based IDs to headings (h1-h6), implements `[TOC]` block rule, generates TOC HTML via core rule with heading collection
+- `directoryLoader.ts` — Wraps Tauri `list_directory` command, converts to `FileTreeNode[]` format
+
 ## For AI Agents
 
 - **Code style**: `semi: false`, `singleQuote: true`, `arrowParens: 'avoid'`, `printWidth: 100`
-- **Keyboard shortcuts**: Cmd+O (open), Cmd+S (save), Cmd+N (new tab), Cmd+/ (mode toggle), Shift+E (export), Cmd+, (settings), Cmd+F (find), Cmd+H (find & replace)
+- **Keyboard shortcuts**: Cmd+O (open), Cmd+S (save), Cmd+N (new tab), Cmd+/ (mode toggle), Shift+E (export), Cmd+, (settings), Cmd+F (find), Cmd+H (find & replace), Shift+Cmd+E (toggle sidebar)
 - **Path aliases**: `@/` → `src/`, `@components/` → `src/components/`, etc.
 - **Zustand pattern**: Always use primitive-returning selectors (not object destructuring)
 - **CM6 pattern**: Compartments in `useRef`, not module-level singletons
 - **Derived state**: `isDirty = content !== savedContent` (not stored)
+- **Sidebar sync**: `loadParentDirectory(filePath, openSidebar?)` consolidates directory loading logic
+- **File tree icons**: Use `@react-symbols/icons/utils` — `FileIcon` auto-assigns by extension, `FolderIcon` by folder name
 - **Type checking**: `npx tsc --noEmit` before committing
 - **Linting**: `npx eslint src/` before committing
 - **Build**: `npx vite build` to verify; `npm run tauri:build` for DMG
@@ -63,10 +88,10 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 | Desktop Shell | Tauri 2.0 (Rust)                                                |
 | UI Framework  | React 19 + TypeScript (strict)                                  |
 | Editor        | CodeMirror 6 (direct API)                                       |
-| Markdown      | markdown-it + KaTeX + Mermaid + Prism.js                        |
+| Markdown      | markdown-it + KaTeX + Mermaid + Prism.js + tocPlugin            |
 | State         | Zustand (5 stores: editor, tab, sidebar, settings, findReplace) |
 | Styling       | Tailwind CSS (dark mode: class-based)                           |
-| Icons         | lucide-react                                                    |
+| Icons         | lucide-react + @react-symbols/icons (file/folder icons)         |
 | File Tree     | react-arborist                                                  |
 | Build         | Vite 7 + esbuild                                                |
 

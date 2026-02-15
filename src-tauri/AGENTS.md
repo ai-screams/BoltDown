@@ -8,7 +8,7 @@ Rust backend providing desktop shell, native file system access, and IPC command
 
 ## Key Files
 
-- `src/main.rs` — Tauri entry point with 6 IPC commands: `greet`, `read_file`, `write_file`, `list_directory`, `read_settings`, `write_settings`
+- `src/main.rs` — Tauri entry point with 9 IPC commands: `greet`, `read_file`, `write_file`, `rename_file`, `delete_file`, `copy_file`, `list_directory`, `read_settings`, `write_settings`
 - `src/lib.rs` — Shared utilities: `word_count`, `reading_time`, placeholder `markdown_to_html`
 - `Cargo.toml` — Rust dependencies (tauri 2.0, tokio, serde, notify); aggressive release optimizations (LTO, strip, opt-level=z)
 - `tauri.conf.json` — App config: window 1400x900 (min 800x600), CSP policy, asset protocol, bundle targets
@@ -28,6 +28,9 @@ Rust backend providing desktop shell, native file system access, and IPC command
 | `greet`          | `(name: &str) → String`                                          | Test greeting                                                 |
 | `read_file`      | `(path: String) → Result<String, String>`                        | Read file contents (async)                                    |
 | `write_file`     | `(path: String, content: String) → Result<(), String>`           | Write file contents (async)                                   |
+| `rename_file`    | `(old_path: String, new_path: String) → Result<(), String>`      | Rename/move file (async)                                      |
+| `delete_file`    | `(path: String) → Result<(), String>`                            | Delete file (async)                                           |
+| `copy_file`      | `(src_path: String, dest_path: String) → Result<(), String>`     | Copy file (async)                                             |
 | `list_directory` | `(path: String) → Result<Vec<FileEntry>, String>`                | List directory (filters hidden/system dirs, sorts dirs first) |
 | `read_settings`  | `(app_handle: AppHandle) → Result<String, String>`               | Read app settings from appDataDir/settings.json               |
 | `write_settings` | `(app_handle: AppHandle, settings: String) → Result<(), String>` | Write app settings to appDataDir/settings.json                |
