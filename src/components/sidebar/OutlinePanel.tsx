@@ -1,12 +1,13 @@
 import { EditorView } from '@codemirror/view'
 import { Hash } from 'lucide-react'
-import { memo } from 'react'
+import { memo, useCallback } from 'react'
 
 import { useEditorView } from '@/contexts/EditorViewContext'
 import { useOutline } from '@/hooks/useOutline'
 
 function scrollToLine(view: EditorView, line: number) {
-  const lineInfo = view.state.doc.line(line + 1)
+  const targetLine = Math.min(Math.max(1, line + 1), view.state.doc.lines)
+  const lineInfo = view.state.doc.line(targetLine)
   view.dispatch({
     selection: { anchor: lineInfo.from },
     effects: EditorView.scrollIntoView(lineInfo.from, { y: 'center' }),
@@ -18,12 +19,15 @@ export const OutlinePanel = memo(() => {
   const headings = useOutline()
   const editorViewRef = useEditorView()
 
-  const handleHeadingClick = (line: number) => {
-    const view = editorViewRef.current
-    if (view) {
-      scrollToLine(view, line)
-    }
-  }
+  const handleHeadingClick = useCallback(
+    (line: number) => {
+      const view = editorViewRef.current
+      if (view) {
+        scrollToLine(view, line)
+      }
+    },
+    [editorViewRef]
+  )
 
   if (headings.length === 0) {
     return (
@@ -36,11 +40,12 @@ export const OutlinePanel = memo(() => {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto text-xs">
-      {headings.map((heading, index) => {
+      {headings.map(heading => {
         const indent = (heading.level - 1) * 12
         return (
           <button
-            key={index}
+            key={`${heading.line}-${heading.text}`}
+            type="button"
             onClick={() => handleHeadingClick(heading.line)}
             className="flex items-center gap-2 px-3 py-1.5 text-left text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
             style={{ paddingLeft: `${12 + indent}px` }}

@@ -1,5 +1,6 @@
 import { clsx } from 'clsx'
 import type { LucideIcon } from 'lucide-react'
+import { memo } from 'react'
 
 interface IconButtonProps {
   icon: LucideIcon
@@ -10,7 +11,7 @@ interface IconButtonProps {
   disabled?: boolean
 }
 
-export default function IconButton({
+export default memo(function IconButton({
   icon: Icon,
   label,
   shortcut,
@@ -20,6 +21,8 @@ export default function IconButton({
 }: IconButtonProps) {
   return (
     <button
+      type="button"
+      aria-label={label}
       onClick={onClick}
       disabled={disabled}
       title={shortcut ? `${label} (${shortcut})` : label}
@@ -31,7 +34,7 @@ export default function IconButton({
         disabled ? 'cursor-not-allowed opacity-40' : 'hover:scale-110 active:scale-95'
       )}
     >
-      <Icon className="h-4 w-4" />
+      <Icon className="h-4 w-4" aria-hidden="true" />
     </button>
   )
-}
+})

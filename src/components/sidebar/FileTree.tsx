@@ -6,12 +6,19 @@ import { useSidebarStore } from '@/stores/sidebarStore'
 import { useTabStore } from '@/stores/tabStore'
 import type { FileTreeNode } from '@/types/sidebar'
 import { loadDirectoryEntries } from '@/utils/directoryLoader'
-import { isTauri } from '@/utils/tauri'
+import { getDirectoryPath, joinPath } from '@/utils/imagePath'
+import { invokeTauri, isTauri } from '@/utils/tauri'
 
 import FileTreeNodeComponent from './FileTreeNode'
 
 interface FileTreeProps {
   onFileOpen: (path: string, name: string) => void
+}
+
+const MAX_COPY_ATTEMPTS = 100
+
+function getFileName(path: string): string {
+  return path.split(/[/\\]/).pop() ?? path
 }
 
 export default memo(function FileTree({ onFileOpen }: FileTreeProps) {
@@ -78,15 +85,14 @@ export default memo(function FileTree({ onFileOpen }: FileTreeProps) {
       if (!isTauri()) return
       try {
         const { ask } = await import('@tauri-apps/plugin-dialog')
-        const fileName = path.split('/').pop() ?? path
+        const fileName = getFileName(path)
         const confirmed = await ask(`Delete "${fileName}"? This cannot be undone.`, {
           title: 'Delete File',
           kind: 'warning',
         })
         if (!confirmed) return
 
-        const { invoke } = await import('@tauri-apps/api/core')
-        await invoke('delete_file', { path })
+        await invokeTauri('delete_file', { path })
 
         // Close tab if open
         const { tabs, closeTab } = useTabStore.getState()
@@ -108,36 +114,40 @@ export default memo(function FileTree({ onFileOpen }: FileTreeProps) {
     async (path: string) => {
       if (!isTauri()) return
       try {
-        const { invoke } = await import('@tauri-apps/api/core')
-
         // Generate copy name: "file.md" → "file (copy).md"
-        const lastSlash = path.lastIndexOf('/')
-        const dir = path.slice(0, lastSlash + 1)
-        const fullName = path.slice(lastSlash + 1)
+        const dir = getDirectoryPath(path)
+        const fullName = getFileName(path)
         const dotIdx = fullName.lastIndexOf('.')
         const name = dotIdx > 0 ? fullName.slice(0, dotIdx) : fullName
         const ext = dotIdx > 0 ? fullName.slice(dotIdx) : ''
 
         // Find available name
         let copyName = `${name} (copy)${ext}`
-        let copyPath = `${dir}${copyName}`
-        let counter = 2
-        while (true) {
+        let copyPath = joinPath(dir, copyName)
+        let nextCopyIndex = 2
+        let available = false
+        for (let attempt = 0; attempt < MAX_COPY_ATTEMPTS; attempt++) {
           try {
-            await invoke<string>('read_file', { path: copyPath })
+            await invokeTauri<string>('read_file', { path: copyPath })
             // File exists, try next
-            copyName = `${name} (copy ${counter})${ext}`
-            copyPath = `${dir}${copyName}`
-            counter++
+            copyName = `${name} (copy ${nextCopyIndex})${ext}`
+            copyPath = joinPath(dir, copyName)
+            nextCopyIndex += 1
           } catch {
+            available = true
             break // File doesn't exist, use this name
           }
         }
 
-        await invoke('copy_file', { srcPath: path, destPath: copyPath })
+        if (!available) {
+          useEditorStore.getState().flashStatus('Duplicate failed: too many copies', 4000)
+          return
+        }
+
+        await invokeTauri('copy_file', { srcPath: path, destPath: copyPath })
 
         // Read and open the copy in a new tab
-        const content = await invoke<string>('read_file', { path: copyPath })
+        const content = await invokeTauri<string>('read_file', { path: copyPath })
         useTabStore.getState().openTab(copyPath, copyName, content)
 
         // Refresh tree

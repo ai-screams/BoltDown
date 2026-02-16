@@ -1,36 +1,25 @@
 import { clsx } from 'clsx'
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 
 import { useEditorStore } from '@/stores/editorStore'
 import { useTabStore } from '@/stores/tabStore'
 
-function useActiveCharCount() {
-  return useTabStore(s => {
-    const tab = s.tabs.find(t => t.id === s.activeTabId)
-    return tab?.content.length ?? 0
-  })
-}
-
-function useActiveWordCount() {
+function useActiveContent() {
   return useTabStore(s => {
     const tab = s.tabs.find(t => t.id === s.activeTabId)
     const content = tab?.content ?? ''
-    return content.split(/\s+/).filter(Boolean).length
-  })
-}
-
-function useActiveLineCount() {
-  return useTabStore(s => {
-    const tab = s.tabs.find(t => t.id === s.activeTabId)
-    const content = tab?.content ?? ''
-    return content.split('\n').length
+    return content
   })
 }
 
 export default memo(function Footer({ className }: { className?: string }) {
-  const charCount = useActiveCharCount()
-  const wordCount = useActiveWordCount()
-  const lineCount = useActiveLineCount()
+  const content = useActiveContent()
+  const { charCount, wordCount, lineCount } = useMemo(() => {
+    const charCount = content.length
+    const wordCount = content.split(/\s+/).filter(Boolean).length
+    const lineCount = content.split('\n').length
+    return { charCount, wordCount, lineCount }
+  }, [content])
   const readingTime = Math.max(1, Math.ceil(wordCount / 225))
   const statusText = useEditorStore(s => s.statusText)
 

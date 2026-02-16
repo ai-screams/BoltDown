@@ -1,5 +1,5 @@
 import { EditorView } from '@codemirror/view'
-import { createContext, type ReactNode, type RefObject, useContext, useRef } from 'react'
+import { createContext, type ReactNode, type RefObject, useContext, useMemo, useRef } from 'react'
 
 interface EditorViewContextValue {
   editorViewRef: RefObject<EditorView | null>
@@ -9,7 +9,8 @@ const EditorViewContext = createContext<EditorViewContextValue | null>(null)
 
 export function EditorViewProvider({ children }: { children: ReactNode }) {
   const editorViewRef = useRef<EditorView | null>(null)
-  return <EditorViewContext value={{ editorViewRef }}>{children}</EditorViewContext>
+  const value = useMemo(() => ({ editorViewRef }), [])
+  return <EditorViewContext value={value}>{children}</EditorViewContext>
 }
 
 export function useEditorView(): RefObject<EditorView | null> {

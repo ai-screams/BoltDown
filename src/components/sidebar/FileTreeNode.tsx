@@ -1,6 +1,6 @@
 import { FileIcon, FolderIcon } from '@react-symbols/icons/utils'
 import { ChevronDown, ChevronRight, Copy, Trash2 } from 'lucide-react'
-import { memo, useEffect, useState } from 'react'
+import { memo, useCallback, useEffect, useState } from 'react'
 import type { NodeRendererProps } from 'react-arborist'
 
 import type { FileTreeNode } from '@/types/sidebar'
@@ -10,27 +10,61 @@ interface FileTreeNodeProps extends NodeRendererProps<FileTreeNode> {
   onDuplicate?: (path: string) => void
 }
 
+const MENU_WIDTH = 160
+const MENU_HEIGHT = 90
+
 function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeNodeProps) {
   const { isDir, name, path } = node.data
   const [isHovered, setIsHovered] = useState(false)
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null)
 
-  const handleContextMenu = (e: React.MouseEvent) => {
-    if (isDir) return
-    e.preventDefault()
-    e.stopPropagation()
-    setMenuPos({ x: e.clientX, y: e.clientY })
-  }
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      if (isDir) return
+      e.preventDefault()
+      e.stopPropagation()
+      const maxX = Math.max(8, window.innerWidth - MENU_WIDTH - 8)
+      const maxY = Math.max(8, window.innerHeight - MENU_HEIGHT - 8)
+      setMenuPos({ x: Math.min(e.clientX, maxX), y: Math.min(e.clientY, maxY) })
+    },
+    [isDir]
+  )
 
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    onDelete?.(path)
-  }
+  const handleDelete = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation()
+      onDelete?.(path)
+    },
+    [onDelete, path]
+  )
 
-  const handleDuplicate = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    onDuplicate?.(path)
-  }
+  const handleDuplicate = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation()
+      onDuplicate?.(path)
+    },
+    [onDuplicate, path]
+  )
+
+  const handleMouseEnter = useCallback(() => setIsHovered(true), [])
+  const handleMouseLeave = useCallback(() => setIsHovered(false), [])
+  const handleNodeClick = useCallback(() => {
+    if (isDir) {
+      node.toggle()
+      return
+    }
+    node.activate()
+  }, [isDir, node])
+
+  const handleNodeKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        handleNodeClick()
+      }
+    },
+    [handleNodeClick]
+  )
 
   // Close menu on click outside or Escape
   useEffect(() => {
@@ -51,17 +85,16 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
     <>
       <div
         style={style}
-        className="group relative flex cursor-pointer items-center gap-1 px-1 py-0.5 text-xs hover:bg-gray-100 dark:hover:bg-gray-800"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        role="treeitem"
+        tabIndex={0}
+        aria-expanded={isDir ? node.isOpen : undefined}
+        aria-selected={!isDir ? node.isSelected : undefined}
+        className="group relative flex cursor-pointer items-center gap-1 px-1 py-0.5 text-xs hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-electric-yellow/50 dark:hover:bg-gray-800"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         onContextMenu={handleContextMenu}
-        onClick={() => {
-          if (isDir) {
-            node.toggle()
-          } else {
-            node.activate()
-          }
-        }}
+        onClick={handleNodeClick}
+        onKeyDown={handleNodeKeyDown}
       >
         {isDir ? (
           <>
@@ -85,9 +118,17 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
         <span className="flex-1 truncate text-gray-700 dark:text-gray-300">{name}</span>
 
         {/* Hover action icons (files only) */}
-        {!isDir && isHovered && (
-          <div className="flex items-center gap-0.5">
+        {!isDir && (
+          <div
+            className={
+              isHovered
+                ? 'flex items-center gap-0.5'
+                : 'pointer-events-none flex items-center gap-0.5 opacity-0 group-focus-within:pointer-events-auto group-focus-within:opacity-100'
+            }
+          >
             <button
+              type="button"
+              aria-label="Duplicate file"
               onClick={handleDuplicate}
               className="rounded p-0.5 hover:bg-gray-200 dark:hover:bg-gray-700"
               title="Duplicate file"
@@ -95,6 +136,8 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
               <Copy className="h-3 w-3 text-gray-500 dark:text-gray-400" />
             </button>
             <button
+              type="button"
+              aria-label="Delete file"
               onClick={handleDelete}
               className="rounded p-0.5 hover:bg-gray-200 dark:hover:bg-gray-700"
               title="Delete file"
@@ -113,6 +156,7 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
           onClick={e => e.stopPropagation()}
         >
           <button
+            type="button"
             onClick={e => {
               handleDuplicate(e)
               setMenuPos(null)
@@ -123,6 +167,7 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
             Duplicate
           </button>
           <button
+            type="button"
             onClick={e => {
               handleDelete(e)
               setMenuPos(null)

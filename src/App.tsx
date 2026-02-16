@@ -9,6 +9,7 @@ import { useSettingsStore } from '@/stores/settingsStore'
 import { useSidebarStore } from '@/stores/sidebarStore'
 import { useTabStore } from '@/stores/tabStore'
 import type { EditorMode } from '@/types/editor'
+import { invokeTauri } from '@/utils/tauri'
 import EditorToolbar from '@components/editor/EditorToolbar'
 import MarkdownEditor from '@components/editor/MarkdownEditor'
 import TabBar from '@components/editor/TabBar'
@@ -41,6 +42,9 @@ function App() {
   const findReplaceOpen = useFindReplaceStore(s => s.isOpen)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const loadSettings = useSettingsStore(s => s.loadSettings)
+  const handleSettingsClose = useCallback(() => {
+    setSettingsOpen(false)
+  }, [])
 
   // Load persisted settings on mount
   useEffect(() => {
@@ -59,8 +63,7 @@ function App() {
   const handleFileOpen = useCallback(
     async (path: string, name: string) => {
       try {
-        const { invoke } = await import('@tauri-apps/api/core')
-        const text = await invoke<string>('read_file', { path })
+        const text = await invokeTauri<string>('read_file', { path })
         openTab(path, name, text)
         addRecentFile(path, name)
 
@@ -75,6 +78,20 @@ function App() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target
+      const isCodeMirrorTarget =
+        target instanceof HTMLElement && !!target.closest('.cm-editor, .cm-panels')
+      if (
+        target instanceof HTMLElement &&
+        !isCodeMirrorTarget &&
+        (target.isContentEditable ||
+          target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT')
+      ) {
+        return
+      }
+
       const mod = e.metaKey || e.ctrlKey
 
       // Escape exits zen mode (skip if any modal is open)
@@ -179,7 +196,7 @@ function App() {
         <Footer className={mode === 'zen' ? 'zen-footer-dim' : ''} />
       </div>
       {sidebarResizing && <div className="fixed inset-0 z-40 cursor-col-resize" />}
-      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <SettingsModal isOpen={settingsOpen} onClose={handleSettingsClose} />
       <FindReplaceModal />
     </EditorViewProvider>
   )
