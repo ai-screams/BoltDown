@@ -107,14 +107,14 @@ export default memo(function TabBar() {
   return (
     <div className="flex h-8 flex-none items-center border-b border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-900">
       <button
-        onClick={toggleSidebar}
-        title="Toggle Sidebar (Cmd+Shift+E)"
         className={clsx(
           'flex h-8 w-8 flex-none items-center justify-center border-r border-gray-200 transition-colors dark:border-gray-700',
           sidebarOpen
             ? 'bg-electric-yellow/30 text-electric-dark'
             : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300'
         )}
+        title="Toggle Sidebar (Cmd+Shift+E)"
+        onClick={toggleSidebar}
       >
         <PanelLeft className="h-3.5 w-3.5" />
       </button>
@@ -125,8 +125,6 @@ export default memo(function TabBar() {
             <div
               key={tab.id}
               role="tab"
-              onClick={() => !isRenaming && setActiveTab(tab.id)}
-              onDoubleClick={e => !isRenaming && handleDoubleClick(e, tab.id, tab.fileName)}
               className={clsx(
                 'group flex h-8 w-[160px] shrink-0 cursor-pointer items-center gap-1.5 border-r px-3 text-xs transition-colors duration-150',
                 isRenaming
@@ -135,12 +133,16 @@ export default memo(function TabBar() {
                     ? 'border-gray-200 bg-white text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white'
                     : 'border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200'
               )}
+              onClick={() => !isRenaming && setActiveTab(tab.id)}
+              onDoubleClick={e => !isRenaming && handleDoubleClick(e, tab.id, tab.fileName)}
             >
               <FileText className="h-3 w-3 flex-none" />
               {isRenaming ? (
                 <input
                   ref={renameInputRef}
+                  className="min-w-0 flex-1 rounded border border-electric-yellow bg-white px-1 py-0.5 text-xs text-gray-900 outline-none focus:ring-1 focus:ring-electric-yellow/50 dark:bg-gray-700 dark:text-white"
                   value={renameValue}
+                  onBlur={() => void commitRename(tab.id)}
                   onChange={e => setRenameValue(e.target.value)}
                   onKeyDown={e => {
                     if (e.key === 'Enter') {
@@ -153,8 +155,6 @@ export default memo(function TabBar() {
                     }
                     e.stopPropagation()
                   }}
-                  onBlur={() => void commitRename(tab.id)}
-                  className="min-w-0 flex-1 rounded border border-electric-yellow bg-white px-1 py-0.5 text-xs text-gray-900 outline-none focus:ring-1 focus:ring-electric-yellow/50 dark:bg-gray-700 dark:text-white"
                 />
               ) : (
                 <>
@@ -166,8 +166,8 @@ export default memo(function TabBar() {
               )}
               {!isRenaming && (
                 <span
-                  onClick={e => handleClose(e, tab.id)}
                   className="ml-auto flex-none rounded p-0.5 opacity-0 hover:bg-gray-200 group-hover:opacity-100 dark:hover:bg-gray-600"
+                  onClick={e => handleClose(e, tab.id)}
                 >
                   <X className="h-3 w-3" />
                 </span>
@@ -176,9 +176,9 @@ export default memo(function TabBar() {
           )
         })}
         <button
-          onClick={handleNewTab}
-          title="New Tab (Cmd+N)"
           className="flex h-8 w-8 flex-none items-center justify-center text-gray-400 transition-all duration-150 hover:scale-110 hover:bg-gray-50 hover:text-gray-600 active:scale-95 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+          title="New Tab (Cmd+N)"
+          onClick={handleNewTab}
         >
           <Plus className="h-3.5 w-3.5" />
         </button>

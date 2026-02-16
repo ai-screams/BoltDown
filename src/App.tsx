@@ -106,7 +106,7 @@ function App() {
           {mode !== 'zen' && sidebarOpen && <ResizeHandle />}
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <div className={mode === 'zen' ? 'zen-slide-up' : 'zen-slide-down'}>{tabBar}</div>
-            <MainLayout toolbar={toolbar} editor={editor} preview={preview} />
+            <MainLayout editor={editor} preview={preview} toolbar={toolbar} />
           </div>
         </div>
         <Footer className={mode === 'zen' ? 'zen-footer-dim' : ''} />

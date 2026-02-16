@@ -48,11 +48,11 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
     <button
       role="switch"
       aria-checked={checked}
-      onClick={() => onChange(!checked)}
       className={clsx(
         'relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50',
         checked ? 'bg-electric-yellow' : 'bg-gray-300 dark:bg-gray-600'
       )}
+      onClick={() => onChange(!checked)}
     >
       <span
         className={clsx(
@@ -75,9 +75,9 @@ function Select<T extends string>({
 }) {
   return (
     <select
+      className="rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 focus:border-electric-yellow focus:outline-none focus:ring-1 focus:ring-electric-yellow/50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
       value={value}
       onChange={e => onChange(e.target.value as T)}
-      className="rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 focus:border-electric-yellow focus:outline-none focus:ring-1 focus:ring-electric-yellow/50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
     >
       {options.map(o => (
         <option key={o.value} value={o.value}>
@@ -121,10 +121,15 @@ function NumberInput({
   return (
     <input
       type="number"
-      value={focused ? draft : String(value)}
-      min={min}
+      className="w-20 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 focus:border-electric-yellow focus:outline-none focus:ring-1 focus:ring-electric-yellow/50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
       max={max}
+      min={min}
       step={step ?? 1}
+      value={focused ? draft : String(value)}
+      onBlur={() => {
+        setFocused(false)
+        commit()
+      }}
       onChange={e => {
         const raw = e.target.value
         setDraft(raw)
@@ -132,16 +137,11 @@ function NumberInput({
         if (!Number.isNaN(v) && v >= min && v <= max) onChange(v)
       }}
       onFocus={() => setFocused(true)}
-      onBlur={() => {
-        setFocused(false)
-        commit()
-      }}
       onKeyDown={e => {
         if (e.key === 'Enter') {
           e.currentTarget.blur()
         }
       }}
-      className="w-20 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 focus:border-electric-yellow focus:outline-none focus:ring-1 focus:ring-electric-yellow/50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
     />
   )
 }
@@ -160,18 +160,18 @@ function ThemePanel() {
 
   return (
     <div>
-      <SettingRow label="Color Theme" description="Choose the application theme">
+      <SettingRow description="Choose the application theme" label="Color Theme">
         <div className="flex rounded-lg border border-gray-200 bg-gray-100 p-0.5 dark:border-gray-600 dark:bg-gray-700">
           {themes.map(({ value, icon: Icon, label }) => (
             <button
               key={value}
-              onClick={() => updateTheme({ mode: value })}
               className={clsx(
                 'flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95',
                 value === mode
                   ? 'bg-electric-yellow text-deep-blue shadow-sm'
                   : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
               )}
+              onClick={() => updateTheme({ mode: value })}
             >
               <Icon className="h-3.5 w-3.5" />
               {label}
@@ -207,60 +207,60 @@ function EditorPanel() {
 
   return (
     <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
-      <SettingRow label="Font Family" description="Editor font">
+      <SettingRow description="Editor font" label="Font Family">
         <Select
-          value={editor.fontFamily}
           options={fontFamilyOptions}
+          value={editor.fontFamily}
           onChange={v => updateEditor({ fontFamily: v })}
         />
       </SettingRow>
-      <SettingRow label="Font Size" description="10 - 24px">
+      <SettingRow description="10 - 24px" label="Font Size">
         <NumberInput
-          value={editor.fontSize}
-          min={10}
           max={24}
+          min={10}
+          value={editor.fontSize}
           onChange={v => updateEditor({ fontSize: v })}
         />
       </SettingRow>
-      <SettingRow label="Line Height" description="1.2 - 2.4">
+      <SettingRow description="1.2 - 2.4" label="Line Height">
         <NumberInput
-          value={editor.lineHeight}
-          min={1.2}
           max={2.4}
+          min={1.2}
           step={0.1}
+          value={editor.lineHeight}
           onChange={v => updateEditor({ lineHeight: v })}
         />
       </SettingRow>
       <SettingRow label="Tab Size">
         <Select
-          value={String(editor.tabSize)}
           options={tabSizeOptions}
+          value={String(editor.tabSize)}
           onChange={v => updateEditor({ tabSize: parseInt(v, 10) })}
         />
       </SettingRow>
-      <SettingRow label="Word Wrap" description="Wrap long lines in the editor">
+      <SettingRow description="Wrap long lines in the editor" label="Word Wrap">
         <Toggle checked={editor.wordWrap} onChange={v => updateEditor({ wordWrap: v })} />
       </SettingRow>
-      <SettingRow label="Spellcheck" description="Underline misspelled words while typing">
+      <SettingRow description="Underline misspelled words while typing" label="Spellcheck">
         <Toggle checked={editor.spellcheck} onChange={v => updateEditor({ spellcheck: v })} />
       </SettingRow>
-      <SettingRow label="Line Numbers" description="Show line numbers">
+      <SettingRow description="Show line numbers" label="Line Numbers">
         <Toggle checked={editor.lineNumbers} onChange={v => updateEditor({ lineNumbers: v })} />
       </SettingRow>
-      <SettingRow label="Focus Mode" description="Dim lines except cursor line">
+      <SettingRow description="Dim lines except cursor line" label="Focus Mode">
         <Toggle checked={editor.focusMode} onChange={v => updateEditor({ focusMode: v })} />
       </SettingRow>
       {editor.focusMode && (
-        <SettingRow label="Focus Context Lines" description="Bright lines around cursor (0-3)">
+        <SettingRow description="Bright lines around cursor (0-3)" label="Focus Context Lines">
           <NumberInput
-            value={editor.focusContextLines}
-            min={0}
             max={3}
+            min={0}
+            value={editor.focusContextLines}
             onChange={v => updateEditor({ focusContextLines: v })}
           />
         </SettingRow>
       )}
-      <SettingRow label="Typewriter Mode" description="Keep cursor line vertically centered">
+      <SettingRow description="Keep cursor line vertically centered" label="Typewriter Mode">
         <Toggle
           checked={editor.typewriterMode}
           onChange={v => updateEditor({ typewriterMode: v })}
@@ -276,47 +276,47 @@ function PreviewPanel() {
 
   return (
     <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
-      <SettingRow label="Font Size" description="12 - 24px">
+      <SettingRow description="12 - 24px" label="Font Size">
         <NumberInput
-          value={preview.fontSize}
-          min={12}
           max={24}
+          min={12}
+          value={preview.fontSize}
           onChange={v => updatePreview({ fontSize: v })}
         />
       </SettingRow>
-      <SettingRow label="Line Height" description="1.2 - 2.4">
+      <SettingRow description="1.2 - 2.4" label="Line Height">
         <NumberInput
-          value={preview.lineHeight}
-          min={1.2}
           max={2.4}
+          min={1.2}
           step={0.1}
+          value={preview.lineHeight}
           onChange={v => updatePreview({ lineHeight: v })}
         />
       </SettingRow>
-      <SettingRow label="Code Block Font Size" description="10 - 20px">
+      <SettingRow description="10 - 20px" label="Code Block Font Size">
         <NumberInput
-          value={preview.codeBlockFontSize}
-          min={10}
           max={20}
+          min={10}
+          value={preview.codeBlockFontSize}
           onChange={v => updatePreview({ codeBlockFontSize: v })}
         />
       </SettingRow>
-      <SettingRow label="Max Width" description="600 - 1200px">
+      <SettingRow description="600 - 1200px" label="Max Width">
         <NumberInput
-          value={preview.maxWidth}
-          min={600}
           max={1200}
+          min={600}
           step={50}
+          value={preview.maxWidth}
           onChange={v => updatePreview({ maxWidth: v })}
         />
       </SettingRow>
       <SettingRow
-        label="Mermaid Security"
         description="Strict is safer. Loose allows broader diagram HTML behavior"
+        label="Mermaid Security"
       >
         <Select
-          value={preview.mermaidSecurityLevel}
           options={mermaidSecurityOptions}
+          value={preview.mermaidSecurityLevel}
           onChange={v => updatePreview({ mermaidSecurityLevel: v })}
         />
       </SettingRow>
@@ -330,19 +330,19 @@ function GeneralPanel() {
 
   return (
     <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
-      <SettingRow label="Auto Save" description="Automatically save changes">
+      <SettingRow description="Automatically save changes" label="Auto Save">
         <Toggle checked={general.autoSave} onChange={v => updateGeneral({ autoSave: v })} />
       </SettingRow>
-      <SettingRow label="Auto Save Delay" description="1000 - 10000ms">
+      <SettingRow description="1000 - 10000ms" label="Auto Save Delay">
         <NumberInput
-          value={general.autoSaveDelay}
-          min={1000}
           max={10000}
+          min={1000}
           step={500}
+          value={general.autoSaveDelay}
           onChange={v => updateGeneral({ autoSaveDelay: v })}
         />
       </SettingRow>
-      <SettingRow label="Restore Last File" description="Reopen last file on launch">
+      <SettingRow description="Reopen last file on launch" label="Restore Last File">
         <Toggle
           checked={general.restoreLastFile}
           onChange={v => updateGeneral({ restoreLastFile: v })}
@@ -400,8 +400,8 @@ export default memo(function SettingsModal({ isOpen, onClose }: SettingsModalPro
   return (
     <div
       ref={backdropRef}
-      onClick={handleBackdropClick}
       className="z-60 fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      onClick={handleBackdropClick}
     >
       <div className="animate-dropdown flex h-[480px] w-[640px] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800">
         {/* Header */}
@@ -411,8 +411,8 @@ export default memo(function SettingsModal({ isOpen, onClose }: SettingsModalPro
             <span className="text-sm font-semibold text-gray-900 dark:text-white">Settings</span>
           </div>
           <button
-            onClick={onClose}
             className="rounded p-1.5 text-gray-500 transition-all duration-150 hover:scale-110 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+            onClick={onClose}
           >
             <X className="h-4 w-4" />
           </button>
@@ -425,13 +425,13 @@ export default memo(function SettingsModal({ isOpen, onClose }: SettingsModalPro
               {categories.map(({ key, label, icon: Icon }) => (
                 <button
                   key={key}
-                  onClick={() => setActiveCategory(key)}
                   className={clsx(
                     'flex w-full items-center gap-2 px-4 py-2 text-xs font-medium transition-colors',
                     key === activeCategory
                       ? 'bg-electric-yellow/10 text-electric-dark dark:text-electric-yellow'
                       : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200'
                   )}
+                  onClick={() => setActiveCategory(key)}
                 >
                   <Icon className="h-3.5 w-3.5" />
                   {label}
@@ -442,15 +442,15 @@ export default memo(function SettingsModal({ isOpen, onClose }: SettingsModalPro
             {/* Reset buttons */}
             <div className="border-t border-gray-200 p-2 dark:border-gray-700">
               <button
-                onClick={() => resetCategory(activeCategory)}
                 className="flex w-full items-center gap-1.5 rounded px-2 py-1.5 text-[10px] text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                onClick={() => resetCategory(activeCategory)}
               >
                 <RotateCcw className="h-3 w-3" />
                 Reset {categories.find(c => c.key === activeCategory)?.label}
               </button>
               <button
-                onClick={resetAll}
                 className="flex w-full items-center gap-1.5 rounded px-2 py-1.5 text-[10px] text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                onClick={resetAll}
               >
                 <RotateCcw className="h-3 w-3" />
                 Reset All

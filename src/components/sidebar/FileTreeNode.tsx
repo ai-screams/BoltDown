@@ -84,17 +84,17 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
   return (
     <>
       <div
-        style={style}
         role="treeitem"
-        tabIndex={0}
         aria-expanded={isDir ? node.isOpen : undefined}
         aria-selected={!isDir ? node.isSelected : undefined}
         className="group relative flex cursor-pointer items-center gap-1 px-1 py-0.5 text-xs hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-electric-yellow/50 dark:hover:bg-gray-800"
+        style={style}
+        tabIndex={0}
+        onClick={handleNodeClick}
+        onContextMenu={handleContextMenu}
+        onKeyDown={handleNodeKeyDown}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        onContextMenu={handleContextMenu}
-        onClick={handleNodeClick}
-        onKeyDown={handleNodeKeyDown}
       >
         {isDir ? (
           <>
@@ -129,18 +129,18 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
             <button
               type="button"
               aria-label="Duplicate"
-              onClick={handleDuplicate}
               className="rounded p-0.5 hover:bg-gray-200 dark:hover:bg-gray-700"
               title="Duplicate file"
+              onClick={handleDuplicate}
             >
               <Copy className="h-3 w-3 text-gray-500 dark:text-gray-400" />
             </button>
             <button
               type="button"
               aria-label="Delete"
-              onClick={handleDelete}
               className="rounded p-0.5 hover:bg-gray-200 dark:hover:bg-gray-700"
               title="Delete file"
+              onClick={handleDelete}
             >
               <Trash2 className="h-3 w-3 text-gray-500 dark:text-gray-400" />
             </button>
@@ -157,22 +157,22 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
         >
           <button
             type="button"
+            className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
             onClick={e => {
               handleDuplicate(e)
               setMenuPos(null)
             }}
-            className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
           >
             <Copy className="h-3.5 w-3.5" />
             Duplicate
           </button>
           <button
             type="button"
+            className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-red-600 hover:bg-gray-100 dark:text-red-400 dark:hover:bg-gray-700"
             onClick={e => {
               handleDelete(e)
               setMenuPos(null)
             }}
-            className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-red-600 hover:bg-gray-100 dark:text-red-400 dark:hover:bg-gray-700"
           >
             <Trash2 className="h-3.5 w-3.5" />
             Delete

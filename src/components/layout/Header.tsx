@@ -108,16 +108,16 @@ export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
           <IconButton icon={FolderOpen} label="Open file" shortcut="Cmd+O" onClick={onOpenFile} />
           <IconButton icon={Save} label="Save file" shortcut="Cmd+S" onClick={onSaveFile} />
 
-          <div className="relative" ref={exportRef}>
+          <div ref={exportRef} className="relative">
             <button
               type="button"
-              aria-label="Export"
-              aria-haspopup="menu"
-              aria-expanded={exportOpen}
               aria-controls={EXPORT_MENU_ID}
-              onClick={toggleExportOpen}
-              title="Export"
+              aria-expanded={exportOpen}
+              aria-haspopup="menu"
+              aria-label="Export"
               className="rounded p-1.5 text-gray-500 transition-all duration-150 hover:scale-110 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+              title="Export"
+              onClick={toggleExportOpen}
             >
               <Download className="h-4 w-4" />
             </button>
@@ -132,13 +132,13 @@ export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
                   return (
                     <button
                       key={action.key}
-                      type="button"
                       role="menuitem"
+                      type="button"
+                      className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                       onClick={() => {
                         action.run()
                         setExportOpen(false)
                       }}
-                      className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                     >
                       <ActionIcon className="h-3.5 w-3.5" />
                       {action.label}
@@ -157,16 +157,16 @@ export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
             <button
               key={m}
               type="button"
-              onClick={() => setMode(m)}
-              aria-pressed={m === mode}
               aria-label={`Switch to ${label} mode`}
-              title={label}
+              aria-pressed={m === mode}
               className={clsx(
                 'flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95',
                 m === mode
                   ? 'bg-electric-yellow text-deep-blue shadow-sm'
                   : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
               )}
+              title={label}
+              onClick={() => setMode(m)}
             >
               <Icon className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">{label}</span>
@@ -177,9 +177,9 @@ export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
         <button
           type="button"
           aria-label={`Theme: ${themeLabel[themeMode]}`}
-          onClick={cycleTheme}
-          title={`Theme: ${themeLabel[themeMode]}`}
           className="rounded p-1.5 text-gray-500 transition-all duration-150 hover:scale-110 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+          title={`Theme: ${themeLabel[themeMode]}`}
+          onClick={cycleTheme}
         >
           <ThemeIcon className="h-4 w-4" />
         </button>

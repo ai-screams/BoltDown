@@ -5,6 +5,7 @@ import reactPlugin from 'eslint-plugin-react'
 import reactHooksPlugin from 'eslint-plugin-react-hooks'
 import importPlugin from 'eslint-plugin-import'
 import jsxA11yPlugin from 'eslint-plugin-jsx-a11y'
+import perfectionist from 'eslint-plugin-perfectionist'
 import prettierConfig from 'eslint-config-prettier'
 
 export default [
@@ -72,6 +73,7 @@ export default [
       'react-hooks': reactHooksPlugin,
       import: importPlugin,
       'jsx-a11y': jsxA11yPlugin,
+      perfectionist,
     },
     rules: {
       // TypeScript
@@ -116,6 +118,36 @@ export default [
         'warn',
         {
           allow: ['warn', 'error'],
+        },
+      ],
+
+      // JSX Props Sorting
+      'perfectionist/sort-jsx-props': [
+        'error',
+        {
+          type: 'alphabetical',
+          order: 'asc',
+          ignoreCase: true,
+          partitionByNewLine: true,
+          groups: [
+            'key',
+            'ref',
+            'identity',
+            'aria',
+            'className',
+            'unknown',
+            'multiline-prop',
+            'shorthand-prop',
+            'callback',
+          ],
+          customGroups: [
+            { groupName: 'key', elementNamePattern: '^key$' },
+            { groupName: 'ref', elementNamePattern: '^ref$' },
+            { groupName: 'identity', elementNamePattern: '^(id|name|type|role|htmlFor|for)$' },
+            { groupName: 'aria', elementNamePattern: '^aria-.+' },
+            { groupName: 'className', elementNamePattern: '^(className|style)$' },
+            { groupName: 'callback', elementNamePattern: '^on.+' },
+          ],
         },
       ],
     },

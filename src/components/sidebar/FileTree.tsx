@@ -175,17 +175,17 @@ export default memo(function FileTree({ onFileOpen }: FileTreeProps) {
         <Tree<FileTreeNode>
           ref={treeRef}
           data={treeData}
-          openByDefault={false}
-          width={width - 16}
           height={containerHeight}
-          rowHeight={28}
           indent={16}
+          openByDefault={false}
           overscanCount={5}
+          rowHeight={28}
+          width={width - 16}
           disableDrag
           disableDrop
           disableEdit
-          onToggle={handleToggle}
           onActivate={handleActivate}
+          onToggle={handleToggle}
         >
           {props => (
             <FileTreeNodeComponent {...props} onDelete={deleteFile} onDuplicate={duplicateFile} />

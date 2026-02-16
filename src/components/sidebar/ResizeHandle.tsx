@@ -53,15 +53,15 @@ export default memo(function ResizeHandle() {
   return (
     <div
       role="separator"
-      aria-orientation="vertical"
       aria-label="Resize sidebar"
-      onMouseDown={handleMouseDown}
-      onDoubleClick={handleDoubleClick}
+      aria-orientation="vertical"
       className={`group relative flex-none cursor-col-resize transition-all duration-150 ${
         isDragging
           ? 'w-1.5 bg-electric-yellow shadow-[0_0_8px_rgba(250,204,21,0.6)]'
           : 'w-1 bg-gray-200 hover:w-1.5 hover:bg-electric-yellow/50 dark:bg-gray-700 dark:hover:bg-electric-yellow/50'
       }`}
+      onDoubleClick={handleDoubleClick}
+      onMouseDown={handleMouseDown}
     />
   )
 })

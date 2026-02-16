@@ -52,11 +52,11 @@ export default memo(function Sidebar({ onFileOpen }: SidebarProps) {
   return (
     <aside
       aria-label="Sidebar"
-      style={{ width: isOpen ? width : 0 }}
       className={clsx(
         'flex flex-col overflow-hidden border-r border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900',
         !isResizing && 'transition-[width] duration-200 ease-in-out'
       )}
+      style={{ width: isOpen ? width : 0 }}
     >
       <div
         role="tablist"
@@ -66,19 +66,19 @@ export default memo(function Sidebar({ onFileOpen }: SidebarProps) {
         {tabs.map(({ key, label }) => (
           <button
             key={key}
-            type="button"
-            data-tab={key}
-            onClick={handleTabClick}
-            role="tab"
             id={`sidebar-tab-${key}`}
-            aria-selected={activeTab === key}
+            role="tab"
+            type="button"
             aria-controls={`sidebar-panel-${key}`}
+            aria-selected={activeTab === key}
             className={clsx(
               'flex-1 text-center text-[10px] font-semibold tracking-wider',
               activeTab === key
                 ? 'text-gray-900 dark:text-white'
                 : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300'
             )}
+            data-tab={key}
+            onClick={handleTabClick}
           >
             {label}
           </button>
@@ -87,8 +87,8 @@ export default memo(function Sidebar({ onFileOpen }: SidebarProps) {
 
       {activeTab === 'files' ? (
         <div
-          role="tabpanel"
           id="sidebar-panel-files"
+          role="tabpanel"
           aria-labelledby="sidebar-tab-files"
           className="flex min-h-0 flex-1"
         >
@@ -96,8 +96,8 @@ export default memo(function Sidebar({ onFileOpen }: SidebarProps) {
         </div>
       ) : activeTab === 'recent' ? (
         <div
-          role="tabpanel"
           id="sidebar-panel-recent"
+          role="tabpanel"
           aria-labelledby="sidebar-tab-recent"
           className="flex min-h-0 flex-1"
         >
@@ -105,8 +105,8 @@ export default memo(function Sidebar({ onFileOpen }: SidebarProps) {
         </div>
       ) : (
         <div
-          role="tabpanel"
           id="sidebar-panel-outline"
+          role="tabpanel"
           aria-labelledby="sidebar-tab-outline"
           className="flex min-h-0 flex-1"
         >
@@ -117,8 +117,8 @@ export default memo(function Sidebar({ onFileOpen }: SidebarProps) {
       {isTauri() && (
         <button
           type="button"
-          onClick={handleOpenFolder}
           className="flex h-9 flex-none items-center justify-center gap-1.5 border-t border-gray-200 text-xs text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+          onClick={handleOpenFolder}
         >
           <FolderOpen className="h-3.5 w-3.5" />
           Open Folder

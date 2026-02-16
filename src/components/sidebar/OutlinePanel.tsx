@@ -46,9 +46,9 @@ export const OutlinePanel = memo(() => {
           <button
             key={`${heading.line}-${heading.text}`}
             type="button"
-            onClick={() => handleHeadingClick(heading.line)}
             className="flex items-center gap-2 px-3 py-1.5 text-left text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
             style={{ paddingLeft: `${12 + indent}px` }}
+            onClick={() => handleHeadingClick(heading.line)}
           >
             <Hash className="h-3 w-3 flex-shrink-0 opacity-60" />
             <span className="truncate">{heading.text}</span>

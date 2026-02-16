@@ -43,6 +43,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "validate": "npm run type-check && npm run lint && npm run format:check && npm run rust:fmt && npm run rust:clippy",
+    "knip": "knip",
     "prepare": "husky"
   },
   "dependencies": {
@@ -91,10 +92,12 @@
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-perfectionist": "^5.5.0",
     "eslint-plugin-react": "^7.37.2",
     "eslint-plugin-react-hooks": "^7.0.1",
     "husky": "^9.1.7",
     "jsdom": "^28.1.0",
+    "knip": "^5.83.1",
     "lint-staged": "^16.2.7",
     "postcss": "^8.4.49",
     "prettier": "^3.3.3",
