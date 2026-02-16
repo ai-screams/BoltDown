@@ -26,6 +26,14 @@ export function useCustomCss(): void {
       el.textContent = customCss
     }, CUSTOM_CSS_LIMITS.debounceMs)
 
-    return () => clearTimeout(timer)
+    return () => {
+      clearTimeout(timer)
+    }
   }, [customCss])
+
+  useEffect(() => {
+    return () => {
+      document.getElementById(STYLE_ELEMENT_ID)?.remove()
+    }
+  }, [])
 }

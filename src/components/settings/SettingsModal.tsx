@@ -292,7 +292,7 @@ const CustomCssEditor = memo(function CustomCssEditor() {
       <button
         type="button"
         className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm font-medium text-fg transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setIsOpen(v => !v)}
       >
         <ChevronIcon className="h-4 w-4 text-fg-muted" />
         <Code2 className="h-4 w-4 text-fg-muted" />
@@ -310,12 +310,12 @@ const CustomCssEditor = memo(function CustomCssEditor() {
           </p>
           <textarea
             className="w-full resize-y rounded border border-line bg-surface px-2 py-1.5 font-mono text-xs text-fg focus:border-electric-yellow focus:outline-none focus:ring-1 focus:ring-electric-yellow/50"
-            placeholder={
-              '/* Custom CSS examples */\n\n/* Change editor font */\n.cm-editor { font-size: 16px; }\n\n/* Preview heading color */\n.markdown-preview h1 { color: #e06c75; }\n\n/* Hide line numbers */\n.cm-gutters { display: none; }'
-            }
             rows={8}
             spellCheck={false}
             value={customCss}
+            placeholder={
+              '/* Custom CSS examples */\n\n/* Change editor font */\n.cm-editor { font-size: 16px; }\n\n/* Preview heading color */\n.markdown-preview h1 { color: #e06c75; }\n\n/* Hide line numbers */\n.cm-gutters { display: none; }'
+            }
             onChange={handleChange}
           />
           <div className="mt-2 flex items-center justify-between text-xs">
