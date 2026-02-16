@@ -11,6 +11,7 @@ export type FontFamily = 'jetbrains-mono' | 'fira-code' | 'consolas' | 'system-m
 export interface ThemeSettings {
   mode: ThemeMode
   name: ThemeName
+  customCss: string // user-defined CSS override, default ''
 }
 
 export interface EditorSettings {
@@ -52,6 +53,7 @@ export type SettingsCategory = keyof AppSettings
 export const DEFAULT_THEME: ThemeSettings = {
   mode: 'system',
   name: DEFAULT_THEME_NAME,
+  customCss: '',
 }
 
 export const DEFAULT_EDITOR: EditorSettings = {

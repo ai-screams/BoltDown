@@ -40,6 +40,12 @@ export const SETTINGS_DEFAULTS = {
   },
 } as const
 
+export const CUSTOM_CSS_LIMITS = {
+  maxLength: 10240,
+  warningThreshold: 8192,
+  debounceMs: 150,
+} as const
+
 export const SETTINGS_POLICY = {
   saveDebounceMs: 500,
 } as const

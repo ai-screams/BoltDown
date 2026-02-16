@@ -1,6 +1,10 @@
 import { clsx } from 'clsx'
 import {
   Check,
+  ChevronDown,
+  ChevronRight,
+  BookOpen,
+  Code2,
   Eye,
   Keyboard,
   Monitor,
@@ -14,6 +18,7 @@ import {
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 
 import {
+  CUSTOM_CSS_LIMITS,
   EDITOR_SETTING_LIMITS,
   GENERAL_SETTING_LIMITS,
   PREVIEW_SETTING_LIMITS,
@@ -260,6 +265,212 @@ const ThemePresetControl = memo(function ThemePresetControl() {
   )
 })
 
+const CustomCssEditor = memo(function CustomCssEditor() {
+  const customCss = useSettingsStore(s => s.settings.theme.customCss)
+  const updateTheme = useSettingsStore(s => s.updateTheme)
+  const [isOpen, setIsOpen] = useState(false)
+
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const value = e.target.value
+      if (value.length <= CUSTOM_CSS_LIMITS.maxLength) {
+        updateTheme({ customCss: value })
+      }
+    },
+    [updateTheme]
+  )
+
+  const handleReset = useCallback(() => {
+    updateTheme({ customCss: '' })
+  }, [updateTheme])
+
+  const isWarning = customCss.length > CUSTOM_CSS_LIMITS.warningThreshold
+  const ChevronIcon = isOpen ? ChevronDown : ChevronRight
+
+  return (
+    <div className="mt-4">
+      <button
+        type="button"
+        className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm font-medium text-fg transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <ChevronIcon className="h-4 w-4 text-fg-muted" />
+        <Code2 className="h-4 w-4 text-fg-muted" />
+        <span>Custom CSS</span>
+        {customCss.length > 0 && (
+          <span className="ml-auto rounded bg-surface-muted px-1.5 py-0.5 text-xs text-fg-muted">
+            {customCss.length.toLocaleString()}
+          </span>
+        )}
+      </button>
+      {isOpen && (
+        <div className="mt-2 rounded-lg border border-line bg-surface-muted p-3">
+          <p className="mb-2 text-xs text-fg-muted">
+            Add custom CSS to override theme styles. Changes apply in real-time.
+          </p>
+          <textarea
+            className="w-full resize-y rounded border border-line bg-surface px-2 py-1.5 font-mono text-xs text-fg focus:border-electric-yellow focus:outline-none focus:ring-1 focus:ring-electric-yellow/50"
+            placeholder={
+              '/* Custom CSS examples */\n\n/* Change editor font */\n.cm-editor { font-size: 16px; }\n\n/* Preview heading color */\n.markdown-preview h1 { color: #e06c75; }\n\n/* Hide line numbers */\n.cm-gutters { display: none; }'
+            }
+            rows={8}
+            spellCheck={false}
+            value={customCss}
+            onChange={handleChange}
+          />
+          <div className="mt-2 flex items-center justify-between text-xs">
+            <span className={clsx(isWarning ? 'text-warning' : 'text-fg-muted')}>
+              {customCss.length.toLocaleString()} / {CUSTOM_CSS_LIMITS.maxLength.toLocaleString()}
+            </span>
+            {customCss.length > 0 && (
+              <button
+                type="button"
+                className="flex items-center gap-1 rounded px-2 py-1 text-xs text-fg-muted transition-colors hover:bg-surface hover:text-fg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50"
+                onClick={handleReset}
+              >
+                <RotateCcw className="h-3 w-3" />
+                Reset
+              </button>
+            )}
+          </div>
+          <CssReference />
+        </div>
+      )}
+    </div>
+  )
+})
+
+const CSS_REFERENCE_SECTIONS = [
+  {
+    title: 'Background',
+    items: [
+      { token: '--s-bg-canvas', desc: 'Page background' },
+      { token: '--s-bg-surface', desc: 'Card / panel' },
+      { token: '--s-bg-elevated', desc: 'Dropdown / tooltip' },
+      { token: '--s-bg-muted', desc: 'Subtle fill' },
+    ],
+  },
+  {
+    title: 'Text',
+    items: [
+      { token: '--s-text-primary', desc: 'Body text' },
+      { token: '--s-text-secondary', desc: 'Labels' },
+      { token: '--s-text-muted', desc: 'Hints / placeholders' },
+    ],
+  },
+  {
+    title: 'Border & Accent',
+    items: [
+      { token: '--s-border-default', desc: 'Default border' },
+      { token: '--s-border-strong', desc: 'Emphasized border' },
+      { token: '--s-accent', desc: 'Primary accent' },
+      { token: '--s-link', desc: 'Link color' },
+    ],
+  },
+  {
+    title: 'Status',
+    items: [
+      { token: '--s-info', desc: 'Info / active' },
+      { token: '--s-danger', desc: 'Error / destructive' },
+      { token: '--s-success', desc: 'Success' },
+      { token: '--s-warning', desc: 'Warning' },
+    ],
+  },
+] as const
+
+const CSS_SELECTORS = [
+  { sel: '.cm-editor', desc: 'CodeMirror root' },
+  { sel: '.cm-scroller', desc: 'Editor scroll area' },
+  { sel: '.cm-gutters', desc: 'Line numbers gutter' },
+  { sel: '.cm-content', desc: 'Editor content area' },
+  { sel: '.cm-focus-dimmed', desc: 'Dimmed lines (focus mode)' },
+  { sel: '.markdown-preview', desc: 'Preview panel' },
+  { sel: '.markdown-preview h1', desc: 'Preview headings' },
+  { sel: '.markdown-preview pre', desc: 'Code blocks' },
+] as const
+
+const CSS_RECIPES = [
+  { label: 'Custom editor font', code: '.cm-editor { font-family: "Fira Code"; }' },
+  { label: 'Hide line numbers', code: '.cm-gutters { display: none; }' },
+  { label: 'Preview heading color', code: '.markdown-preview h1 { color: #e06c75; }' },
+  {
+    label: 'Theme-scoped override',
+    code: ':root[data-theme="nord"] { --s-accent: 136 192 208; }',
+  },
+] as const
+
+const CssReference = memo(function CssReference() {
+  const [isOpen, setIsOpen] = useState(false)
+  const RefChevron = isOpen ? ChevronDown : ChevronRight
+
+  return (
+    <div className="mt-3 border-t border-line pt-3">
+      <button
+        type="button"
+        className="flex w-full items-center gap-1.5 text-left text-xs font-medium text-fg-muted transition-colors hover:text-fg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50"
+        onClick={() => setIsOpen(v => !v)}
+      >
+        <RefChevron className="h-3 w-3" />
+        <BookOpen className="h-3 w-3" />
+        <span>CSS Reference</span>
+      </button>
+      {isOpen && (
+        <div className="mt-2 space-y-3 text-xs">
+          {CSS_REFERENCE_SECTIONS.map(section => (
+            <div key={section.title}>
+              <h4 className="mb-1 font-medium text-fg-secondary">{section.title}</h4>
+              <div className="space-y-0.5">
+                {section.items.map(item => (
+                  <div key={item.token} className="flex items-baseline gap-2">
+                    <code className="shrink-0 rounded bg-surface px-1 py-0.5 font-mono text-[10px] text-fg-muted">
+                      {item.token}
+                    </code>
+                    <span className="text-fg-muted">{item.desc}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          <div>
+            <h4 className="mb-1 font-medium text-fg-secondary">Selectors</h4>
+            <div className="space-y-0.5">
+              {CSS_SELECTORS.map(item => (
+                <div key={item.sel} className="flex items-baseline gap-2">
+                  <code className="shrink-0 rounded bg-surface px-1 py-0.5 font-mono text-[10px] text-fg-muted">
+                    {item.sel}
+                  </code>
+                  <span className="text-fg-muted">{item.desc}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h4 className="mb-1 font-medium text-fg-secondary">Recipes</h4>
+            <div className="space-y-1">
+              {CSS_RECIPES.map(recipe => (
+                <div key={recipe.label}>
+                  <span className="text-fg-muted">{recipe.label}</span>
+                  <code className="mt-0.5 block rounded bg-surface px-1.5 py-1 font-mono text-[10px] text-fg-muted">
+                    {recipe.code}
+                  </code>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <p className="text-[10px] text-fg-muted">
+            Values use RGB channels (e.g. <code className="font-mono">136 192 208</code>). Scope to
+            a theme with <code className="font-mono">:root[data-theme=&quot;name&quot;]</code> or
+            dark mode with <code className="font-mono">.dark</code>.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+})
+
 function ThemePanel() {
   return (
     <div className="divide-y divide-line">
@@ -269,6 +480,9 @@ function ThemePanel() {
       <SettingRow description="Choose a color set for the interface" label="Theme Preset">
         <ThemePresetControl />
       </SettingRow>
+      <div className="py-3">
+        <CustomCssEditor />
+      </div>
     </div>
   )
 }

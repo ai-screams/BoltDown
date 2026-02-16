@@ -55,9 +55,12 @@ function sanitizeTheme(theme: Partial<ThemeSettings> | undefined): ThemeSettings
       ? theme.name
       : DEFAULT_THEME.name
 
+  const customCss = typeof theme?.customCss === 'string' ? theme.customCss : DEFAULT_THEME.customCss
+
   return {
     mode,
     name: name as ThemeName,
+    customCss,
   }
 }
 

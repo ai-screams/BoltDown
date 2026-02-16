@@ -3,6 +3,7 @@ import { useShallow } from 'zustand/react/shallow'
 
 import { EditorViewProvider } from '@/contexts/EditorViewContext'
 import { useAutoSave } from '@/hooks/useAutoSave'
+import { useCustomCss } from '@/hooks/useCustomCss'
 import { useFileSystem } from '@/hooks/useFileSystem'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { useEditorStore } from '@/stores/editorStore'
@@ -40,6 +41,7 @@ const preview = (
 function App() {
   const { openFile, saveFile, saveFileAs } = useFileSystem()
   useAutoSave()
+  useCustomCss()
   const { isOpen: sidebarOpen, isResizing: sidebarResizing } = useSidebarStore(
     useShallow(s => ({ isOpen: s.isOpen, isResizing: s.isResizing }))
   )
