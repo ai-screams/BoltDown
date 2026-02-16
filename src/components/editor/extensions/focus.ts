@@ -1,4 +1,4 @@
-import { type Extension } from '@codemirror/state'
+import { type Extension, type Range } from '@codemirror/state'
 import {
   Decoration,
   type DecorationSet,
@@ -21,13 +21,13 @@ class FocusPlugin {
   }
 
   update(update: ViewUpdate) {
-    if (update.selectionSet || update.docChanged) {
+    if (update.selectionSet || update.docChanged || update.viewportChanged) {
       this.decorations = this.buildDecorations(update.view)
     }
   }
 
   buildDecorations(view: EditorView): DecorationSet {
-    const decorations: any[] = []
+    const decorations: Range<Decoration>[] = []
     const { state } = view
     const cursorLines = new Set<number>()
 
@@ -73,7 +73,9 @@ class FocusPlugin {
 }
 
 export function focusExtension(contextLines: number): Extension {
-  return ViewPlugin.define(view => new FocusPlugin(view, contextLines), {
+  const normalizedContextLines = Math.max(0, Math.floor(contextLines))
+
+  return ViewPlugin.define(view => new FocusPlugin(view, normalizedContextLines), {
     decorations: plugin => plugin.decorations,
   })
 }

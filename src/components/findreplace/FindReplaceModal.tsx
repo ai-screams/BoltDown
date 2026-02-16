@@ -7,7 +7,7 @@ import {
   selectMatches,
   setSearchQuery,
 } from '@codemirror/search'
-import { EditorSelection, StateEffect, type Text } from '@codemirror/state'
+import { Compartment, EditorSelection, StateEffect, type Text } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
 import { clsx } from 'clsx'
 import { ArrowRightLeft, ChevronDown, ChevronRight, ChevronUp, Search, X } from 'lucide-react'
@@ -115,6 +115,7 @@ interface MatchRowProps {
 const MatchRow = memo(function MatchRow({ match, isActive, onClick }: MatchRowProps) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className={clsx(
         'flex w-full items-start gap-2 py-1.5 text-left text-xs transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50',
@@ -172,19 +173,15 @@ export default memo(function FindReplaceModal() {
   const searchInputRef = useRef<HTMLInputElement>(null)
   const replaceInputRef = useRef<HTMLInputElement>(null)
   const backdropRef = useRef<HTMLDivElement>(null)
-  const isOpenRef = useRef(isOpen)
-  const listenerInstalledRef = useRef(false)
+  const listenerCompartmentRef = useRef(new Compartment())
+  const listenerViewRef = useRef<EditorView | null>(null)
+  const statusTimerRef = useRef<number | null>(null)
 
   const [matches, setMatches] = useState<MatchInfo[]>([])
   const [currentIndex, setCurrentIndex] = useState(-1)
   const [regexError, setRegexError] = useState<string | null>(null)
   const [docVersion, setDocVersion] = useState(0)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
-
-  // Keep ref in sync
-  useEffect(() => {
-    isOpenRef.current = isOpen
-  }, [isOpen])
 
   // M1: buildQuery without replaceText dependency — read from store when needed
   const buildQuery = useCallback(
@@ -259,23 +256,35 @@ export default memo(function FindReplaceModal() {
     docVersion,
   ])
 
-  // C1: Replace polling with CM6 update listener via StateEffect.appendConfig
+  // C1: CM6 update listener with compartment-based cleanup
   useEffect(() => {
     if (!isOpen) return
     const view = editorViewRef.current
-    if (!view || listenerInstalledRef.current) return
+    if (!view) return
+    const listenerCompartment = listenerCompartmentRef.current
 
-    // Install a permanent lightweight listener that checks the isOpenRef
+    if (listenerViewRef.current !== view) {
+      view.dispatch({
+        effects: StateEffect.appendConfig.of(listenerCompartment.of([])),
+      })
+      listenerViewRef.current = view
+    }
+
     view.dispatch({
-      effects: StateEffect.appendConfig.of(
+      effects: listenerCompartment.reconfigure(
         EditorView.updateListener.of(update => {
-          if (update.docChanged && isOpenRef.current) {
+          if (update.docChanged) {
             setDocVersion(v => v + 1)
           }
         })
       ),
     })
-    listenerInstalledRef.current = true
+
+    return () => {
+      if (listenerViewRef.current === view) {
+        view.dispatch({ effects: listenerCompartment.reconfigure([]) })
+      }
+    }
   }, [isOpen, editorViewRef])
 
   // Focus search input on open + auto-fill selected text (C1)
@@ -371,13 +380,33 @@ export default memo(function FindReplaceModal() {
       replaceAll(view)
       setDocVersion(v => v + 1)
       setStatusMessage(`${countBefore}개 치환됨`)
-      setTimeout(() => setStatusMessage(null), 2000)
+      if (statusTimerRef.current) {
+        window.clearTimeout(statusTimerRef.current)
+      }
+      statusTimerRef.current = window.setTimeout(() => setStatusMessage(null), 2000)
     } catch (e) {
       const message = e instanceof Error ? e.message : ERROR_REPLACE_FAILED
       console.error('Replace all failed:', e)
       setRegexError(message)
     }
   }, [editorViewRef, matches.length])
+
+  useEffect(() => {
+    return () => {
+      if (statusTimerRef.current) {
+        window.clearTimeout(statusTimerRef.current)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (isOpen) return
+    if (statusTimerRef.current) {
+      window.clearTimeout(statusTimerRef.current)
+      statusTimerRef.current = null
+    }
+    setStatusMessage(null)
+  }, [isOpen])
 
   // Select all occurrences
   const handleSelectAll = useCallback(() => {
@@ -510,7 +539,9 @@ export default memo(function FindReplaceModal() {
         <div className="flex h-12 flex-none items-center justify-between border-b border-gray-200 px-4 dark:border-gray-700">
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={toggleReplace}
+              aria-label={showReplace ? 'Hide replace panel' : 'Show replace panel'}
               className="rounded p-0.5 text-gray-400 transition-transform hover:text-gray-600 dark:hover:text-gray-300"
               title={showReplace ? 'Hide Replace' : 'Show Replace'}
             >
@@ -527,7 +558,10 @@ export default memo(function FindReplaceModal() {
             </span>
           </div>
           <button
+            type="button"
             onClick={handleClose}
+            aria-label="Close find and replace"
+            title="Close"
             className="rounded p-1.5 text-gray-500 transition-all duration-150 hover:scale-110 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
           >
             <X className="h-4 w-4" />
@@ -541,6 +575,7 @@ export default memo(function FindReplaceModal() {
             type="text"
             value={searchText}
             onChange={e => setSearchText(e.target.value)}
+            aria-label="Find text"
             placeholder="Search..."
             className="min-w-0 flex-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 placeholder-gray-400 focus:border-electric-yellow focus:outline-none focus:ring-1 focus:ring-electric-yellow/50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-500"
           />
@@ -548,6 +583,7 @@ export default memo(function FindReplaceModal() {
           {/* Toggle buttons (A1: aria-pressed + aria-label) */}
           <div className="flex gap-0.5">
             <button
+              type="button"
               onClick={toggleCaseSensitive}
               title="Case Sensitive (Alt+C)"
               aria-pressed={caseSensitive}
@@ -562,6 +598,7 @@ export default memo(function FindReplaceModal() {
               Aa
             </button>
             <button
+              type="button"
               onClick={toggleRegex}
               title="Regular Expression (Alt+R)"
               aria-pressed={useRegex}
@@ -576,6 +613,7 @@ export default memo(function FindReplaceModal() {
               .*
             </button>
             <button
+              type="button"
               onClick={toggleWholeWord}
               title="Whole Word (Alt+W)"
               aria-pressed={wholeWord}
@@ -607,16 +645,20 @@ export default memo(function FindReplaceModal() {
           {/* Prev / Next */}
           <div className="flex gap-0.5">
             <button
+              type="button"
               onClick={handleFindPrev}
               disabled={!hasMatches}
+              aria-label="Previous match"
               title="Previous Match (Shift+Enter)"
               className="rounded p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
             >
               <ChevronUp className="h-3.5 w-3.5" />
             </button>
             <button
+              type="button"
               onClick={handleFindNext}
               disabled={!hasMatches}
+              aria-label="Next match"
               title="Next Match (Enter)"
               className="rounded p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
             >
@@ -634,10 +676,12 @@ export default memo(function FindReplaceModal() {
               value={replaceText}
               onChange={e => setReplaceText(e.target.value)}
               onKeyDown={handleKeyDown}
+              aria-label="Replace text"
               placeholder="Replace..."
               className="min-w-0 flex-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 placeholder-gray-400 focus:border-electric-yellow focus:outline-none focus:ring-1 focus:ring-electric-yellow/50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-500"
             />
             <button
+              type="button"
               onClick={handleReplace}
               disabled={!hasMatches}
               title="Replace"
@@ -647,6 +691,7 @@ export default memo(function FindReplaceModal() {
               Replace
             </button>
             <button
+              type="button"
               onClick={handleReplaceAll}
               disabled={!hasMatches}
               title="Replace All"
@@ -691,6 +736,7 @@ export default memo(function FindReplaceModal() {
         {hasMatches && (
           <div className="flex items-center justify-end border-t border-gray-100 px-4 py-2 dark:border-gray-700/50">
             <button
+              type="button"
               onClick={handleSelectAll}
               className="rounded-md px-2 py-1 text-[10px] font-medium text-gray-600 transition-colors hover:bg-electric-yellow/10 hover:text-electric-dark dark:text-gray-400 dark:hover:text-electric-yellow"
             >

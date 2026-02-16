@@ -6,13 +6,15 @@ import { useTabStore } from '@/stores/tabStore'
 import type { MermaidSecurityLevel } from '@/types/settings'
 import { resolveImageSrcForDisplay } from '@/utils/imagePath'
 
-let previewRenderToken = 0
-
-async function renderMermaidBlocks(container: HTMLElement, securityLevel: MermaidSecurityLevel) {
+async function renderMermaidBlocks(
+  container: HTMLElement,
+  securityLevel: MermaidSecurityLevel,
+  tokenRef: { current: number }
+) {
   const blocks = container.querySelectorAll<HTMLPreElement>('pre.mermaid-block')
   if (blocks.length === 0) return
 
-  const token = `${++previewRenderToken}`
+  const token = `${++tokenRef.current}`
   container.dataset['mermaidToken'] = token
   const theme = document.documentElement.classList.contains('dark') ? 'dark' : 'default'
   const configKey = `${theme}:${securityLevel}`
@@ -56,14 +58,24 @@ function addCopyButtons(container: HTMLElement) {
     btn.className =
       'copy-btn absolute right-2 top-2 rounded bg-gray-700/80 px-2 py-1 text-xs text-gray-200 opacity-0 transition-opacity hover:bg-gray-600 group-hover:opacity-100'
     btn.textContent = 'Copy'
+    btn.type = 'button'
+    btn.setAttribute('aria-label', 'Copy code block')
     btn.addEventListener('click', () => {
       const code = pre.querySelector('code')?.textContent ?? pre.textContent ?? ''
-      void navigator.clipboard.writeText(code).then(() => {
-        btn.textContent = 'Copied!'
-        setTimeout(() => {
-          btn.textContent = 'Copy'
-        }, 1500)
-      })
+      void navigator.clipboard
+        .writeText(code)
+        .then(() => {
+          btn.textContent = 'Copied!'
+          setTimeout(() => {
+            btn.textContent = 'Copy'
+          }, 1500)
+        })
+        .catch(() => {
+          btn.textContent = 'Failed'
+          setTimeout(() => {
+            btn.textContent = 'Copy'
+          }, 1500)
+        })
     })
 
     pre.style.position = 'relative'
@@ -105,12 +117,13 @@ export default memo(function MarkdownPreview() {
   const markdownFilePath = useActiveTabFilePath()
   const html = useMarkdownParser(content)
   const containerRef = useRef<HTMLDivElement>(null)
+  const renderTokenRef = useRef(0)
   const preview = useSettingsStore(s => s.settings.preview)
 
   const enhancePreview = useCallback(() => {
     if (!containerRef.current) return
     resolveImageSources(containerRef.current, markdownFilePath)
-    void renderMermaidBlocks(containerRef.current, preview.mermaidSecurityLevel)
+    void renderMermaidBlocks(containerRef.current, preview.mermaidSecurityLevel, renderTokenRef)
     addCopyButtons(containerRef.current)
   }, [markdownFilePath, preview.mermaidSecurityLevel])
 

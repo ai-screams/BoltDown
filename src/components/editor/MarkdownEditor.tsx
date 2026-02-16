@@ -9,7 +9,7 @@ import {
   keymap,
   lineNumbers,
 } from '@codemirror/view'
-import { memo, useEffect, useRef } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 
 import { useEditorView } from '@/contexts/EditorViewContext'
 import { useEditorStore } from '@/stores/editorStore'
@@ -39,6 +39,15 @@ const orderedListMarkerRegex = /^(\s*)(\d+)([.)])(\s*)/
 const nestedListIndent = '    '
 const supportedImageExtensions = /\.(png|jpe?g|gif|webp|svg|bmp|avif|ico)$/i
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024 // 10 MB
+let tauriInvokePromise: Promise<(typeof import('@tauri-apps/api/core'))['invoke']> | null = null
+
+async function getTauriInvoke() {
+  if (!tauriInvokePromise) {
+    tauriInvokePromise = import('@tauri-apps/api/core').then(mod => mod.invoke)
+  }
+
+  return tauriInvokePromise
+}
 
 function isImageFile(file: File): boolean {
   return file.type.startsWith('image/') || supportedImageExtensions.test(file.name)
@@ -187,7 +196,7 @@ async function toImageMarkdown(
         }
 
         const destinationPath = buildDestinationImagePath(markdownFilePath, file.name, index)
-        const { invoke } = await import('@tauri-apps/api/core')
+        const invoke = await getTauriInvoke()
 
         if (sourcePath) {
           await invoke('copy_file', {
@@ -249,7 +258,7 @@ async function toImageMarkdownFromPath(
       }
 
       const destinationPath = buildDestinationImagePath(markdownFilePath, fileName, index)
-      const { invoke } = await import('@tauri-apps/api/core')
+      const invoke = await getTauriInvoke()
 
       await invoke('copy_file', {
         srcPath: sourcePath,
@@ -266,8 +275,15 @@ async function toImageMarkdownFromPath(
   return `![${altText}](<${encodeURI(toPosixPath(sourcePath))}>)`
 }
 
-function dispatchImageSnippets(view: EditorView, snippets: string[], insertPos: number) {
+function dispatchImageSnippets(
+  view: EditorView,
+  snippets: string[],
+  insertPos: number,
+  expectedTabId: string
+) {
   if (snippets.length === 0) return
+  if (!view.dom.isConnected) return
+  if (useTabStore.getState().activeTabId !== expectedTabId) return
 
   // Clamp to valid range — doc may have changed during async image processing
   const clampedPos = Math.min(insertPos, view.state.doc.length)
@@ -296,25 +312,23 @@ function getActiveMarkdownFilePath(): string | null {
 }
 
 async function insertDroppedImages(view: EditorView, files: File[], insertPos: number) {
+  const expectedTabId = useTabStore.getState().activeTabId
   const markdownFilePath = getActiveMarkdownFilePath()
-  const snippets: string[] = []
+  const snippets = await Promise.all(
+    files.map((file, index) => toImageMarkdown(file, markdownFilePath, index))
+  )
 
-  for (const [index, file] of files.entries()) {
-    snippets.push(await toImageMarkdown(file, markdownFilePath, index))
-  }
-
-  dispatchImageSnippets(view, snippets, insertPos)
+  dispatchImageSnippets(view, snippets, insertPos, expectedTabId)
 }
 
 async function insertDroppedImagePaths(view: EditorView, paths: string[], insertPos: number) {
+  const expectedTabId = useTabStore.getState().activeTabId
   const markdownFilePath = getActiveMarkdownFilePath()
-  const snippets: string[] = []
+  const snippets = await Promise.all(
+    paths.map((path, index) => toImageMarkdownFromPath(path, markdownFilePath, index))
+  )
 
-  for (const [index, path] of paths.entries()) {
-    snippets.push(await toImageMarkdownFromPath(path, markdownFilePath, index))
-  }
-
-  dispatchImageSnippets(view, snippets, insertPos)
+  dispatchImageSnippets(view, snippets, insertPos, expectedTabId)
 }
 
 function isInOrderedList(state: EditorState, pos: number): boolean {
@@ -389,9 +403,10 @@ function indentOrderedListItem(view: EditorView): boolean {
 export default memo(function MarkdownEditor() {
   const mode = useEditorStore(s => s.mode)
   const themeMode = useSettingsStore(s => s.settings.theme.mode)
-  const isDark =
-    themeMode === 'dark' ||
-    (themeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  const [systemDark, setSystemDark] = useState(
+    () => window.matchMedia('(prefers-color-scheme: dark)').matches
+  )
+  const isDark = themeMode === 'dark' || (themeMode === 'system' && systemDark)
   const editorViewRef = useEditorView()
 
   const focusMode = useSettingsStore(s => s.settings.editor.focusMode)
@@ -418,6 +433,31 @@ export default memo(function MarkdownEditor() {
   const typewriterCompRef = useRef(new Compartment())
 
   activeTabIdRef.current = activeTabId
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const handleChange = (event: MediaQueryListEvent) => {
+      setSystemDark(event.matches)
+    }
+    media.addEventListener('change', handleChange)
+    return () => media.removeEventListener('change', handleChange)
+  }, [])
+
+  const buildReconfigureEffects = useCallback(
+    () => [
+      themeCompRef.current.reconfigure(isDark ? boltdownDarkTheme : boltdownTheme),
+      wysiwygCompRef.current.reconfigure(
+        mode === 'zen' ? wysiwygExtension(mermaidSecurityLevel) : []
+      ),
+      gutterCompRef.current.reconfigure(buildGutterExts(mode !== 'zen')),
+      focusCompRef.current.reconfigure(focusMode ? focusExtension(focusContextLines) : []),
+      spellcheckCompRef.current.reconfigure(
+        EditorView.contentAttributes.of(getSpellingContentAttributes(spellcheck))
+      ),
+      typewriterCompRef.current.reconfigure(typewriterMode ? typewriterExtension() : []),
+    ],
+    [focusContextLines, focusMode, isDark, mermaidSecurityLevel, mode, spellcheck, typewriterMode]
+  )
 
   // Build extensions array with current compartment state
   const buildExtensions = (): Extension[] => [
@@ -561,18 +601,7 @@ export default memo(function MarkdownEditor() {
       view.setState(cached)
       // Re-apply current compartment configs after restore
       view.dispatch({
-        effects: [
-          themeCompRef.current.reconfigure(isDark ? boltdownDarkTheme : boltdownTheme),
-          wysiwygCompRef.current.reconfigure(
-            mode === 'zen' ? wysiwygExtension(mermaidSecurityLevel) : []
-          ),
-          gutterCompRef.current.reconfigure(buildGutterExts(mode !== 'zen')),
-          focusCompRef.current.reconfigure(focusMode ? focusExtension(focusContextLines) : []),
-          spellcheckCompRef.current.reconfigure(
-            EditorView.contentAttributes.of(getSpellingContentAttributes(spellcheck))
-          ),
-          typewriterCompRef.current.reconfigure(typewriterMode ? typewriterExtension() : []),
-        ],
+        effects: buildReconfigureEffects(),
       })
     } else {
       const activeTab = useTabStore.getState().tabs.find(t => t.id === activeTabId)
@@ -601,39 +630,12 @@ export default memo(function MarkdownEditor() {
     return unsub
   }, [])
 
-  // Theme reconfiguration
-  useEffect(() => {
-    viewRef.current?.dispatch({
-      effects: themeCompRef.current.reconfigure(isDark ? boltdownDarkTheme : boltdownTheme),
-    })
-  }, [isDark])
-
-  // Mode reconfiguration (wysiwyg + gutters)
+  // Dynamic compartment reconfiguration
   useEffect(() => {
     const view = viewRef.current
     if (!view) return
-    view.dispatch({
-      effects: [
-        wysiwygCompRef.current.reconfigure(
-          mode === 'zen' ? wysiwygExtension(mermaidSecurityLevel) : []
-        ),
-        gutterCompRef.current.reconfigure(buildGutterExts(mode !== 'zen')),
-      ],
-    })
-  }, [mode, mermaidSecurityLevel])
-
-  // Focus, Spellcheck, and Typewriter mode reconfiguration
-  useEffect(() => {
-    viewRef.current?.dispatch({
-      effects: [
-        focusCompRef.current.reconfigure(focusMode ? focusExtension(focusContextLines) : []),
-        spellcheckCompRef.current.reconfigure(
-          EditorView.contentAttributes.of(getSpellingContentAttributes(spellcheck))
-        ),
-        typewriterCompRef.current.reconfigure(typewriterMode ? typewriterExtension() : []),
-      ],
-    })
-  }, [focusMode, focusContextLines, spellcheck, typewriterMode])
+    view.dispatch({ effects: buildReconfigureEffects() })
+  }, [buildReconfigureEffects])
 
   return <div ref={containerRef} className="h-full [&_.cm-editor]:h-full" />
 })
