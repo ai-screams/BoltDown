@@ -15,6 +15,7 @@ Reusable React hooks that bridge UI components with Tauri APIs, store state, and
 - `useAutoSave.ts` — Auto-save hook for dirty tabs. Reads `autoSave` and `autoSaveDelay` from settingsStore. Subscribes to tabStore changes and schedules debounced saves. Disk save via Tauri `write_file` invoke for files with path, in-memory `markClean` for untitled/browser. `isSavingRef` guard prevents concurrent saves. Also saves immediately on window blur. Flashes "Auto-saved" status via editorStore. Returns void (side-effect only hook). Called in App.tsx.
 - `useDocumentStats.ts` — Computes document statistics (chars, words, lines) with debouncing (150ms default). Returns `DocumentStats` object. Used by Footer component for real-time stats display.
 - `useKeyboardShortcuts.ts` — Global keyboard shortcut handler extracted from App.tsx. Manages Cmd+O/S/N/\\/,/F/H, Shift+Cmd+E, and Escape (Zen exit). Takes file operation callbacks and settings modal state as dependencies. Uses stable refs to prevent stale closures.
+- `useCustomCss.ts` — Injects custom CSS from settingsStore into `<style id="boltdown-custom-css">` element. Debounced with 150ms delay (CUSTOM_CSS_LIMITS.debounceMs). Creates style element on mount if customCss is non-empty, removes on unmount or when customCss becomes empty. Uses two useEffect hooks: one for debounced injection, one for cleanup. Called in App.tsx.
 
 ## For AI Agents
 
@@ -28,4 +29,5 @@ Reusable React hooks that bridge UI components with Tauri APIs, store state, and
 - `useOutline` strips markdown inline formatting (bold, italic, code, links, strikethrough) before extracting heading text
 - `useKeyboardShortcuts` extracted from App.tsx for modularity — handles all global keyboard shortcuts
 - `useDocumentStats` provides debounced statistics computation for Footer component
+- `useCustomCss` injects custom CSS with debouncing — no validation/sanitization, raw injection into style element
 - Theme management moved to `settingsStore.ts` in Phase 2 (useTheme.ts deleted)
