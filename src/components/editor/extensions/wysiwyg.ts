@@ -27,10 +27,108 @@ let mermaidRenderCount = 0
 let mermaidRenderToken = 0
 
 function getCodeBlockPalette() {
+  const isDark = document.documentElement.classList.contains('dark')
   return {
     background: 'rgb(var(--c-code-block-bg) / 1)',
     text: 'rgb(var(--c-code-block-text) / 1)',
     badge: 'rgb(var(--c-code-block-badge) / 1)',
+    keyword: isDark ? '#c678dd' : '#a626a4',
+    string: isDark ? '#98c379' : '#50a14f',
+    comment: isDark ? '#5c6370' : '#a0a1a7',
+    function: isDark ? '#61afef' : '#4078f2',
+    number: isDark ? '#d19a66' : '#986801',
+    punctuation: isDark ? '#abb2bf' : '#383a42',
+  }
+}
+
+function getPrismTokenColor(
+  type: string,
+  palette: ReturnType<typeof getCodeBlockPalette>
+): string | null {
+  if (type === 'keyword' || type === 'tag' || type === 'builtin') return palette.keyword
+  if (type === 'string' || type === 'char' || type === 'template-string') return palette.string
+  if (type === 'comment' || type === 'prolog' || type === 'doctype') return palette.comment
+  if (type === 'function' || type === 'class-name') return palette.function
+  if (type === 'number' || type === 'boolean') return palette.number
+  if (type === 'operator' || type === 'punctuation') return palette.punctuation
+  if (type === 'attr-name' || type === 'property') return palette.keyword
+  if (type === 'attr-value') return palette.string
+  return null
+}
+
+function applyPrismTokens(
+  decorations: Range<Decoration>[],
+  tokens: (string | Prism.Token)[],
+  startPos: number,
+  palette: ReturnType<typeof getCodeBlockPalette>
+): number {
+  let pos = startPos
+  for (const token of tokens) {
+    if (typeof token === 'string') {
+      pos += token.length
+    } else {
+      const tokenStart = pos
+      if (Array.isArray(token.content)) {
+        pos = applyPrismTokens(decorations, token.content, pos, palette)
+      } else if (typeof token.content === 'string') {
+        pos += token.content.length
+      } else {
+        // token.content is a single Token — recurse
+        pos = applyPrismTokens(decorations, [token.content], pos, palette)
+      }
+      const color = getPrismTokenColor(token.type, palette)
+      if (color) {
+        decorations.push(
+          Decoration.mark({ attributes: { style: `color: ${color};` } }).range(tokenStart, pos)
+        )
+      }
+    }
+  }
+  return pos
+}
+
+/** Shared logic for symmetric inline formatting (bold, italic, inline code, strikethrough) */
+function applyInlineFormatting(
+  decorations: Range<Decoration>[],
+  from: number,
+  to: number,
+  markerLen: number,
+  contentStyle: string,
+  revealInline: boolean
+) {
+  decorations.push(
+    Decoration.mark({ attributes: { style: contentStyle } }).range(from + markerLen, to - markerLen)
+  )
+  if (!revealInline) {
+    decorations.push(Decoration.replace({}).range(from, from + markerLen))
+    decorations.push(Decoration.replace({}).range(to - markerLen, to))
+  } else {
+    decorations.push(
+      Decoration.mark({ attributes: { style: 'opacity: 0.35;' } }).range(from, from + markerLen)
+    )
+    decorations.push(
+      Decoration.mark({ attributes: { style: 'opacity: 0.35;' } }).range(to - markerLen, to)
+    )
+  }
+}
+
+class LanguageBadgeWidget extends WidgetType {
+  constructor(private language: string) {
+    super()
+  }
+  toDOM() {
+    const badge = document.createElement('span')
+    badge.className = 'cm-codeblock-badge'
+    badge.textContent = this.language.toUpperCase()
+    const palette = getCodeBlockPalette()
+    badge.style.cssText = `display: block; text-align: right; font-size: 0.7em; color: ${palette.badge}; font-family: monospace; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 8px; background: ${palette.background}; border-radius: 6px 6px 0 0;`
+    return badge
+  }
+  eq(other: LanguageBadgeWidget) {
+    return this.language === other.language
+  }
+  ignoreEvent() {
+    return false
   }
 }
 
@@ -41,17 +139,13 @@ function scheduleEditorMeasure(view: EditorView) {
   })
 }
 
-function getMermaidTheme(): 'dark' | 'default' {
-  return getMermaidThemeFromDom()
-}
-
 async function getMermaid(securityLevel: MermaidSecurityLevel) {
   if (!mermaidModulePromise) {
     mermaidModulePromise = import('mermaid').then(mod => mod.default)
   }
 
   const mermaid = await mermaidModulePromise
-  const theme = getMermaidTheme()
+  const theme = getMermaidThemeFromDom()
 
   if (
     !mermaidConfigCache ||
@@ -493,13 +587,15 @@ function buildDecorations(
   const cursorLine = state.doc.lineAt(cursor.head).number
   const codeRanges: DocRange[] = []
   const tree = ensureSyntaxTree(state, state.doc.length, 50) ?? syntaxTree(state)
+  const codeBlockPalette = getCodeBlockPalette()
 
   tree.iterate({
     enter(node) {
       const { from, to } = node
       const cursorInRange = isSelectionInRange(cursor, from, to)
       const cursorOnNodeLine = isCursorOnRangeLine(state, cursorLine, from, to)
-      const revealNode = cursorInRange || cursorOnNodeLine
+      const revealBlock = cursorInRange || cursorOnNodeLine
+      const revealInline = cursorInRange
 
       // Collect code ranges for math exclusion
       if (node.name === 'FencedCode' || node.name === 'InlineCode') {
@@ -507,7 +603,7 @@ function buildDecorations(
       }
 
       // Headings: style the line when cursor is outside
-      if (node.name.startsWith('ATXHeading') && !revealNode) {
+      if (node.name.startsWith('ATXHeading') && !revealBlock) {
         const levelMatch = /ATXHeading(\d)/.exec(node.name)
         const level = levelMatch?.[1] ?? '1'
         const lineText = state.sliceDoc(from, to)
@@ -527,59 +623,32 @@ function buildDecorations(
       }
 
       // Bold (**text** or __text__)
-      if (node.name === 'StrongEmphasis' && !revealNode) {
-        const text = state.sliceDoc(from, to)
-        const marker = text.startsWith('**') ? '**' : '__'
-        const mLen = marker.length
-
-        // Hide opening marker
-        decorations.push(Decoration.replace({}).range(from, from + mLen))
-        // Hide closing marker
-        decorations.push(Decoration.replace({}).range(to - mLen, to))
-        // Style the content
-        decorations.push(
-          Decoration.mark({ attributes: { style: 'font-weight: 700;' } }).range(
-            from + mLen,
-            to - mLen
-          )
-        )
+      if (node.name === 'StrongEmphasis') {
+        applyInlineFormatting(decorations, from, to, 2, 'font-weight: 700;', revealInline)
       }
 
       // Italic (*text* or _text_)
-      if (node.name === 'Emphasis' && !revealNode) {
-        const text = state.sliceDoc(from, to)
-        const marker = text.startsWith('*') ? '*' : '_'
-        const mLen = marker.length
-
-        decorations.push(Decoration.replace({}).range(from, from + mLen))
-        decorations.push(Decoration.replace({}).range(to - mLen, to))
-        decorations.push(
-          Decoration.mark({ attributes: { style: 'font-style: italic;' } }).range(
-            from + mLen,
-            to - mLen
-          )
-        )
+      if (node.name === 'Emphasis') {
+        applyInlineFormatting(decorations, from, to, 1, 'font-style: italic;', revealInline)
       }
 
       // Inline code
-      if (node.name === 'InlineCode' && !revealNode) {
+      if (node.name === 'InlineCode') {
         const text = state.sliceDoc(from, to)
         if (text.startsWith('`') && text.endsWith('`')) {
-          decorations.push(Decoration.replace({}).range(from, from + 1))
-          decorations.push(Decoration.replace({}).range(to - 1, to))
-          decorations.push(
-            Decoration.mark({
-              attributes: {
-                style:
-                  'background: var(--c-wys-inline-code-bg); padding: 1px 4px; border-radius: 3px; font-family: monospace; font-size: 0.9em;',
-              },
-            }).range(from + 1, to - 1)
+          applyInlineFormatting(
+            decorations,
+            from,
+            to,
+            1,
+            'background: var(--c-wys-inline-code-bg); padding: 1px 4px; border-radius: 3px; font-family: monospace; font-size: 0.9em;',
+            revealInline
           )
         }
       }
 
       // Images: ![alt](url)
-      if (node.name === 'Image' && !revealNode) {
+      if (node.name === 'Image' && !revealBlock) {
         const text = state.sliceDoc(from, to)
         const imgMatch = /!\[([^\]]*)\]\(([^)]+)\)/.exec(text)
         if (imgMatch) {
@@ -594,24 +663,22 @@ function buildDecorations(
       }
 
       // Strikethrough: ~~text~~
-      if (node.name === 'Strikethrough' && !revealNode) {
+      if (node.name === 'Strikethrough') {
         const text = state.sliceDoc(from, to)
         if (text.startsWith('~~') && text.endsWith('~~')) {
-          decorations.push(Decoration.replace({}).range(from, from + 2))
-          decorations.push(Decoration.replace({}).range(to - 2, to))
-          decorations.push(
-            Decoration.mark({
-              attributes: {
-                style:
-                  'text-decoration: line-through; color: rgb(var(--c-wys-strikethrough-text) / 1);',
-              },
-            }).range(from + 2, to - 2)
+          applyInlineFormatting(
+            decorations,
+            from,
+            to,
+            2,
+            'text-decoration: line-through; color: rgb(var(--c-wys-strikethrough-text) / 1);',
+            revealInline
           )
         }
       }
 
       // Horizontal rule
-      if (node.name === 'HorizontalRule' && !revealNode) {
+      if (node.name === 'HorizontalRule' && !revealBlock) {
         decorations.push(
           Decoration.line({
             attributes: {
@@ -623,7 +690,7 @@ function buildDecorations(
       }
 
       // Links: [text](url)
-      if (node.name === 'Link' && !revealNode) {
+      if (node.name === 'Link') {
         const linkMarks = node.node.getChildren('LinkMark')
         const urlNode = node.node.getChildren('URL')
         // LinkMarks: [0]='[', [1]=']', [2]='(', [3]=')'
@@ -631,11 +698,8 @@ function buildDecorations(
           const openBracket = linkMarks[0]!
           const closeBracket = linkMarks[1]!
           const closeParen = linkMarks[3]!
-          // Hide '['
-          decorations.push(Decoration.replace({}).range(openBracket.from, openBracket.to))
-          // Hide '](url)'
-          decorations.push(Decoration.replace({}).range(closeBracket.from, closeParen.to))
-          // Style link text with blue + underline
+
+          // Always style link text with blue + underline
           decorations.push(
             Decoration.mark({
               attributes: {
@@ -644,6 +708,26 @@ function buildDecorations(
               },
             }).range(openBracket.to, closeBracket.from)
           )
+
+          if (!revealInline) {
+            // Cursor outside: hide markers
+            decorations.push(Decoration.replace({}).range(openBracket.from, openBracket.to))
+            decorations.push(Decoration.replace({}).range(closeBracket.from, closeParen.to))
+          } else {
+            // Cursor inside: show markers dimmed
+            decorations.push(
+              Decoration.mark({ attributes: { style: 'opacity: 0.35;' } }).range(
+                openBracket.from,
+                openBracket.to
+              )
+            )
+            decorations.push(
+              Decoration.mark({ attributes: { style: 'opacity: 0.35;' } }).range(
+                closeBracket.from,
+                closeParen.to
+              )
+            )
+          }
         }
       }
 
@@ -699,36 +783,17 @@ function buildDecorations(
       }
 
       // Blockquotes: hide > marks, add left border
-      if (node.name === 'Blockquote' && !revealNode) {
-        // Hide all QuoteMark children
-        const quoteMarks = node.node.getChildren('QuoteMark')
-        for (const qm of quoteMarks) {
-          // Hide the '> ' (mark + trailing space)
-          const afterMark = qm.to
-          const nextChar = state.sliceDoc(afterMark, afterMark + 1)
-          const hideEnd = nextChar === ' ' ? afterMark + 1 : afterMark
-          decorations.push(Decoration.replace({}).range(qm.from, hideEnd))
-        }
-        // Also find nested QuoteMarks (inside paragraphs within blockquotes)
-        const innerCursor = node.node.cursor()
-        if (innerCursor.firstChild()) {
-          do {
-            if (innerCursor.type.name === 'Paragraph') {
-              const paraCursor = innerCursor.node.cursor()
-              if (paraCursor.firstChild()) {
-                do {
-                  if (paraCursor.type.name === 'QuoteMark') {
-                    const qmFrom = paraCursor.from
-                    const qmTo = paraCursor.to
-                    const nextCh = state.sliceDoc(qmTo, qmTo + 1)
-                    const hideE = nextCh === ' ' ? qmTo + 1 : qmTo
-                    decorations.push(Decoration.replace({}).range(qmFrom, hideE))
-                  }
-                } while (paraCursor.nextSibling())
-              }
-            }
-          } while (innerCursor.nextSibling())
-        }
+      if (node.name === 'Blockquote') {
+        // Walk all descendants to find every QuoteMark at any nesting depth
+        const walker = node.node.cursor()
+        do {
+          if (walker.type.name === 'QuoteMark') {
+            const qmTo = walker.to
+            const nextCh = state.sliceDoc(qmTo, qmTo + 1)
+            const hideEnd = nextCh === ' ' ? qmTo + 1 : qmTo
+            decorations.push(Decoration.replace({}).range(walker.from, hideEnd))
+          }
+        } while (walker.next())
         // Add line decorations with left border for each line in the blockquote
         const startLine = state.doc.lineAt(from).number
         const endLine = state.doc.lineAt(to).number
@@ -746,7 +811,7 @@ function buildDecorations(
       }
 
       // Tables: replace with rendered HTML table
-      if (node.name === 'Table' && !revealNode) {
+      if (node.name === 'Table' && !revealBlock) {
         const tableText = state.sliceDoc(from, to)
         decorations.push(
           Decoration.replace({
@@ -757,7 +822,7 @@ function buildDecorations(
       }
 
       // Fenced code blocks: replace with syntax-highlighted block
-      if (node.name === 'FencedCode' && !revealNode) {
+      if (node.name === 'FencedCode') {
         const codeInfoNode = node.node.getChildren('CodeInfo')
         const codeTextNode = node.node.getChildren('CodeText')
         const language =
@@ -767,17 +832,75 @@ function buildDecorations(
         const code =
           codeTextNode.length > 0 ? state.sliceDoc(codeTextNode[0]!.from, codeTextNode[0]!.to) : ''
         const normalizedLanguage = language.toLowerCase()
-        const widget =
-          normalizedLanguage === 'mermaid'
-            ? new MermaidWidget(code, mermaidSecurityLevel)
-            : new CodeBlockWidget(code, language)
 
-        decorations.push(
-          Decoration.replace({
-            widget,
-            block: true,
-          }).range(from, to)
-        )
+        if (!revealBlock) {
+          // Cursor outside: show full widget (current behavior)
+          const widget =
+            normalizedLanguage === 'mermaid'
+              ? new MermaidWidget(code, mermaidSecurityLevel)
+              : new CodeBlockWidget(code, language)
+
+          decorations.push(
+            Decoration.replace({
+              widget,
+              block: true,
+            }).range(from, to)
+          )
+        } else {
+          // Cursor inside: hide fences, keep code editable with syntax highlighting
+          const firstLine = state.doc.lineAt(from)
+          const lastLine = state.doc.lineAt(to)
+
+          // Hide the opening fence line (clamp to doc length for unclosed fences)
+          decorations.push(
+            Decoration.replace({}).range(
+              firstLine.from,
+              Math.min(firstLine.to + 1, state.doc.length)
+            )
+          )
+          // Hide the closing fence line
+          if (lastLine.from > firstLine.to) {
+            decorations.push(Decoration.replace({}).range(lastLine.from - 1, lastLine.to))
+          }
+
+          // Style the code area with a background (palette hoisted above tree.iterate)
+          const palette = codeBlockPalette
+          if (codeTextNode.length > 0) {
+            const codeFrom = codeTextNode[0]!.from
+            const codeTo = codeTextNode[0]!.to
+
+            // Apply background to each line of the code block
+            const startLine = state.doc.lineAt(codeFrom)
+            const endLine = state.doc.lineAt(codeTo)
+            for (let i = startLine.number; i <= endLine.number; i++) {
+              const line = state.doc.line(i)
+              decorations.push(
+                Decoration.line({
+                  attributes: {
+                    style: `background: ${palette.background}; font-family: monospace; font-size: 0.875em;`,
+                  },
+                }).range(line.from)
+              )
+            }
+
+            // Apply Prism syntax highlighting as mark decorations
+            const grammar = Prism.languages[normalizedLanguage]
+            if (grammar) {
+              const tokens = Prism.tokenize(code, grammar)
+              applyPrismTokens(decorations, tokens, codeFrom, palette)
+            }
+          }
+
+          // Show language badge if present
+          if (language && codeInfoNode.length > 0) {
+            decorations.push(
+              Decoration.widget({
+                widget: new LanguageBadgeWidget(language),
+                side: -1,
+              }).range(codeTextNode.length > 0 ? codeTextNode[0]!.from : from)
+            )
+          }
+        }
       }
     },
   })
