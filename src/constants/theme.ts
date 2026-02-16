@@ -35,6 +35,22 @@ export const THEME_PRESETS = [
     info: '#0046C8',
     danger: '#C80000',
   },
+  {
+    name: 'meadow',
+    label: 'Meadow',
+    description: 'Fresh pastel greens and sky blues',
+    swatches: ['#98B8E1', '#DAE199', '#B9D889', '#F6EC4F', '#C0E0F6'],
+    info: '#5A8CC8',
+    danger: '#C33C37',
+  },
+  {
+    name: 'vivid',
+    label: 'Vivid',
+    description: 'Bold deep blue with warm pop accents',
+    swatches: ['#123D96', '#EEC2DA', '#EDD841', '#B4D156', '#F6B26B'],
+    info: '#3264BE',
+    danger: '#C8323C',
+  },
 ] as const
 
 const BUILT_IN_THEME_NAMES = new Set<string>(THEME_PRESETS.map(theme => theme.name))
