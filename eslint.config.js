@@ -121,6 +121,10 @@ export default [
         },
       ],
 
+      // Keep disabled globally; enable incrementally by scoped overrides below.
+      'no-magic-numbers': 'off',
+      '@typescript-eslint/no-magic-numbers': 'off',
+
       // JSX Props Sorting
       'perfectionist/sort-jsx-props': [
         'error',
@@ -159,6 +163,35 @@ export default [
         typescript: true,
         node: true,
       },
+    },
+  },
+
+  // Incremental rollout: enforce no-magic-numbers in policy-heavy modules first
+  {
+    files: [
+      'src/stores/**/*.{ts,tsx}',
+      'src/components/findreplace/**/*.{ts,tsx}',
+      'src/hooks/useFileSystem.ts',
+      'src/hooks/useDocumentStats.ts',
+      'src/hooks/useKeyboardShortcuts.ts',
+      'src/utils/settingsStorage.ts',
+    ],
+    rules: {
+      '@typescript-eslint/no-magic-numbers': [
+        'error',
+        {
+          ignore: [-1, 0, 1, 2, 10],
+          ignoreArrayIndexes: true,
+          ignoreDefaultValues: true,
+          ignoreClassFieldInitialValues: true,
+          ignoreEnums: true,
+          ignoreNumericLiteralTypes: true,
+          ignoreReadonlyClassProperties: true,
+          ignoreTypeIndexes: true,
+          enforceConst: true,
+          detectObjects: true,
+        },
+      ],
     },
   },
 
