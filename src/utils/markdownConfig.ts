@@ -4,6 +4,8 @@ import type StateBlock from 'markdown-it/lib/rules_block/state_block.mjs'
 import type StateInline from 'markdown-it/lib/rules_inline/state_inline.mjs'
 import Prism from 'prismjs'
 
+import { escapeHtml } from '@/utils/markdownText'
+
 import 'katex/dist/katex.min.css'
 import 'prismjs/components/prism-bash'
 import 'prismjs/components/prism-css'
@@ -15,14 +17,6 @@ import 'prismjs/components/prism-python'
 import 'prismjs/components/prism-rust'
 import 'prismjs/components/prism-tsx'
 import 'prismjs/components/prism-typescript'
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
 
 // KaTeX inline math: $...$
 function mathInline(state: StateInline, silent: boolean): boolean {

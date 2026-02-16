@@ -1,21 +1,23 @@
 import type MarkdownIt from 'markdown-it'
 import type StateBlock from 'markdown-it/lib/rules_block/state_block.mjs'
 
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
+import { escapeHtml, stripInlineMarkdown } from '@/utils/markdownText'
 
 function slugify(text: string): string {
-  return text
+  const slug = text
     .toLowerCase()
     .replace(/[^\w\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .trim()
+
+  return slug || 'section'
+}
+
+function createUniqueSlug(baseSlug: string, slugCounts: Map<string, number>): string {
+  const count = slugCounts.get(baseSlug) ?? 0
+  slugCounts.set(baseSlug, count + 1)
+  return count > 0 ? `${baseSlug}-${count}` : baseSlug
 }
 
 function tocBlockRule(
@@ -55,16 +57,8 @@ export function tocPlugin(md: MarkdownIt): void {
     const currentToken = tokens[idx]
     const nextToken = tokens[idx + 1]
     if (currentToken && nextToken && nextToken.type === 'inline') {
-      const rawText = nextToken.content
-        .replace(/\*\*(.+?)\*\*/g, '$1')
-        .replace(/\*(.+?)\*/g, '$1')
-        .replace(/`(.+?)`/g, '$1')
-        .replace(/\[(.+?)\]\(.+?\)/g, '$1')
-        .replace(/~~(.+?)~~/g, '$1')
-      let slug = slugify(rawText)
-      const count = slugCounts.get(slug) ?? 0
-      if (count > 0) slug = `${slug}-${count}`
-      slugCounts.set(slug.replace(/-\d+$/, ''), count + 1)
+      const rawText = stripInlineMarkdown(nextToken.content)
+      const slug = createUniqueSlug(slugify(rawText), slugCounts)
       currentToken.attrSet('id', slug)
     }
     if (originalHeadingOpen) {
@@ -100,16 +94,8 @@ export function tocPlugin(md: MarkdownIt): void {
         const level = parseInt(token.tag.slice(1))
         const inline = state.tokens[i + 1]
         if (inline && inline.type === 'inline') {
-          const rawText = inline.content
-            .replace(/\*\*(.+?)\*\*/g, '$1')
-            .replace(/\*(.+?)\*/g, '$1')
-            .replace(/`(.+?)`/g, '$1')
-            .replace(/\[(.+?)\]\(.+?\)/g, '$1')
-            .replace(/~~(.+?)~~/g, '$1')
-          let slug = slugify(rawText)
-          const count = tempSlugs.get(slug) ?? 0
-          if (count > 0) slug = `${slug}-${count}`
-          tempSlugs.set(slug.replace(/-\d+$/, ''), count + 1)
+          const rawText = stripInlineMarkdown(inline.content)
+          const slug = createUniqueSlug(slugify(rawText), tempSlugs)
           headings.push({ level, text: rawText.trim(), slug })
         }
       }

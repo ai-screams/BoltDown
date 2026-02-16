@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react'
 import { useEditorStore } from '@/stores/editorStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useTabStore } from '@/stores/tabStore'
-import { isTauri } from '@/utils/tauri'
+import { invokeTauri, isTauri } from '@/utils/tauri'
 
 /**
  * useAutoSave — debounced auto-save for all dirty tabs.
@@ -27,6 +27,7 @@ export function useAutoSave(): void {
       try {
         const tabs = useTabStore.getState().tabs
         const { markClean } = useTabStore.getState()
+        const desktop = isTauri()
         let savedCount = 0
 
         for (const tab of tabs) {
@@ -37,11 +38,10 @@ export function useAutoSave(): void {
           const current = useTabStore.getState().tabs.find(t => t.id === tab.id)
           if (!current) continue
 
-          if (current.filePath && isTauri()) {
+          if (current.filePath && desktop) {
             // Disk save: Tauri + has file path
             try {
-              const { invoke } = await import('@tauri-apps/api/core')
-              await invoke('write_file', { path: current.filePath, content: current.content })
+              await invokeTauri('write_file', { path: current.filePath, content: current.content })
               markClean(current.id, current.content)
               savedCount++
             } catch (e) {

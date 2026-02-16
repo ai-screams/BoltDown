@@ -1,15 +1,22 @@
 import type { AppSettings } from '@/types/settings'
-import { isTauri } from '@/utils/tauri'
+import { invokeTauri, isTauri } from '@/utils/tauri'
 
 const STORAGE_KEY = 'boltdown-settings'
+
+function parseSettingsJson(raw: string): Partial<AppSettings> | null {
+  try {
+    return JSON.parse(raw) as Partial<AppSettings>
+  } catch {
+    return null
+  }
+}
 
 export async function loadSettingsFromStorage(): Promise<Partial<AppSettings> | null> {
   if (isTauri()) {
     try {
-      const { invoke } = await import('@tauri-apps/api/core')
-      const raw = await invoke<string>('read_settings')
+      const raw = await invokeTauri<string>('read_settings')
       if (raw === 'null' || !raw) return null
-      return JSON.parse(raw) as Partial<AppSettings>
+      return parseSettingsJson(raw)
     } catch (e) {
       console.error('Failed to load settings from Tauri:', e)
       return null
@@ -18,8 +25,9 @@ export async function loadSettingsFromStorage(): Promise<Partial<AppSettings> | 
 
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as Partial<AppSettings>) : null
-  } catch {
+    return raw ? parseSettingsJson(raw) : null
+  } catch (e) {
+    console.error('Failed to load settings from localStorage:', e)
     return null
   }
 }
@@ -29,8 +37,7 @@ export async function saveSettingsToStorage(settings: AppSettings): Promise<void
 
   if (isTauri()) {
     try {
-      const { invoke } = await import('@tauri-apps/api/core')
-      await invoke('write_settings', { settings: json })
+      await invokeTauri('write_settings', { settings: json })
     } catch (e) {
       console.error('Failed to save settings to Tauri:', e)
     }

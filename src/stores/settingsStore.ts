@@ -56,78 +56,77 @@ interface SettingsState {
   loadSettings: () => Promise<void>
 }
 
-export const useSettingsStore = create<SettingsState>((set, get) => ({
-  settings: DEFAULT_SETTINGS,
-  isLoaded: false,
+export const useSettingsStore = create<SettingsState>((set, get) => {
+  const patchCategory = <K extends SettingsCategory>(
+    category: K,
+    patch: Partial<AppSettings[K]>
+  ): void => {
+    const previous = get().settings
+    const next = {
+      ...previous,
+      [category]: {
+        ...previous[category],
+        ...patch,
+      },
+    } as AppSettings
 
-  updateTheme: patch => {
-    const next = { ...get().settings, theme: { ...get().settings.theme, ...patch } }
     set({ settings: next })
-    applyTheme(next.theme.mode)
+    if (category === 'theme') applyTheme(next.theme.mode)
     debouncedSave(next)
-  },
+  }
 
-  updateEditor: patch => {
-    const next = { ...get().settings, editor: { ...get().settings.editor, ...patch } }
-    set({ settings: next })
-    debouncedSave(next)
-  },
+  return {
+    settings: DEFAULT_SETTINGS,
+    isLoaded: false,
 
-  updatePreview: patch => {
-    const next = { ...get().settings, preview: { ...get().settings.preview, ...patch } }
-    set({ settings: next })
-    debouncedSave(next)
-  },
+    updateTheme: patch => patchCategory('theme', patch),
+    updateEditor: patch => patchCategory('editor', patch),
+    updatePreview: patch => patchCategory('preview', patch),
+    updateGeneral: patch => patchCategory('general', patch),
 
-  updateGeneral: patch => {
-    const next = { ...get().settings, general: { ...get().settings.general, ...patch } }
-    set({ settings: next })
-    debouncedSave(next)
-  },
+    resetCategory: category => {
+      const next = { ...get().settings, [category]: DEFAULT_SETTINGS[category] }
+      set({ settings: next })
+      if (category === 'theme') applyTheme(DEFAULT_THEME.mode)
+      debouncedSave(next)
+    },
 
-  resetCategory: category => {
-    const next = { ...get().settings, [category]: DEFAULT_SETTINGS[category] }
-    set({ settings: next })
-    if (category === 'theme') applyTheme(DEFAULT_THEME.mode)
-    debouncedSave(next)
-  },
-
-  resetAll: () => {
-    set({ settings: DEFAULT_SETTINGS })
-    applyTheme(DEFAULT_SETTINGS.theme.mode)
-    debouncedSave(DEFAULT_SETTINGS)
-  },
-
-  loadSettings: async () => {
-    const stored = await loadSettingsFromStorage()
-    if (stored) {
-      const merged = mergeWithDefaults(stored, DEFAULT_SETTINGS)
-      set({ settings: merged, isLoaded: true })
-      applyTheme(merged.theme.mode)
-    } else {
-      set({ isLoaded: true })
+    resetAll: () => {
+      set({ settings: DEFAULT_SETTINGS })
       applyTheme(DEFAULT_SETTINGS.theme.mode)
-    }
+      debouncedSave(DEFAULT_SETTINGS)
+    },
 
-    // System theme change listener (migrated from useTheme.ts)
-    if (!themeListenerRegistered) {
-      themeListenerRegistered = true
-      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-        const { settings } = useSettingsStore.getState()
-        if (settings.theme.mode === 'system') {
-          applyTheme('system')
-        }
-      })
-    }
-
-    // One-time migration: old boltdown-theme localStorage key
-    const oldTheme = localStorage.getItem('boltdown-theme')
-    if (oldTheme && !stored?.theme) {
-      const mode = oldTheme as ThemeMode
-      if (['light', 'dark', 'system'].includes(mode)) {
-        useSettingsStore.getState().updateTheme({ mode })
+    loadSettings: async () => {
+      const stored = await loadSettingsFromStorage()
+      if (stored) {
+        const merged = mergeWithDefaults(stored, DEFAULT_SETTINGS)
+        set({ settings: merged, isLoaded: true })
+        applyTheme(merged.theme.mode)
+      } else {
+        set({ isLoaded: true })
+        applyTheme(DEFAULT_SETTINGS.theme.mode)
       }
-      localStorage.removeItem('boltdown-theme')
-    }
-  },
-}))
+
+      if (!themeListenerRegistered) {
+        themeListenerRegistered = true
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+        mediaQuery.addEventListener('change', () => {
+          const { settings } = get()
+          if (settings.theme.mode === 'system') {
+            applyTheme('system')
+          }
+        })
+      }
+
+      const oldTheme = localStorage.getItem('boltdown-theme')
+      if (oldTheme && !stored?.theme) {
+        const mode = oldTheme as ThemeMode
+        if (['light', 'dark', 'system'].includes(mode)) {
+          get().updateTheme({ mode })
+        }
+        localStorage.removeItem('boltdown-theme')
+      }
+    },
+  }
+})

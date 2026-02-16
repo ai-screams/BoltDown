@@ -1,9 +1,10 @@
 import { useCallback } from 'react'
 
 import { useEditorStore } from '@/stores/editorStore'
-import { useTabStore } from '@/stores/tabStore'
+import { getActiveTabSnapshot } from '@/stores/tabStore'
 import { md } from '@/utils/markdownConfig'
-import { isTauri } from '@/utils/tauri'
+import { escapeHtml } from '@/utils/markdownText'
+import { invokeTauri, isTauri } from '@/utils/tauri'
 
 function buildStandaloneHtml(html: string, title: string): string {
   return `<!DOCTYPE html>
@@ -11,7 +12,7 @@ function buildStandaloneHtml(html: string, title: string): string {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${title}</title>
+<title>${escapeHtml(title)}</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.25/dist/katex.min.css">
 <style>
   body {
@@ -47,8 +48,7 @@ ${html}
 }
 
 function getActiveTab() {
-  const { tabs, activeTabId } = useTabStore.getState()
-  return tabs.find(t => t.id === activeTabId)
+  return getActiveTabSnapshot().tab
 }
 
 export function useExport() {
@@ -60,26 +60,30 @@ export function useExport() {
     const title = tab.fileName.replace(/\.[^.]+$/, '')
     const fullHtml = buildStandaloneHtml(html, title)
 
-    if (isTauri()) {
-      const { save } = await import('@tauri-apps/plugin-dialog')
-      const { invoke } = await import('@tauri-apps/api/core')
-      const path = await save({
-        filters: [{ name: 'HTML', extensions: ['html'] }],
-        defaultPath: `${title}.html`,
-      })
-      if (path) {
-        await invoke('write_file', { path, content: fullHtml })
+    try {
+      if (isTauri()) {
+        const { save } = await import('@tauri-apps/plugin-dialog')
+        const path = await save({
+          filters: [{ name: 'HTML', extensions: ['html'] }],
+          defaultPath: `${title}.html`,
+        })
+        if (path) {
+          await invokeTauri('write_file', { path, content: fullHtml })
+          useEditorStore.getState().flashStatus('Exported HTML')
+        }
+      } else {
+        const blob = new Blob([fullHtml], { type: 'text/html' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${title}.html`
+        a.click()
+        URL.revokeObjectURL(url)
         useEditorStore.getState().flashStatus('Exported HTML')
       }
-    } else {
-      const blob = new Blob([fullHtml], { type: 'text/html' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${title}.html`
-      a.click()
-      URL.revokeObjectURL(url)
-      useEditorStore.getState().flashStatus('Exported HTML')
+    } catch (e) {
+      console.error('Export HTML failed:', e)
+      useEditorStore.getState().flashStatus('Export failed', 3000)
     }
   }, [])
 
@@ -102,9 +106,15 @@ export function useExport() {
       useEditorStore.getState().flashStatus('Copied HTML')
       return true
     } catch {
-      await navigator.clipboard.writeText(tab.content)
-      useEditorStore.getState().flashStatus('Copied as text')
-      return false
+      try {
+        await navigator.clipboard.writeText(tab.content)
+        useEditorStore.getState().flashStatus('Copied as text')
+        return false
+      } catch (e) {
+        console.error('Copy HTML failed:', e)
+        useEditorStore.getState().flashStatus('Copy failed', 3000)
+        return false
+      }
     }
   }, [])
 

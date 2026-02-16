@@ -2,11 +2,14 @@ import { create } from 'zustand'
 
 import type { FileTreeNode, RecentFile, SidebarTab } from '@/types/sidebar'
 import { loadDirectoryEntries } from '@/utils/directoryLoader'
+import { getDirectoryPath } from '@/utils/imagePath'
 
 const STORAGE_KEY_WIDTH = 'boltdown-sidebar-width'
 const STORAGE_KEY_RECENT = 'boltdown-recent-files'
 const MAX_RECENT = 20
 const DEFAULT_WIDTH = 240
+const MIN_WIDTH = 180
+const MAX_WIDTH = 480
 
 const loadRecentFiles = (): RecentFile[] => {
   try {
@@ -21,7 +24,8 @@ const loadWidth = (): number => {
   const raw = localStorage.getItem(STORAGE_KEY_WIDTH)
   if (!raw) return DEFAULT_WIDTH
   const parsed = parseInt(raw, 10)
-  return Number.isNaN(parsed) ? DEFAULT_WIDTH : parsed
+  if (Number.isNaN(parsed)) return DEFAULT_WIDTH
+  return Math.max(MIN_WIDTH, Math.min(parsed, MAX_WIDTH))
 }
 
 const updateChildren = (
@@ -41,7 +45,11 @@ let widthWriteTimer: ReturnType<typeof setTimeout> | null = null
 function debouncedSaveWidth(width: number) {
   if (widthWriteTimer) clearTimeout(widthWriteTimer)
   widthWriteTimer = setTimeout(() => {
-    localStorage.setItem(STORAGE_KEY_WIDTH, String(width))
+    try {
+      localStorage.setItem(STORAGE_KEY_WIDTH, String(width))
+    } catch {
+      // Ignore storage errors (private mode/quota exceeded)
+    }
   }, 300)
 }
 
@@ -78,8 +86,9 @@ export const useSidebarStore = create<SidebarState>((set, get) => ({
   toggle: () => set(s => ({ isOpen: !s.isOpen })),
   setOpen: open => set({ isOpen: open }),
   setWidth: width => {
-    debouncedSaveWidth(width)
-    set({ width })
+    const clamped = Math.max(MIN_WIDTH, Math.min(width, MAX_WIDTH))
+    debouncedSaveWidth(clamped)
+    set({ width: clamped })
   },
   setResizing: resizing => set({ isResizing: resizing }),
   setActiveTab: tab => set({ activeTab: tab }),
@@ -90,11 +99,15 @@ export const useSidebarStore = create<SidebarState>((set, get) => ({
   addRecentFile: (path, name) => {
     const filtered = get().recentFiles.filter(f => f.path !== path)
     const updated = [{ path, name, openedAt: Date.now() }, ...filtered].slice(0, MAX_RECENT)
-    localStorage.setItem(STORAGE_KEY_RECENT, JSON.stringify(updated))
+    try {
+      localStorage.setItem(STORAGE_KEY_RECENT, JSON.stringify(updated))
+    } catch {
+      // Ignore storage errors (private mode/quota exceeded)
+    }
     set({ recentFiles: updated })
   },
   loadParentDirectory: async (filePath, openSidebar = false) => {
-    const dir = filePath.slice(0, filePath.lastIndexOf('/'))
+    const dir = getDirectoryPath(filePath)
     if (!dir) return
     const { rootPath } = get()
     if (rootPath !== dir) {

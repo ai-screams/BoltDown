@@ -49,7 +49,7 @@ export const useFindReplaceStore = create<FindReplaceState>()(
     }),
     {
       name: 'find-replace-preferences',
-      partialize: state => ({
+      partialize: (state): Pick<FindReplaceState, 'caseSensitive' | 'useRegex' | 'wholeWord'> => ({
         caseSensitive: state.caseSensitive,
         useRegex: state.useRegex,
         wholeWord: state.wholeWord,
