@@ -128,7 +128,7 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
           >
             <button
               type="button"
-              aria-label="Duplicate file"
+              aria-label="Duplicate"
               onClick={handleDuplicate}
               className="rounded p-0.5 hover:bg-gray-200 dark:hover:bg-gray-700"
               title="Duplicate file"
@@ -137,7 +137,7 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
             </button>
             <button
               type="button"
-              aria-label="Delete file"
+              aria-label="Delete"
               onClick={handleDelete}
               className="rounded p-0.5 hover:bg-gray-200 dark:hover:bg-gray-700"
               title="Delete file"

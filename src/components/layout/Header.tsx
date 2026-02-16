@@ -14,10 +14,9 @@ import {
   Sun,
   Zap,
 } from 'lucide-react'
-import { memo, useCallback, useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useExport } from '@/hooks/useExport'
-import { useFileSystem } from '@/hooks/useFileSystem'
 import { useEditorStore } from '@/stores/editorStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import type { EditorMode } from '@/types/editor'
@@ -34,10 +33,14 @@ const themeIcon = { light: Sun, dark: Moon, system: Monitor }
 const themeLabel = { light: 'Light', dark: 'Dark', system: 'System' }
 const EXPORT_MENU_ID = 'header-export-menu'
 
-export default memo(function Header() {
+interface HeaderProps {
+  onOpenFile: () => void
+  onSaveFile: () => void
+}
+
+export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
   const mode = useEditorStore(s => s.mode)
   const setMode = useEditorStore(s => s.setMode)
-  const { openFile, saveFile } = useFileSystem()
   const themeMode = useSettingsStore(s => s.settings.theme.mode)
   const updateTheme = useSettingsStore(s => s.updateTheme)
   const { exportHtml, exportPdf, copyHtml } = useExport()
@@ -56,35 +59,33 @@ export default memo(function Header() {
   const [exportOpen, setExportOpen] = useState(false)
   const exportRef = useRef<HTMLDivElement>(null)
 
-  const exportActions: {
-    key: string
-    icon: typeof FileText
-    label: string
-    run: () => void
-  }[] = [
-    {
-      key: 'export-html',
-      icon: FileText,
-      label: 'Export HTML',
-      run: () => {
-        void exportHtml()
+  const exportActions = useMemo(
+    () => [
+      {
+        key: 'export-html',
+        icon: FileText,
+        label: 'Export HTML',
+        run: () => {
+          void exportHtml()
+        },
       },
-    },
-    {
-      key: 'export-pdf',
-      icon: Printer,
-      label: 'Print / PDF',
-      run: exportPdf,
-    },
-    {
-      key: 'copy-html',
-      icon: Clipboard,
-      label: 'Copy HTML',
-      run: () => {
-        void copyHtml()
+      {
+        key: 'export-pdf',
+        icon: Printer,
+        label: 'Print / PDF',
+        run: exportPdf,
       },
-    },
-  ]
+      {
+        key: 'copy-html',
+        icon: Clipboard,
+        label: 'Copy HTML',
+        run: () => {
+          void copyHtml()
+        },
+      },
+    ],
+    [exportHtml, exportPdf, copyHtml]
+  )
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -104,18 +105,8 @@ export default memo(function Header() {
         <Zap className="h-5 w-5 text-electric-yellow" fill="currentColor" />
         <span className="text-sm font-semibold text-gray-900 dark:text-white">BoltDown</span>
         <div className="ml-2 flex items-center gap-0.5">
-          <IconButton
-            icon={FolderOpen}
-            label="Open file"
-            shortcut="Cmd+O"
-            onClick={() => void openFile()}
-          />
-          <IconButton
-            icon={Save}
-            label="Save file"
-            shortcut="Cmd+S"
-            onClick={() => void saveFile()}
-          />
+          <IconButton icon={FolderOpen} label="Open file" shortcut="Cmd+O" onClick={onOpenFile} />
+          <IconButton icon={Save} label="Save file" shortcut="Cmd+S" onClick={onSaveFile} />
 
           <div className="relative" ref={exportRef}>
             <button

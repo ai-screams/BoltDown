@@ -1,15 +1,16 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 
 import { EditorViewProvider } from '@/contexts/EditorViewContext'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useFileSystem } from '@/hooks/useFileSystem'
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { useEditorStore } from '@/stores/editorStore'
-import { useFindReplaceStore } from '@/stores/findReplaceStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useSidebarStore } from '@/stores/sidebarStore'
 import { useTabStore } from '@/stores/tabStore'
-import type { EditorMode } from '@/types/editor'
 import { invokeTauri } from '@/utils/tauri'
+import { ErrorBoundary } from '@components/common/ErrorBoundary'
 import EditorToolbar from '@components/editor/EditorToolbar'
 import MarkdownEditor from '@components/editor/MarkdownEditor'
 import TabBar from '@components/editor/TabBar'
@@ -25,23 +26,35 @@ import Sidebar from '@components/sidebar/Sidebar'
 // Stable slot elements — never recreated on App re-render
 const tabBar = <TabBar />
 const toolbar = <EditorToolbar />
-const editor = <MarkdownEditor />
-const preview = <MarkdownPreview />
+const editor = (
+  <ErrorBoundary>
+    <MarkdownEditor />
+  </ErrorBoundary>
+)
+const preview = (
+  <ErrorBoundary>
+    <MarkdownPreview />
+  </ErrorBoundary>
+)
 
 function App() {
-  const mode = useEditorStore(s => s.mode)
-  const setMode = useEditorStore(s => s.setMode)
   const { openFile, saveFile, saveFileAs } = useFileSystem()
   useAutoSave()
-  const sidebarOpen = useSidebarStore(s => s.isOpen)
-  const sidebarResizing = useSidebarStore(s => s.isResizing)
-  const toggleSidebar = useSidebarStore(s => s.toggle)
+  const { isOpen: sidebarOpen, isResizing: sidebarResizing } = useSidebarStore(
+    useShallow(s => ({ isOpen: s.isOpen, isResizing: s.isResizing }))
+  )
   const addRecentFile = useSidebarStore(s => s.addRecentFile)
   const openTab = useTabStore(s => s.openTab)
-  const openFindReplace = useFindReplaceStore(s => s.open)
-  const findReplaceOpen = useFindReplaceStore(s => s.isOpen)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const settingsOpenRef = useRef(settingsOpen)
   const loadSettings = useSettingsStore(s => s.loadSettings)
+
+  // Sync settingsOpenRef with settingsOpen state
+  settingsOpenRef.current = settingsOpen
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({ openFile, saveFile, saveFileAs, settingsOpenRef, setSettingsOpen })
+
   const handleSettingsClose = useCallback(() => {
     setSettingsOpen(false)
   }, [])
@@ -76,117 +89,20 @@ function App() {
     [openTab, addRecentFile]
   )
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target
-      const isCodeMirrorTarget =
-        target instanceof HTMLElement && !!target.closest('.cm-editor, .cm-panels')
-      if (
-        target instanceof HTMLElement &&
-        !isCodeMirrorTarget &&
-        (target.isContentEditable ||
-          target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.tagName === 'SELECT')
-      ) {
-        return
-      }
-
-      const mod = e.metaKey || e.ctrlKey
-
-      // Escape exits zen mode (skip if any modal is open)
-      if (
-        mode === 'zen' &&
-        e.key === 'Escape' &&
-        !mod &&
-        !e.shiftKey &&
-        !findReplaceOpen &&
-        !settingsOpen
-      ) {
-        e.preventDefault()
-        setMode('source')
-        return
-      }
-
-      if (mod && e.shiftKey && e.key === 'e') {
-        e.preventDefault()
-        toggleSidebar()
-        return
-      }
-
-      if (mod && e.key === 'n') {
-        e.preventDefault()
-        openTab(null, 'Untitled.md', '')
-        return
-      }
-
-      if (mod && e.key === '\\') {
-        e.preventDefault()
-        const cycle: EditorMode[] = ['split', 'source', 'zen']
-        const idx = cycle.indexOf(mode)
-        setMode(cycle[(idx + 1) % cycle.length]!)
-        return
-      }
-
-      if (mod && e.key === 'o') {
-        e.preventDefault()
-        void openFile()
-        return
-      }
-
-      if (mod && !e.shiftKey && e.key === 's') {
-        e.preventDefault()
-        void saveFile()
-        return
-      }
-
-      if (mod && e.shiftKey && e.key === 's') {
-        e.preventDefault()
-        void saveFileAs()
-        return
-      }
-
-      if (mod && e.key === ',') {
-        e.preventDefault()
-        setSettingsOpen(prev => !prev)
-        return
-      }
-
-      if (mod && !e.shiftKey && e.key === 'f') {
-        e.preventDefault()
-        openFindReplace(false)
-        return
-      }
-
-      if (mod && !e.shiftKey && e.key === 'h') {
-        e.preventDefault()
-        openFindReplace(true)
-        return
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [
-    mode,
-    setMode,
-    openFile,
-    saveFile,
-    saveFileAs,
-    toggleSidebar,
-    openTab,
-    openFindReplace,
-    findReplaceOpen,
-    settingsOpen,
-  ])
+  const mode = useEditorStore(s => s.mode)
 
   return (
     <EditorViewProvider>
       <div className="flex h-screen flex-col overflow-hidden bg-gray-50 dark:bg-gray-900">
         <div className={mode === 'zen' ? 'zen-slide-up' : 'zen-slide-down'}>
-          <Header />
+          <Header onOpenFile={() => void openFile()} onSaveFile={() => void saveFile()} />
         </div>
         <div className="flex min-h-0 flex-1 overflow-hidden">
-          {mode !== 'zen' && <Sidebar onFileOpen={handleFileOpen} />}
+          {mode !== 'zen' && (
+            <ErrorBoundary>
+              <Sidebar onFileOpen={handleFileOpen} />
+            </ErrorBoundary>
+          )}
           {mode !== 'zen' && sidebarOpen && <ResizeHandle />}
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <div className={mode === 'zen' ? 'zen-slide-up' : 'zen-slide-down'}>{tabBar}</div>

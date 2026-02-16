@@ -52,6 +52,9 @@ export default memo(function ResizeHandle() {
 
   return (
     <div
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Resize sidebar"
       onMouseDown={handleMouseDown}
       onDoubleClick={handleDoubleClick}
       className={`group relative flex-none cursor-col-resize transition-all duration-150 ${

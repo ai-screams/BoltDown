@@ -1,13 +1,16 @@
 import { clsx } from 'clsx'
 import { FileText, PanelLeft, Plus, X } from 'lucide-react'
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 
+import { useEditorStore } from '@/stores/editorStore'
 import { useSidebarStore } from '@/stores/sidebarStore'
 import { useTabStore } from '@/stores/tabStore'
 
 export default memo(function TabBar() {
-  const tabs = useTabStore(s => s.tabs)
-  const activeTabId = useTabStore(s => s.activeTabId)
+  const { tabs, activeTabId } = useTabStore(
+    useShallow(s => ({ tabs: s.tabs, activeTabId: s.activeTabId }))
+  )
   const setActiveTab = useTabStore(s => s.setActiveTab)
   const closeTab = useTabStore(s => s.closeTab)
   const openTab = useTabStore(s => s.openTab)
@@ -58,6 +61,7 @@ export default memo(function TabBar() {
           renameTab(tabId, newFileName, newPath)
         } catch (e) {
           console.warn('Failed to rename file:', e)
+          useEditorStore.getState().flashStatus('Rename failed', 3000)
         }
       } else {
         renameTab(tabId, newFileName, null)

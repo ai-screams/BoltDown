@@ -21,11 +21,15 @@ const loadRecentFiles = (): RecentFile[] => {
 }
 
 const loadWidth = (): number => {
-  const raw = localStorage.getItem(STORAGE_KEY_WIDTH)
-  if (!raw) return DEFAULT_WIDTH
-  const parsed = parseInt(raw, 10)
-  if (Number.isNaN(parsed)) return DEFAULT_WIDTH
-  return Math.max(MIN_WIDTH, Math.min(parsed, MAX_WIDTH))
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_WIDTH)
+    if (!raw) return DEFAULT_WIDTH
+    const parsed = parseInt(raw, 10)
+    if (Number.isNaN(parsed)) return DEFAULT_WIDTH
+    return Math.max(MIN_WIDTH, Math.min(parsed, MAX_WIDTH))
+  } catch {
+    return DEFAULT_WIDTH
+  }
 }
 
 const updateChildren = (

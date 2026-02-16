@@ -1,26 +1,12 @@
 import { clsx } from 'clsx'
-import { memo, useMemo } from 'react'
+import { memo } from 'react'
 
+import { useDocumentStats } from '@/hooks/useDocumentStats'
 import { useEditorStore } from '@/stores/editorStore'
-import { useTabStore } from '@/stores/tabStore'
-
-function useActiveContent() {
-  return useTabStore(s => {
-    const tab = s.tabs.find(t => t.id === s.activeTabId)
-    const content = tab?.content ?? ''
-    return content
-  })
-}
 
 export default memo(function Footer({ className }: { className?: string }) {
-  const content = useActiveContent()
-  const { charCount, wordCount, lineCount } = useMemo(() => {
-    const charCount = content.length
-    const wordCount = content.split(/\s+/).filter(Boolean).length
-    const lineCount = content.split('\n').length
-    return { charCount, wordCount, lineCount }
-  }, [content])
-  const readingTime = Math.max(1, Math.ceil(wordCount / 225))
+  const stats = useDocumentStats()
+  const readingTime = Math.max(1, Math.ceil(stats.words / 225))
   const statusText = useEditorStore(s => s.statusText)
 
   return (
@@ -32,8 +18,8 @@ export default memo(function Footer({ className }: { className?: string }) {
     >
       <span className="text-xs text-thunder-gray">{statusText || 'Ready'}</span>
       <span className="text-xs tabular-nums text-thunder-gray">
-        {wordCount.toLocaleString()} words · {readingTime} min read · {lineCount.toLocaleString()}{' '}
-        lines · {charCount.toLocaleString()} chars
+        {stats.words.toLocaleString()} words · {readingTime} min read ·{' '}
+        {stats.lines.toLocaleString()} lines · {stats.chars.toLocaleString()} chars
       </span>
     </footer>
   )

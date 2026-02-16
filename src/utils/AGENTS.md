@@ -13,6 +13,8 @@ Pure utility functions and configured library instances shared across the fronte
 - `directoryLoader.ts` — Bridges Tauri IPC `list_directory` command to `FileTreeNode[]` format. Exports `loadDirectoryEntries(dirPath)`. Used by both Sidebar.tsx and FileTree.tsx (DRY extraction).
 - `settingsStorage.ts` — Dual-path settings persistence: Tauri IPC (`read_settings`/`write_settings` via appDataDir) or localStorage (`boltdown-settings` key). Exports `loadSettingsFromStorage()` → `Partial<AppSettings> | null`, `saveSettingsToStorage(settings)` → `Promise<void>`. Uses dynamic `import('@tauri-apps/api/core')` matching App.tsx pattern.
 - `tocPlugin.ts` — Custom markdown-it plugin for Table of Contents generation. Recognizes `[toc]` marker (case-insensitive), generates slug-based heading IDs with `-N` suffix for duplicates, two-pass rendering (collects headings, then injects TOC HTML). Exports `tocPlugin(md)` function.
+- `imagePath.ts` — Image path resolution utilities. Exports `resolveImageSrcForDisplay(url, filePath)` — resolves relative/absolute/web image URLs for display in both preview and Zen mode. Handles `file://` URLs via `fromFileUrl()`, POSIX path normalization via `toPosixPath()`, relative path resolution against document directory. Also exports: `isWebUrl`, `isAbsoluteFilePath`, `normalizeMarkdownUrl`, `joinPath`, `getDirectoryPath`, `safeDecodeUri`, `toFileUrl`, `resolveRelativePath`.
+- `markdownText.ts` — Shared markdown text processing. Exports `escapeHtml(str)` for safe HTML entity escaping and `stripInlineMarkdown(text)` for removing markdown formatting (bold, italic, code, links, strikethrough) from heading text. Extracted from inline usage for DRY reuse across outline/preview/export.
 
 ## For AI Agents
 
@@ -24,3 +26,5 @@ Pure utility functions and configured library instances shared across the fronte
 - `directoryLoader.ts` was extracted to eliminate duplicate directory loading code in Sidebar and FileTree
 - `isTauri()` enables graceful degradation — app can run in browser without Tauri
 - `settingsStorage.ts` follows the same `isTauri()` detection pattern as other Tauri-dependent code
+- `imagePath.ts` is used by both wysiwyg.ts (Zen mode image rendering) and MarkdownPreview.tsx (split mode)
+- `markdownText.ts` is used by `useOutline.ts` (heading text extraction) and `useExport.ts`
