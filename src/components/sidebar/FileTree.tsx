@@ -1,9 +1,15 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { Tree, type TreeApi } from 'react-arborist'
 
+import { STATUS_TIMEOUT_MS } from '@/constants/feedback'
+import { FILE_POLICY } from '@/constants/file'
+import { useEditorStore } from '@/stores/editorStore'
 import { useSidebarStore } from '@/stores/sidebarStore'
+import { useTabStore } from '@/stores/tabStore'
 import type { FileTreeNode } from '@/types/sidebar'
 import { loadDirectoryEntries } from '@/utils/directoryLoader'
+import { getDirectoryPath, joinPath } from '@/utils/imagePath'
+import { invokeTauri, isTauri } from '@/utils/tauri'
 
 import FileTreeNodeComponent from './FileTreeNode'
 
@@ -11,18 +17,26 @@ interface FileTreeProps {
   onFileOpen: (path: string, name: string) => void
 }
 
+function getFileName(path: string): string {
+  return path.split(/[/\\]/).pop() ?? path
+}
+
 export default memo(function FileTree({ onFileOpen }: FileTreeProps) {
   const treeData = useSidebarStore(s => s.treeData)
+  const setTreeData = useSidebarStore(s => s.setTreeData)
+  const rootPath = useSidebarStore(s => s.rootPath)
   const width = useSidebarStore(s => s.width)
   const updateNodeChildren = useSidebarStore(s => s.updateNodeChildren)
 
   const treeRef = useRef<TreeApi<FileTreeNode>>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const [containerHeight, setContainerHeight] = useState(400)
+  const [containerHeight, setContainerHeight] = useState(0)
 
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
+    // Measure immediately to avoid flash of incorrect height
+    setContainerHeight(el.clientHeight)
     const observer = new ResizeObserver(entries => {
       const entry = entries[0]
       if (entry) setContainerHeight(entry.contentRect.height)
@@ -56,9 +70,102 @@ export default memo(function FileTree({ onFileOpen }: FileTreeProps) {
     [onFileOpen]
   )
 
+  const refreshTree = useCallback(async () => {
+    if (!rootPath) return
+    try {
+      const entries = await loadDirectoryEntries(rootPath)
+      setTreeData(entries)
+    } catch (e) {
+      console.error('Failed to refresh tree:', e)
+    }
+  }, [rootPath, setTreeData])
+
+  const deleteFile = useCallback(
+    async (path: string) => {
+      if (!isTauri()) return
+      try {
+        const { ask } = await import('@tauri-apps/plugin-dialog')
+        const fileName = getFileName(path)
+        const confirmed = await ask(`Delete "${fileName}"? This cannot be undone.`, {
+          title: 'Delete File',
+          kind: 'warning',
+        })
+        if (!confirmed) return
+
+        await invokeTauri('delete_file', { path })
+
+        // Close tab if open
+        const { tabs, closeTab } = useTabStore.getState()
+        const tab = tabs.find(t => t.filePath === path)
+        if (tab) closeTab(tab.id)
+
+        // Refresh tree
+        await refreshTree()
+
+        useEditorStore.getState().flashStatus('File deleted')
+      } catch (e) {
+        useEditorStore.getState().flashStatus(`Delete failed: ${e}`)
+      }
+    },
+    [refreshTree]
+  )
+
+  const duplicateFile = useCallback(
+    async (path: string) => {
+      if (!isTauri()) return
+      try {
+        // Generate copy name: "file.md" → "file (copy).md"
+        const dir = getDirectoryPath(path)
+        const fullName = getFileName(path)
+        const dotIdx = fullName.lastIndexOf('.')
+        const name = dotIdx > 0 ? fullName.slice(0, dotIdx) : fullName
+        const ext = dotIdx > 0 ? fullName.slice(dotIdx) : ''
+
+        // Find available name
+        let copyName = `${name} (copy)${ext}`
+        let copyPath = joinPath(dir, copyName)
+        let nextCopyIndex = 2
+        let available = false
+        for (let attempt = 0; attempt < FILE_POLICY.maxCopyAttempts; attempt++) {
+          try {
+            await invokeTauri<string>('read_file', { path: copyPath })
+            // File exists, try next
+            copyName = `${name} (copy ${nextCopyIndex})${ext}`
+            copyPath = joinPath(dir, copyName)
+            nextCopyIndex += 1
+          } catch {
+            available = true
+            break // File doesn't exist, use this name
+          }
+        }
+
+        if (!available) {
+          useEditorStore
+            .getState()
+            .flashStatus('Duplicate failed: too many copies', STATUS_TIMEOUT_MS.warning)
+          return
+        }
+
+        await invokeTauri('copy_file', { srcPath: path, destPath: copyPath })
+
+        // Read and open the copy in a new tab
+        const content = await invokeTauri<string>('read_file', { path: copyPath })
+        useTabStore.getState().openTab(copyPath, copyName, content)
+
+        // Refresh tree
+        await refreshTree()
+
+        useEditorStore.getState().flashStatus('File duplicated')
+      } catch (e) {
+        useEditorStore.getState().flashStatus(`Duplicate failed: ${e}`)
+      }
+    },
+    [refreshTree]
+  )
+
   if (treeData.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center p-4 text-xs text-gray-400">
+      <div className="flex flex-1 items-center justify-center p-4 text-xs text-fg-muted">
         No folder open
       </div>
     )
@@ -66,23 +173,27 @@ export default memo(function FileTree({ onFileOpen }: FileTreeProps) {
 
   return (
     <div ref={containerRef} className="flex-1 overflow-hidden">
-      <Tree<FileTreeNode>
-        ref={treeRef}
-        data={treeData}
-        openByDefault={false}
-        width={width - 16}
-        height={containerHeight}
-        rowHeight={28}
-        indent={16}
-        overscanCount={5}
-        disableDrag
-        disableDrop
-        disableEdit
-        onToggle={handleToggle}
-        onActivate={handleActivate}
-      >
-        {FileTreeNodeComponent}
-      </Tree>
+      {containerHeight > 0 && (
+        <Tree<FileTreeNode>
+          ref={treeRef}
+          data={treeData}
+          height={containerHeight}
+          indent={16}
+          openByDefault={false}
+          overscanCount={5}
+          rowHeight={28}
+          width={width - 16}
+          disableDrag
+          disableDrop
+          disableEdit
+          onActivate={handleActivate}
+          onToggle={handleToggle}
+        >
+          {props => (
+            <FileTreeNodeComponent {...props} onDelete={deleteFile} onDuplicate={duplicateFile} />
+          )}
+        </Tree>
+      )}
     </div>
   )
 })

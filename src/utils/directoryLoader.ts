@@ -1,5 +1,5 @@
 import type { FileTreeNode } from '@/types/sidebar'
-import { isTauri } from '@/utils/tauri'
+import { invokeTauri, isTauri } from '@/utils/tauri'
 
 interface RawFileEntry {
   name: string
@@ -21,7 +21,6 @@ function toTreeNodes(entries: RawFileEntry[]): FileTreeNode[] {
 
 export async function loadDirectoryEntries(dirPath: string): Promise<FileTreeNode[]> {
   if (!isTauri()) return []
-  const { invoke } = await import('@tauri-apps/api/core')
-  const entries = await invoke<RawFileEntry[]>('list_directory', { path: dirPath })
+  const entries = await invokeTauri<RawFileEntry[]>('list_directory', { path: dirPath })
   return toTreeNodes(entries)
 }

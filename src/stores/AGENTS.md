@@ -4,13 +4,15 @@
 
 ## Purpose
 
-Three independent Zustand stores following SRP. Each store manages a distinct domain of application state.
+Five independent Zustand stores following SRP. Each store manages a distinct domain of application state.
 
 ## Key Files
 
 - `editorStore.ts` — Editor view mode (`'split' | 'source' | 'zen'`) and transient status messages. Exports `useEditorStore` with `mode`, `setMode`, `statusText`, and `flashStatus(text, ms)`.
 - `tabStore.ts` — Multi-tab document state. Manages `Tab[]`, `activeTabId`. Methods: `openTab`, `closeTab`, `closeOtherTabs`, `setActiveTab`, `updateContent`, `markClean`. Tab IDs are UUIDs.
-- `sidebarStore.ts` — Sidebar UI state (open/close, width, file tree data, recent files). Persists width to localStorage with 300ms debounce. Max 20 recent files. Exports `useSidebarStore`.
+- `sidebarStore.ts` — Sidebar UI state (open/close, width, isResizing, file tree data, recent files). Persists width to localStorage with 300ms debounce. Max 20 recent files. Exports `useSidebarStore` with `setResizing(boolean)` for cross-component drag coordination.
+- `settingsStore.ts` — Application settings state (theme, editor, preview, general). Persists to Tauri appDataDir or localStorage with 500ms debounce. Module-level helpers: `debouncedSave`, `getSystemTheme`, `applyTheme`, `mergeWithDefaults`. Migrates legacy `boltdown-theme` key. Has `matchMedia` listener guard. Exports `useSettingsStore`.
+- `findReplaceStore.ts` — Find & Replace UI state (isOpen, showReplace, searchText, replaceText, caseSensitive, useRegex, wholeWord). Persists search preferences (not text) via Zustand persist middleware. Input length limits: 1000 chars (search), 10000 chars (replace). Exports `useFindReplaceStore`.
 
 ## For AI Agents
 
@@ -20,6 +22,12 @@ Three independent Zustand stores following SRP. Each store manages a distinct do
 // ✅ Primitive return — Object.is equality works
 const mode = useEditorStore(s => s.mode)
 const activeTabId = useTabStore(s => s.activeTabId)
+
+// ✅ Good in high-frequency UI (Footer/status): derive primitives without custom equality callback
+const lineCount = useTabStore(s => {
+  const tab = s.tabs.find(t => t.id === s.activeTabId)
+  return (tab?.content ?? '').split('\n').length
+})
 
 // ❌ Object return — re-renders every time
 const { mode, fileName } = useEditorStore(s => ({ mode: s.mode, fileName: s.fileName }))
@@ -42,6 +50,8 @@ const tab = tabs.find(t => t.id === activeTabId) // in closure
 
 ## Dependencies
 
-- `tabStore` is consumed by: MarkdownEditor, TabBar, Header, Footer, App, useFileSystem, useExport
-- `editorStore` is consumed by: MarkdownEditor, Header, MainLayout, App
-- `sidebarStore` is consumed by: Sidebar, TabBar, ResizeHandle, App
+- `tabStore` is consumed by: MarkdownEditor, TabBar, Header, Footer, App, useFileSystem, useExport, useAutoSave
+- `editorStore` is consumed by: MarkdownEditor, Header, MainLayout, App, FileTree, Footer, useAutoSave, useExport, useFileSystem
+- `sidebarStore` is consumed by: Sidebar, TabBar, ResizeHandle, MainLayout, App
+- `settingsStore` is consumed by: App, Header, MarkdownEditor, MarkdownPreview, SettingsModal, useAutoSave
+- `findReplaceStore` is consumed by: App, FindReplaceModal

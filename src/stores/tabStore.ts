@@ -1,6 +1,12 @@
 import { create } from 'zustand'
 
+import { FILE_DEFAULTS } from '@/constants/file'
+import { WELCOME_CONTENT } from '@/constants/welcomeContent'
 import type { Tab } from '@/types/editor'
+
+function patchTab(tabs: Tab[], id: string, patch: Partial<Tab>): Tab[] {
+  return tabs.map(tab => (tab.id === id ? { ...tab, ...patch } : tab))
+}
 
 function createTab(filePath: string | null, fileName: string, content: string): Tab {
   return {
@@ -12,74 +18,7 @@ function createTab(filePath: string | null, fileName: string, content: string): 
   }
 }
 
-const welcomeContent = `# Hello BoltDown!
-
-Welcome to **BoltDown** — a lightning-fast Markdown editor.
-
-![Megumin](https://i.namu.wiki/i/p6amZTd-aBuEQAKgB2M9dbWJ9qn3InFEtM-cs9mCXj3uCZhY3pcgK1hk4133lailOBNG6uAnRowJEDqvAwRWJ6j7g7X6BKAeXq3gMH3YvMcbqxQkm7vC48Un11LikEEGo8oj-4U171hb5Q2bZrze9A.webp)
-
-## Text Formatting
-
-**Bold text**, *italic text*, ~~strikethrough~~, and ***bold italic*** combined.
-
-## Links & Images
-
-[Visit GitHub](https://github.com) — click to open a link.
-
-## Lists
-
-- Bullet item one
-- Bullet item two
-  - Nested item
-
-1. Numbered item
-2. Another item
-
-## Blockquote
-
-> "Make Markdown editing as fast as lightning, as light as air."
-
-## Inline Code & Code Block
-
-Use \`inline code\` in a sentence.
-
-\`\`\`typescript
-function greet(name: string): string {
-  return \`Hello, \${name}!\`
-}
-\`\`\`
-
-## Table
-
-| Feature | Shortcut |
-|---------|----------|
-| Open    | Cmd+O    |
-| Save    | Cmd+S    |
-| New Tab | Cmd+N    |
-| Mode    | Cmd+\\\\   |
-
-## Math (KaTeX)
-
-Inline math: $E = mc^2$
-
-$$
-\\\\int_{-\\\\infty}^{\\\\infty} e^{-x^2} dx = \\\\sqrt{\\\\pi}
-$$
-
-## Diagram (Mermaid)
-
-\`\`\`mermaid
-graph LR
-  A[Write] --> B[Preview]
-  B --> C[Export]
-\`\`\`
-
----
-
-*Start writing your own markdown above!*
-`
-
-const initialTab = createTab(null, 'Untitled.md', welcomeContent)
+const initialTab = createTab(null, FILE_DEFAULTS.untitledName, WELCOME_CONTENT)
 
 interface TabState {
   tabs: Tab[]
@@ -91,6 +30,7 @@ interface TabState {
   setActiveTab: (id: string) => void
   updateContent: (id: string, content: string) => void
   markClean: (id: string, content: string) => void
+  renameTab: (id: string, newFileName: string, newFilePath: string | null) => void
 }
 
 export const useTabStore = create<TabState>((set, get) => ({
@@ -114,11 +54,14 @@ export const useTabStore = create<TabState>((set, get) => ({
   closeTab: id => {
     const { tabs, activeTabId } = get()
     if (tabs.length === 1) {
-      const fresh = createTab(null, 'Untitled.md', '')
+      const fresh = createTab(null, FILE_DEFAULTS.untitledName, '')
       set({ tabs: [fresh], activeTabId: fresh.id })
       return
     }
+
     const idx = tabs.findIndex(t => t.id === id)
+    if (idx === -1) return
+
     const remaining = tabs.filter(t => t.id !== id)
     if (activeTabId === id) {
       const newIdx = Math.min(idx, remaining.length - 1)
@@ -129,23 +72,42 @@ export const useTabStore = create<TabState>((set, get) => ({
   },
 
   closeOtherTabs: id => {
-    set(s => ({
-      tabs: s.tabs.filter(t => t.id === id),
-      activeTabId: id,
-    }))
+    set(s => {
+      const hasTarget = s.tabs.some(tab => tab.id === id)
+      if (!hasTarget) return s
+
+      return {
+        tabs: s.tabs.filter(tab => tab.id === id),
+        activeTabId: id,
+      }
+    })
   },
 
   setActiveTab: id => set({ activeTabId: id }),
 
   updateContent: (id, content) => {
     set(s => ({
-      tabs: s.tabs.map(t => (t.id === id ? { ...t, content } : t)),
+      tabs: patchTab(s.tabs, id, { content }),
     }))
   },
 
   markClean: (id, content) => {
     set(s => ({
-      tabs: s.tabs.map(t => (t.id === id ? { ...t, savedContent: content } : t)),
+      tabs: patchTab(s.tabs, id, { savedContent: content }),
+    }))
+  },
+
+  renameTab: (id, newFileName, newFilePath) => {
+    set(s => ({
+      tabs: patchTab(s.tabs, id, { fileName: newFileName, filePath: newFilePath }),
     }))
   },
 }))
+
+export function getActiveTabSnapshot(): { tab: Tab | undefined; activeTabId: string } {
+  const { tabs, activeTabId } = useTabStore.getState()
+  return {
+    tab: tabs.find(tab => tab.id === activeTabId),
+    activeTabId,
+  }
+}

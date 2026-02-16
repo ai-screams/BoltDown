@@ -121,7 +121,7 @@ export default memo(function EditorToolbar() {
   }
 
   return (
-    <div className="flex h-9 items-center gap-0.5 border-b border-gray-200 bg-gray-50 px-2 dark:border-gray-700 dark:bg-gray-800/50">
+    <div className="flex h-9 flex-none items-center gap-0.5 border-b border-line bg-surface-canvas px-2">
       <IconButton
         icon={Bold}
         label="Bold"
@@ -140,7 +140,7 @@ export default memo(function EditorToolbar() {
         onClick={() => exec(v => toggleWrap(v, '~~', '~~'))}
       />
 
-      <div className="mx-1 h-4 w-px bg-gray-200 dark:bg-gray-700" />
+      <div className="mx-1 h-4 w-px bg-line" />
 
       <IconButton
         icon={Heading1}
@@ -158,7 +158,7 @@ export default memo(function EditorToolbar() {
         onClick={() => exec(v => insertAtLineStart(v, '### '))}
       />
 
-      <div className="mx-1 h-4 w-px bg-gray-200 dark:bg-gray-700" />
+      <div className="mx-1 h-4 w-px bg-line" />
 
       <IconButton
         icon={Link}
@@ -171,7 +171,7 @@ export default memo(function EditorToolbar() {
         onClick={() => exec(v => insertBlock(v, '![alt](url)'))}
       />
 
-      <div className="mx-1 h-4 w-px bg-gray-200 dark:bg-gray-700" />
+      <div className="mx-1 h-4 w-px bg-line" />
 
       <IconButton
         icon={Code}
@@ -194,7 +194,7 @@ export default memo(function EditorToolbar() {
         onClick={() => exec(v => insertAtLineStart(v, '> '))}
       />
 
-      <div className="mx-1 h-4 w-px bg-gray-200 dark:bg-gray-700" />
+      <div className="mx-1 h-4 w-px bg-line" />
 
       <IconButton
         icon={List}

@@ -4,6 +4,8 @@ import type StateBlock from 'markdown-it/lib/rules_block/state_block.mjs'
 import type StateInline from 'markdown-it/lib/rules_inline/state_inline.mjs'
 import Prism from 'prismjs'
 
+import { escapeHtml } from '@/utils/markdownText'
+
 import 'katex/dist/katex.min.css'
 import 'prismjs/components/prism-bash'
 import 'prismjs/components/prism-css'
@@ -15,14 +17,6 @@ import 'prismjs/components/prism-python'
 import 'prismjs/components/prism-rust'
 import 'prismjs/components/prism-tsx'
 import 'prismjs/components/prism-typescript'
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
 
 // KaTeX inline math: $...$
 function mathInline(state: StateInline, silent: boolean): boolean {
@@ -113,7 +107,10 @@ md.block.ruler.before('fence', 'math_block', mathBlock, {
 
 md.renderer.rules['math_inline'] = (tokens, idx) => {
   try {
-    return katex.renderToString(tokens[idx]!.content, { throwOnError: false })
+    return katex.renderToString(tokens[idx]!.content, {
+      throwOnError: false,
+      strict: 'ignore',
+    })
   } catch {
     return `<code>${escapeHtml(tokens[idx]!.content)}</code>`
   }
@@ -123,9 +120,14 @@ md.renderer.rules['math_block'] = (tokens, idx) => {
   try {
     return `<div class="katex-block">${katex.renderToString(tokens[idx]!.content, {
       throwOnError: false,
+      strict: 'ignore',
       displayMode: true,
     })}</div>`
   } catch {
     return `<pre><code>${escapeHtml(tokens[idx]!.content)}</code></pre>`
   }
 }
+
+// Register TOC plugin
+import { tocPlugin } from './tocPlugin'
+md.use(tocPlugin)

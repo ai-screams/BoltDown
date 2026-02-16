@@ -8,9 +8,9 @@ React 19 + TypeScript frontend for BoltDown. Contains all UI components, state m
 
 ## Key Files
 
-- `App.tsx` — Root component: keyboard shortcuts (Cmd+O/S/N/\/Shift+E), layout composition, file open handler
+- `App.tsx` — Root component: keyboard shortcuts (Cmd+O/S/N/\\/,/F/H, Shift+Cmd+E), layout composition, file open handler, settings modal, find/replace modal
 - `main.tsx` — React 19 entry point (StrictMode wrapper)
-- `index.css` — Tailwind base + `.prose` preview styles + brand CSS variables + KaTeX CSS import
+- `index.css` — Tailwind base + `.prose` preview styles + brand CSS variables + KaTeX CSS import + CSS custom properties for preview settings + `.cm-searchMatch` / `.cm-searchMatch-selected` highlight styles (electric-yellow theme)
 - `vite-env.d.ts` — Vite type definitions
 
 ## Subdirectories
@@ -37,11 +37,13 @@ React 19 + TypeScript frontend for BoltDown. Contains all UI components, state m
 App
 ├── Header (logo, file ops, mode toggle, theme)
 ├── Sidebar + ResizeHandle
-└── main content
-    ├── TabBar (sidebar toggle, tabs, new tab)
-    └── MainLayout
-        ├── EditorToolbar
-        ├── MarkdownEditor (CM6)
-        └── MarkdownPreview (markdown-it)
-    Footer
+├── SettingsModal (4-category settings: theme, editor, preview, general)
+├── FindReplaceModal (Cmd+F/H, regex/case/whole-word, keyboard nav)
+├── main content
+│   ├── TabBar (sidebar toggle, tabs, new tab)
+│   └── MainLayout
+│       ├── EditorToolbar
+│       ├── MarkdownEditor (CM6)
+│       └── MarkdownPreview (markdown-it)
+└── Footer
 ```

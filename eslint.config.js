@@ -5,6 +5,7 @@ import reactPlugin from 'eslint-plugin-react'
 import reactHooksPlugin from 'eslint-plugin-react-hooks'
 import importPlugin from 'eslint-plugin-import'
 import jsxA11yPlugin from 'eslint-plugin-jsx-a11y'
+import perfectionist from 'eslint-plugin-perfectionist'
 import prettierConfig from 'eslint-config-prettier'
 
 export default [
@@ -72,6 +73,7 @@ export default [
       'react-hooks': reactHooksPlugin,
       import: importPlugin,
       'jsx-a11y': jsxA11yPlugin,
+      perfectionist,
     },
     rules: {
       // TypeScript
@@ -118,6 +120,40 @@ export default [
           allow: ['warn', 'error'],
         },
       ],
+
+      // Keep disabled globally; enable incrementally by scoped overrides below.
+      'no-magic-numbers': 'off',
+      '@typescript-eslint/no-magic-numbers': 'off',
+
+      // JSX Props Sorting
+      'perfectionist/sort-jsx-props': [
+        'error',
+        {
+          type: 'alphabetical',
+          order: 'asc',
+          ignoreCase: true,
+          partitionByNewLine: true,
+          groups: [
+            'key',
+            'ref',
+            'identity',
+            'aria',
+            'className',
+            'unknown',
+            'multiline-prop',
+            'shorthand-prop',
+            'callback',
+          ],
+          customGroups: [
+            { groupName: 'key', elementNamePattern: '^key$' },
+            { groupName: 'ref', elementNamePattern: '^ref$' },
+            { groupName: 'identity', elementNamePattern: '^(id|name|type|role|htmlFor|for)$' },
+            { groupName: 'aria', elementNamePattern: '^aria-.+' },
+            { groupName: 'className', elementNamePattern: '^(className|style)$' },
+            { groupName: 'callback', elementNamePattern: '^on.+' },
+          ],
+        },
+      ],
     },
     settings: {
       react: {
@@ -127,6 +163,35 @@ export default [
         typescript: true,
         node: true,
       },
+    },
+  },
+
+  // Incremental rollout: enforce no-magic-numbers in policy-heavy modules first
+  {
+    files: [
+      'src/stores/**/*.{ts,tsx}',
+      'src/components/findreplace/**/*.{ts,tsx}',
+      'src/hooks/useFileSystem.ts',
+      'src/hooks/useDocumentStats.ts',
+      'src/hooks/useKeyboardShortcuts.ts',
+      'src/utils/settingsStorage.ts',
+    ],
+    rules: {
+      '@typescript-eslint/no-magic-numbers': [
+        'error',
+        {
+          ignore: [-1, 0, 1, 2, 10],
+          ignoreArrayIndexes: true,
+          ignoreDefaultValues: true,
+          ignoreClassFieldInitialValues: true,
+          ignoreEnums: true,
+          ignoreNumericLiteralTypes: true,
+          ignoreReadonlyClassProperties: true,
+          ignoreTypeIndexes: true,
+          enforceConst: true,
+          detectObjects: true,
+        },
+      ],
     },
   },
 

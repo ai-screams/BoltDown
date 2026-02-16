@@ -12,4 +12,10 @@ export interface RecentFile {
   openedAt: number
 }
 
-export type SidebarTab = 'files' | 'recent'
+export type SidebarTab = 'files' | 'recent' | 'outline'
+
+export interface HeadingNode {
+  level: number
+  text: string
+  line: number
+}
