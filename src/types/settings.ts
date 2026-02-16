@@ -1,7 +1,9 @@
 import { SETTINGS_DEFAULTS } from '@/constants/settingsLimits'
+import { DEFAULT_THEME_NAME, THEME_MODES, THEME_PRESETS } from '@/constants/theme'
 
-export type ThemeMode = 'light' | 'dark' | 'system'
-export type ThemeName = 'bolt' | (string & {})
+export type ThemeMode = (typeof THEME_MODES)[number]
+export type BuiltInThemeName = (typeof THEME_PRESETS)[number]['name']
+export type ThemeName = BuiltInThemeName | (string & {})
 export type MermaidSecurityLevel = 'strict' | 'loose'
 
 export type FontFamily = 'jetbrains-mono' | 'fira-code' | 'consolas' | 'system-mono'
@@ -49,7 +51,7 @@ export type SettingsCategory = keyof AppSettings
 
 export const DEFAULT_THEME: ThemeSettings = {
   mode: 'system',
-  name: 'bolt',
+  name: DEFAULT_THEME_NAME,
 }
 
 export const DEFAULT_EDITOR: EditorSettings = {

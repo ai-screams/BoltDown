@@ -16,11 +16,11 @@ import {
 } from 'lucide-react'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import { THEME_MODES } from '@/constants/theme'
 import { useExport } from '@/hooks/useExport'
 import { useEditorStore } from '@/stores/editorStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import type { EditorMode } from '@/types/editor'
-import type { ThemeMode } from '@/types/settings'
 import IconButton from '@components/common/IconButton'
 
 const modes: { mode: EditorMode; icon: typeof Columns2; label: string }[] = [
@@ -46,9 +46,8 @@ export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
   const { exportHtml, exportPdf, copyHtml } = useExport()
 
   const cycleTheme = useCallback(() => {
-    const order: ThemeMode[] = ['light', 'dark', 'system']
-    const idx = order.indexOf(themeMode)
-    updateTheme({ mode: order[(idx + 1) % order.length]! })
+    const idx = THEME_MODES.indexOf(themeMode)
+    updateTheme({ mode: THEME_MODES[(idx + 1) % THEME_MODES.length]! })
   }, [themeMode, updateTheme])
 
   const toggleExportOpen = useCallback(() => {
@@ -176,9 +175,9 @@ export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
 
         <button
           type="button"
-          aria-label={`Theme: ${themeLabel[themeMode]}`}
+          aria-label={`Theme mode: ${themeLabel[themeMode]}`}
           className="rounded p-1.5 text-gray-500 transition-all duration-150 hover:scale-110 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
-          title={`Theme: ${themeLabel[themeMode]}`}
+          title={`Theme mode: ${themeLabel[themeMode]}`}
           onClick={cycleTheme}
         >
           <ThemeIcon className="h-4 w-4" />

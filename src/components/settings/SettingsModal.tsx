@@ -1,5 +1,16 @@
 import { clsx } from 'clsx'
-import { Eye, Keyboard, Monitor, Moon, Palette, RotateCcw, Settings, Sun, X } from 'lucide-react'
+import {
+  Check,
+  Eye,
+  Keyboard,
+  Monitor,
+  Moon,
+  Palette,
+  RotateCcw,
+  Settings,
+  Sun,
+  X,
+} from 'lucide-react'
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 
 import {
@@ -7,6 +18,7 @@ import {
   GENERAL_SETTING_LIMITS,
   PREVIEW_SETTING_LIMITS,
 } from '@/constants/settingsLimits'
+import { THEME_MODES, THEME_PRESETS } from '@/constants/theme'
 import { useSettingsStore } from '@/stores/settingsStore'
 import type {
   FontFamily,
@@ -153,36 +165,101 @@ function NumberInput({
 
 // --- Category panels ---
 
-function ThemePanel() {
+const themeModeMeta: Record<ThemeMode, { icon: typeof Sun; label: string }> = {
+  light: { icon: Sun, label: 'Light' },
+  dark: { icon: Moon, label: 'Dark' },
+  system: { icon: Monitor, label: 'System' },
+}
+
+const ThemeModeControl = memo(function ThemeModeControl() {
   const mode = useSettingsStore(s => s.settings.theme.mode)
   const updateTheme = useSettingsStore(s => s.updateTheme)
 
-  const themes: { value: ThemeMode; icon: typeof Sun; label: string }[] = [
-    { value: 'light', icon: Sun, label: 'Light' },
-    { value: 'dark', icon: Moon, label: 'Dark' },
-    { value: 'system', icon: Monitor, label: 'System' },
-  ]
+  return (
+    <div className="flex rounded-lg border border-gray-200 bg-gray-100 p-0.5 dark:border-gray-600 dark:bg-gray-700">
+      {THEME_MODES.map(value => {
+        const Icon = themeModeMeta[value].icon
+        const label = themeModeMeta[value].label
+
+        return (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={value === mode}
+            className={clsx(
+              'flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95',
+              value === mode
+                ? 'bg-electric-yellow text-deep-blue shadow-sm'
+                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            )}
+            onClick={() => updateTheme({ mode: value })}
+          >
+            <Icon className="h-3.5 w-3.5" />
+            {label}
+          </button>
+        )
+      })}
+    </div>
+  )
+})
+
+const ThemePresetControl = memo(function ThemePresetControl() {
+  const name = useSettingsStore(s => s.settings.theme.name)
+  const updateTheme = useSettingsStore(s => s.updateTheme)
 
   return (
-    <div>
-      <SettingRow description="Choose the application theme" label="Color Theme">
-        <div className="flex rounded-lg border border-gray-200 bg-gray-100 p-0.5 dark:border-gray-600 dark:bg-gray-700">
-          {themes.map(({ value, icon: Icon, label }) => (
-            <button
-              key={value}
-              className={clsx(
-                'flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95',
-                value === mode
-                  ? 'bg-electric-yellow text-deep-blue shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-              )}
-              onClick={() => updateTheme({ mode: value })}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              {label}
-            </button>
-          ))}
-        </div>
+    <div className="grid w-72 grid-cols-2 gap-2">
+      {THEME_PRESETS.map(preset => {
+        const isActive = preset.name === name
+
+        return (
+          <button
+            key={preset.name}
+            type="button"
+            aria-label={`${preset.label} theme`}
+            aria-pressed={isActive}
+            className={clsx(
+              'rounded-lg border px-2.5 py-2 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50',
+              isActive
+                ? 'border-electric-yellow bg-electric-yellow/10'
+                : 'border-gray-200 bg-white hover:border-electric-yellow/60 dark:border-gray-600 dark:bg-gray-700/50 dark:hover:border-electric-yellow/70'
+            )}
+            onClick={() => updateTheme({ name: preset.name })}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold text-gray-800 dark:text-gray-100">
+                {preset.label}
+              </span>
+              {isActive && <Check className="h-3.5 w-3.5 text-electric-yellow" />}
+            </div>
+            <p className="mt-1 text-[11px] leading-snug text-gray-500 dark:text-gray-300">
+              {preset.description}
+            </p>
+            <div className="mt-2 flex items-center gap-1.5">
+              {preset.swatches.map((swatch, index) => (
+                <span
+                  key={`${preset.name}-${index}`}
+                  aria-hidden
+                  className="h-3 w-3 rounded-full border border-black/10 dark:border-white/20"
+                  style={{ backgroundColor: swatch }}
+                />
+              ))}
+            </div>
+          </button>
+        )
+      })}
+    </div>
+  )
+})
+
+function ThemePanel() {
+  return (
+    <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
+      <SettingRow description="Light, dark, or follow system preference" label="Theme Mode">
+        <ThemeModeControl />
+      </SettingRow>
+      <SettingRow description="Choose a color set for the interface" label="Theme Preset">
+        <ThemePresetControl />
       </SettingRow>
     </div>
   )

@@ -19,25 +19,39 @@ interface ExportThemeTokens {
   hrBorder: string
 }
 
-function readCssToken(name: string): string {
+const CSS_VAR_REF_PATTERN = /^var\(\s*(--[a-z0-9-]+)\s*(?:,\s*(.+))?\)$/i
+
+function resolveCssToken(name: string, seen = new Set<string>()): string {
+  if (seen.has(name)) return ''
+  seen.add(name)
+
   const value = window.getComputedStyle(document.documentElement).getPropertyValue(name).trim()
-  return value
+  if (!value) return ''
+
+  const match = value.match(CSS_VAR_REF_PATTERN)
+  if (!match || !match[1]) return value
+
+  const reference = match[1]
+  const fallback = match[2]?.trim() ?? ''
+  const resolvedReference = resolveCssToken(reference, seen)
+
+  return resolvedReference || fallback
 }
 
 function getExportThemeTokens(): ExportThemeTokens {
   const bodyFontFamily = window.getComputedStyle(document.body).fontFamily
 
   return {
-    fontSans: readCssToken('--p-font-sans') || bodyFontFamily,
-    textPrimary: readCssToken('--s-text-primary') || readCssToken('--p-color-slate-900'),
-    borderDefault: readCssToken('--s-border-default') || readCssToken('--p-color-slate-200'),
-    codeBlockBg: readCssToken('--c-code-block-bg') || readCssToken('--s-bg-muted'),
-    blockquoteText: readCssToken('--c-wys-blockquote-text') || readCssToken('--s-text-muted'),
+    fontSans: resolveCssToken('--p-font-sans') || bodyFontFamily,
+    textPrimary: resolveCssToken('--s-text-primary') || resolveCssToken('--p-color-slate-900'),
+    borderDefault: resolveCssToken('--s-border-default') || resolveCssToken('--p-color-slate-200'),
+    codeBlockBg: resolveCssToken('--c-code-block-bg') || resolveCssToken('--s-bg-muted'),
+    blockquoteText: resolveCssToken('--c-wys-blockquote-text') || resolveCssToken('--s-text-muted'),
     blockquoteBorder:
-      readCssToken('--c-wys-blockquote-border') || readCssToken('--s-border-default'),
-    linkText: readCssToken('--s-link') || readCssToken('--color-deep-blue'),
-    tableBorder: readCssToken('--c-wys-table-border') || readCssToken('--s-border-default'),
-    hrBorder: readCssToken('--c-wys-hr-border') || readCssToken('--s-border-default'),
+      resolveCssToken('--c-wys-blockquote-border') || resolveCssToken('--s-border-default'),
+    linkText: resolveCssToken('--s-link') || resolveCssToken('--color-deep-blue'),
+    tableBorder: resolveCssToken('--c-wys-table-border') || resolveCssToken('--s-border-default'),
+    hrBorder: resolveCssToken('--c-wys-hr-border') || resolveCssToken('--s-border-default'),
   }
 }
 

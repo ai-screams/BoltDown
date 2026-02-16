@@ -2,6 +2,7 @@ import { create } from 'zustand'
 
 import { SETTINGS_POLICY } from '@/constants/settingsLimits'
 import { MEDIA_QUERIES, STORAGE_KEYS } from '@/constants/storage'
+import { isBuiltInThemeName, THEME_MODES } from '@/constants/theme'
 import type {
   AppSettings,
   EditorSettings,
@@ -43,14 +44,16 @@ function applyTheme(theme: ThemeSettings) {
   root.dataset.themeResolved = resolved
 }
 
-const THEME_MODES: ThemeMode[] = ['light', 'dark', 'system']
+const THEME_MODE_SET = new Set<string>(THEME_MODES)
 
 function sanitizeTheme(theme: Partial<ThemeSettings> | undefined): ThemeSettings {
-  const mode = THEME_MODES.includes(theme?.mode as ThemeMode)
+  const mode = THEME_MODE_SET.has(theme?.mode ?? '')
     ? (theme?.mode as ThemeMode)
     : DEFAULT_THEME.mode
   const name =
-    typeof theme?.name === 'string' && theme.name.trim() ? theme.name : DEFAULT_THEME.name
+    typeof theme?.name === 'string' && isBuiltInThemeName(theme.name)
+      ? theme.name
+      : DEFAULT_THEME.name
 
   return {
     mode,
@@ -157,7 +160,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
       const oldTheme = localStorage.getItem(STORAGE_KEYS.legacyTheme)
       if (oldTheme && !stored?.theme) {
         const mode = oldTheme as ThemeMode
-        if (THEME_MODES.includes(mode)) {
+        if (THEME_MODE_SET.has(mode)) {
           get().updateTheme({ mode })
         }
         localStorage.removeItem(STORAGE_KEYS.legacyTheme)
