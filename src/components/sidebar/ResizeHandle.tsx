@@ -64,7 +64,7 @@ export default memo(function ResizeHandle() {
       className={`group relative flex-none cursor-col-resize transition-all duration-150 ${
         isDragging
           ? 'w-1.5 bg-electric-yellow'
-          : 'w-1 bg-border hover:w-1.5 hover:bg-electric-yellow/50'
+          : 'bg-border w-1 hover:w-1.5 hover:bg-electric-yellow/50'
       }`}
       style={dragStyle}
       onDoubleClick={handleDoubleClick}
