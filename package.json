@@ -62,7 +62,7 @@
     "react": "^19.2.4",
     "react-arborist": "^3.4.3",
     "react-dom": "^19.2.4",
-    "react-dropzone": "^14.3.0",
+    "react-dropzone": "^15.0.0",
     "zustand": "^4.5.0"
   },
   "devDependencies": {
@@ -78,7 +78,7 @@
     "@testing-library/react": "^16.3.2",
     "@types/markdown-it": "^14.1.2",
     "@types/prismjs": "^1.26.6",
-    "@types/react": "^19.2.13",
+    "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@typescript-eslint/eslint-plugin": "^8.14.0",
     "@typescript-eslint/parser": "^8.14.0",
