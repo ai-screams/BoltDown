@@ -38,13 +38,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
       return (
         <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Something went wrong</p>
-          <p className="max-w-sm truncate text-xs text-gray-400 dark:text-gray-500">
-            {this.state.error?.message}
-          </p>
+          <p className="text-sm text-fg-muted">Something went wrong</p>
+          <p className="max-w-sm truncate text-xs text-fg-muted">{this.state.error?.message}</p>
           <button
             type="button"
-            className="rounded-md bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+            className="rounded-md bg-surface-muted px-3 py-1.5 text-xs font-medium text-fg-secondary transition-colors hover:bg-surface-elevated"
             onClick={this.handleRetry}
           >
             Retry

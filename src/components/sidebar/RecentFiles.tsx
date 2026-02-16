@@ -21,7 +21,7 @@ export default memo(function RecentFiles({ onFileOpen }: RecentFilesProps) {
 
   if (recentFiles.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center p-4 text-xs text-gray-400">
+      <div className="flex flex-1 items-center justify-center p-4 text-xs text-fg-muted">
         No recent files
       </div>
     )
@@ -32,15 +32,15 @@ export default memo(function RecentFiles({ onFileOpen }: RecentFilesProps) {
       {recentFiles.map(file => (
         <button
           key={file.path}
-          className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs hover:bg-gray-100 dark:hover:bg-gray-800"
+          className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs hover:bg-surface-muted"
           data-name={file.name}
           data-path={file.path}
           onClick={handleClick}
         >
-          <FileText className="h-3.5 w-3.5 flex-none text-blue-500" />
+          <FileText className="h-3.5 w-3.5 flex-none text-info" />
           <div className="min-w-0 flex-1">
-            <div className="truncate text-gray-700 dark:text-gray-300">{file.name}</div>
-            <div className="truncate text-gray-400 dark:text-gray-500" style={{ fontSize: 10 }}>
+            <div className="truncate text-fg-secondary">{file.name}</div>
+            <div className="truncate text-fg-muted" style={{ fontSize: 10 }}>
               {file.path}
             </div>
           </div>

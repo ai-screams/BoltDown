@@ -112,15 +112,15 @@ const MatchRow = memo(function MatchRow({ match, isActive, onClick }: MatchRowPr
     <button
       type="button"
       className={clsx(
-        'flex w-full items-start gap-2 py-1.5 text-left text-xs transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50',
+        'flex w-full items-start gap-2 py-1.5 text-left text-xs transition-colors hover:bg-surface-muted',
         isActive ? 'border-l-2 border-electric-yellow bg-electric-yellow/10 pl-3.5 pr-4' : 'px-4'
       )}
       onClick={onClick}
     >
-      <span className="mt-px min-w-[32px] text-right font-mono text-[10px] text-gray-400 dark:text-gray-500">
+      <span className="mt-px min-w-[32px] text-right font-mono text-[10px] text-fg-muted">
         {match.line}
       </span>
-      <span className="min-w-0 flex-1 truncate font-mono text-gray-700 dark:text-gray-300">
+      <span className="min-w-0 flex-1 truncate font-mono text-fg-secondary">
         {highlightMatch(match.text, match.from, match.to, match.lineFrom)}
       </span>
     </button>
@@ -533,16 +533,16 @@ export default memo(function FindReplaceModal() {
       onClick={handleBackdropClick}
     >
       <div
-        className="animate-dropdown flex w-[calc(100vw-2rem)] max-w-[560px] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800"
+        className="animate-dropdown flex w-[calc(100vw-2rem)] max-w-[560px] flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-2xl"
         onKeyDown={handleKeyDown}
       >
         {/* Header */}
-        <div className="flex h-12 flex-none items-center justify-between border-b border-gray-200 px-4 dark:border-gray-700">
+        <div className="flex h-12 flex-none items-center justify-between border-b border-line px-4">
           <div className="flex items-center gap-2">
             <button
               type="button"
               aria-label={showReplace ? 'Hide replace panel' : 'Show replace panel'}
-              className="rounded p-0.5 text-gray-400 transition-transform hover:text-gray-600 dark:hover:text-gray-300"
+              className="rounded p-0.5 text-fg-muted transition-transform hover:text-fg-secondary"
               title={showReplace ? 'Hide Replace' : 'Show Replace'}
               onClick={toggleReplace}
             >
@@ -553,15 +553,15 @@ export default memo(function FindReplaceModal() {
                 )}
               />
             </button>
-            <Search className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-            <span className="text-sm font-semibold text-gray-900 dark:text-white">
+            <Search className="h-4 w-4 text-fg-muted" />
+            <span className="text-sm font-semibold text-fg">
               Find {showReplace ? '& Replace' : ''}
             </span>
           </div>
           <button
             type="button"
             aria-label="Close find and replace"
-            className="rounded p-1.5 text-gray-500 transition-all duration-150 hover:scale-110 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+            className="rounded p-1.5 text-fg-muted transition-all duration-150 hover:scale-110 hover:bg-surface-muted hover:text-fg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95"
             title="Close"
             onClick={handleClose}
           >
@@ -570,12 +570,12 @@ export default memo(function FindReplaceModal() {
         </div>
 
         {/* Search Row */}
-        <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-2 dark:border-gray-700/50">
+        <div className="flex items-center gap-2 border-b border-line px-4 py-2">
           <input
             ref={searchInputRef}
             type="text"
             aria-label="Find text"
-            className="min-w-0 flex-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 placeholder-gray-400 focus:border-electric-yellow focus:outline-none focus:ring-1 focus:ring-electric-yellow/50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-500"
+            className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg-secondary placeholder-fg-muted focus:border-electric-yellow focus:outline-none focus:ring-1 focus:ring-electric-yellow/50"
             placeholder="Search..."
             value={searchText}
             onChange={e => setSearchText(e.target.value)}
@@ -591,7 +591,7 @@ export default memo(function FindReplaceModal() {
                 'rounded px-1.5 py-1 text-[10px] font-bold transition-colors',
                 caseSensitive
                   ? 'bg-electric-yellow text-deep-blue'
-                  : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300'
+                  : 'text-fg-muted hover:bg-surface-muted hover:text-fg-secondary'
               )}
               title="Case Sensitive (Alt+C)"
               onClick={toggleCaseSensitive}
@@ -606,7 +606,7 @@ export default memo(function FindReplaceModal() {
                 'rounded px-1.5 py-1 text-[10px] font-bold transition-colors',
                 useRegex
                   ? 'bg-electric-yellow text-deep-blue'
-                  : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300'
+                  : 'text-fg-muted hover:bg-surface-muted hover:text-fg-secondary'
               )}
               title="Regular Expression (Alt+R)"
               onClick={toggleRegex}
@@ -621,7 +621,7 @@ export default memo(function FindReplaceModal() {
                 'rounded px-1.5 py-1 text-[10px] font-bold transition-colors',
                 wholeWord
                   ? 'bg-electric-yellow text-deep-blue'
-                  : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300'
+                  : 'text-fg-muted hover:bg-surface-muted hover:text-fg-secondary'
               )}
               title="Whole Word (Alt+W)"
               onClick={toggleWholeWord}
@@ -637,7 +637,7 @@ export default memo(function FindReplaceModal() {
             aria-live="polite"
             className={clsx(
               'min-w-[80px] text-center font-mono text-[10px] font-medium tabular-nums',
-              regexError ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'
+              regexError ? 'text-danger' : 'text-fg-muted'
             )}
           >
             {statusMessage ?? matchCountText}
@@ -648,7 +648,7 @@ export default memo(function FindReplaceModal() {
             <button
               type="button"
               aria-label="Previous match"
-              className="rounded p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+              className="rounded p-1 text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg-secondary disabled:opacity-30"
               disabled={!hasMatches}
               title="Previous Match (Shift+Enter)"
               onClick={handleFindPrev}
@@ -658,7 +658,7 @@ export default memo(function FindReplaceModal() {
             <button
               type="button"
               aria-label="Next match"
-              className="rounded p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+              className="rounded p-1 text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg-secondary disabled:opacity-30"
               disabled={!hasMatches}
               title="Next Match (Enter)"
               onClick={handleFindNext}
@@ -670,12 +670,12 @@ export default memo(function FindReplaceModal() {
 
         {/* Replace Row */}
         {showReplace && (
-          <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-2 dark:border-gray-700/50">
+          <div className="flex items-center gap-2 border-b border-line px-4 py-2">
             <input
               ref={replaceInputRef}
               type="text"
               aria-label="Replace text"
-              className="min-w-0 flex-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 placeholder-gray-400 focus:border-electric-yellow focus:outline-none focus:ring-1 focus:ring-electric-yellow/50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-500"
+              className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg-secondary placeholder-fg-muted focus:border-electric-yellow focus:outline-none focus:ring-1 focus:ring-electric-yellow/50"
               placeholder="Replace..."
               value={replaceText}
               onChange={e => setReplaceText(e.target.value)}
@@ -683,7 +683,7 @@ export default memo(function FindReplaceModal() {
             />
             <button
               type="button"
-              className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-800 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+              className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium text-fg-secondary transition-colors hover:bg-surface-muted hover:text-fg disabled:opacity-30"
               disabled={!hasMatches}
               title="Replace"
               onClick={handleReplace}
@@ -693,7 +693,7 @@ export default memo(function FindReplaceModal() {
             </button>
             <button
               type="button"
-              className="rounded-md px-2 py-1 text-[10px] font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-800 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+              className="rounded-md px-2 py-1 text-[10px] font-medium text-fg-secondary transition-colors hover:bg-surface-muted hover:text-fg disabled:opacity-30"
               disabled={!hasMatches}
               title="Replace All"
               onClick={handleReplaceAll}
@@ -717,7 +717,7 @@ export default memo(function FindReplaceModal() {
                   />
                 ))}
                 {matches.length > FIND_REPLACE_SEARCH_POLICY.maxResultsDisplay && (
-                  <div className="px-4 py-2 text-center text-[10px] text-gray-400 dark:text-gray-500">
+                  <div className="px-4 py-2 text-center text-[10px] text-fg-muted">
                     Showing {FIND_REPLACE_SEARCH_POLICY.maxResultsDisplay} of {matches.length}{' '}
                     matches
                   </div>
@@ -726,8 +726,8 @@ export default memo(function FindReplaceModal() {
             ) : (
               !regexError && (
                 <div className="flex flex-col items-center gap-2 px-4 py-6 text-center">
-                  <Search className="h-6 w-6 text-gray-300 dark:text-gray-600" />
-                  <p className="text-xs text-gray-400 dark:text-gray-500">No matches found</p>
+                  <Search className="h-6 w-6 text-fg-muted opacity-50" />
+                  <p className="text-xs text-fg-muted">No matches found</p>
                 </div>
               )
             )}
@@ -736,10 +736,10 @@ export default memo(function FindReplaceModal() {
 
         {/* Footer with Select All */}
         {hasMatches && (
-          <div className="flex items-center justify-end border-t border-gray-100 px-4 py-2 dark:border-gray-700/50">
+          <div className="flex items-center justify-end border-t border-line px-4 py-2">
             <button
               type="button"
-              className="rounded-md px-2 py-1 text-[10px] font-medium text-gray-600 transition-colors hover:bg-electric-yellow/10 hover:text-electric-dark dark:text-gray-400 dark:hover:text-electric-yellow"
+              className="rounded-md px-2 py-1 text-[10px] font-medium text-fg-secondary transition-colors hover:bg-electric-yellow/10 hover:text-electric-dark"
               onClick={handleSelectAll}
             >
               Select All Occurrences

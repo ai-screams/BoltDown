@@ -31,7 +31,7 @@ export const OutlinePanel = memo(() => {
 
   if (headings.length === 0) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center px-4 text-sm text-gray-500">
+      <div className="flex flex-1 flex-col items-center justify-center px-4 text-sm text-fg-muted">
         <Hash className="mb-2 h-8 w-8 opacity-50" />
         <p>No headings found</p>
       </div>
@@ -46,7 +46,7 @@ export const OutlinePanel = memo(() => {
           <button
             key={`${heading.line}-${heading.text}`}
             type="button"
-            className="flex items-center gap-2 px-3 py-1.5 text-left text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+            className="flex items-center gap-2 px-3 py-1.5 text-left text-fg-secondary transition-colors hover:bg-surface-muted"
             style={{ paddingLeft: `${12 + indent}px` }}
             onClick={() => handleHeadingClick(heading.line)}
           >

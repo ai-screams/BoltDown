@@ -99,10 +99,10 @@ export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
   }, [exportOpen])
 
   return (
-    <header className="flex h-12 flex-none items-center justify-between border-b border-gray-200 bg-white px-4 dark:border-gray-700 dark:bg-gray-800">
+    <header className="flex h-12 flex-none items-center justify-between border-b border-line bg-surface px-4">
       <div className="flex items-center gap-2">
         <Zap className="h-5 w-5 text-electric-yellow" fill="currentColor" />
-        <span className="text-sm font-semibold text-gray-900 dark:text-white">BoltDown</span>
+        <span className="text-sm font-semibold text-fg">BoltDown</span>
         <div className="ml-2 flex items-center gap-0.5">
           <IconButton icon={FolderOpen} label="Open file" shortcut="Cmd+O" onClick={onOpenFile} />
           <IconButton icon={Save} label="Save file" shortcut="Cmd+S" onClick={onSaveFile} />
@@ -114,7 +114,7 @@ export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
               aria-expanded={exportOpen}
               aria-haspopup="menu"
               aria-label="Export"
-              className="rounded p-1.5 text-gray-500 transition-all duration-150 hover:scale-110 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+              className="rounded p-1.5 text-fg-muted transition-all duration-150 hover:scale-110 hover:bg-surface-muted hover:text-fg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95"
               title="Export"
               onClick={toggleExportOpen}
             >
@@ -124,7 +124,7 @@ export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
               <div
                 id={EXPORT_MENU_ID}
                 role="menu"
-                className="animate-dropdown absolute left-0 top-full z-50 mt-1 w-40 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-600 dark:bg-gray-800"
+                className="animate-dropdown absolute left-0 top-full z-50 mt-1 w-40 rounded-lg border border-line bg-surface py-1 shadow-lg"
               >
                 {exportActions.map(action => {
                   const ActionIcon = action.icon
@@ -133,7 +133,7 @@ export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
                       key={action.key}
                       role="menuitem"
                       type="button"
-                      className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                      className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-fg-secondary transition-colors hover:bg-surface-muted"
                       onClick={() => {
                         action.run()
                         setExportOpen(false)
@@ -151,7 +151,7 @@ export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        <div className="flex rounded-lg border border-gray-200 bg-gray-100 p-0.5 dark:border-gray-600 dark:bg-gray-700">
+        <div className="flex rounded-lg border border-line bg-surface-muted p-0.5">
           {modes.map(({ mode: m, icon: Icon, label }) => (
             <button
               key={m}
@@ -162,7 +162,7 @@ export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
                 'flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95',
                 m === mode
                   ? 'bg-electric-yellow text-deep-blue shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                  : 'text-fg-muted hover:text-fg-secondary'
               )}
               title={label}
               onClick={() => setMode(m)}
@@ -176,7 +176,7 @@ export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
         <button
           type="button"
           aria-label={`Theme mode: ${themeLabel[themeMode]}`}
-          className="rounded p-1.5 text-gray-500 transition-all duration-150 hover:scale-110 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+          className="rounded p-1.5 text-fg-muted transition-all duration-150 hover:scale-110 hover:bg-surface-muted hover:text-fg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95"
           title={`Theme mode: ${themeLabel[themeMode]}`}
           onClick={cycleTheme}
         >

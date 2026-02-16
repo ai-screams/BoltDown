@@ -50,10 +50,8 @@ function SettingRow({
   return (
     <div className="flex items-center justify-between gap-4 py-3">
       <div className="min-w-0">
-        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{label}</div>
-        {description && (
-          <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{description}</div>
-        )}
+        <div className="text-sm font-medium text-fg">{label}</div>
+        {description && <div className="mt-0.5 text-xs text-fg-muted">{description}</div>}
       </div>
       <div className="flex-shrink-0">{children}</div>
     </div>
@@ -67,7 +65,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       aria-checked={checked}
       className={clsx(
         'relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50',
-        checked ? 'bg-electric-yellow' : 'bg-gray-300 dark:bg-gray-600'
+        checked ? 'bg-electric-yellow' : 'bg-surface-muted'
       )}
       onClick={() => onChange(!checked)}
     >
@@ -92,7 +90,7 @@ function Select<T extends string>({
 }) {
   return (
     <select
-      className="rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 focus:border-electric-yellow focus:outline-none focus:ring-1 focus:ring-electric-yellow/50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+      className="rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg-secondary focus:border-electric-yellow focus:outline-none focus:ring-1 focus:ring-electric-yellow/50"
       value={value}
       onChange={e => onChange(e.target.value as T)}
     >
@@ -138,7 +136,7 @@ function NumberInput({
   return (
     <input
       type="number"
-      className="w-20 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 focus:border-electric-yellow focus:outline-none focus:ring-1 focus:ring-electric-yellow/50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+      className="w-20 rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg-secondary focus:border-electric-yellow focus:outline-none focus:ring-1 focus:ring-electric-yellow/50"
       max={max}
       min={min}
       step={step ?? 1}
@@ -176,7 +174,7 @@ const ThemeModeControl = memo(function ThemeModeControl() {
   const updateTheme = useSettingsStore(s => s.updateTheme)
 
   return (
-    <div className="flex rounded-lg border border-gray-200 bg-gray-100 p-0.5 dark:border-gray-600 dark:bg-gray-700">
+    <div className="flex rounded-lg border border-line bg-surface-muted p-0.5">
       {THEME_MODES.map(value => {
         const Icon = themeModeMeta[value].icon
         const label = themeModeMeta[value].label
@@ -190,7 +188,7 @@ const ThemeModeControl = memo(function ThemeModeControl() {
               'flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95',
               value === mode
                 ? 'bg-electric-yellow text-deep-blue shadow-sm'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                : 'text-fg-muted hover:text-fg-secondary'
             )}
             onClick={() => updateTheme({ mode: value })}
           >
@@ -222,28 +220,38 @@ const ThemePresetControl = memo(function ThemePresetControl() {
               'rounded-lg border px-2.5 py-2 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50',
               isActive
                 ? 'border-electric-yellow bg-electric-yellow/10'
-                : 'border-gray-200 bg-white hover:border-electric-yellow/60 dark:border-gray-600 dark:bg-gray-700/50 dark:hover:border-electric-yellow/70'
+                : 'border-line bg-surface hover:border-electric-yellow/60'
             )}
             onClick={() => updateTheme({ name: preset.name })}
           >
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-semibold text-gray-800 dark:text-gray-100">
-                {preset.label}
-              </span>
+              <span className="text-xs font-semibold text-fg">{preset.label}</span>
               {isActive && <Check className="h-3.5 w-3.5 text-electric-yellow" />}
             </div>
-            <p className="mt-1 text-[11px] leading-snug text-gray-500 dark:text-gray-300">
-              {preset.description}
-            </p>
-            <div className="mt-2 flex items-center gap-1.5">
-              {preset.swatches.map((swatch, index) => (
+            <p className="mt-1 text-[11px] leading-snug text-fg-secondary">{preset.description}</p>
+            <div className="mt-2 flex flex-col gap-1">
+              <div className="flex items-center gap-0.5">
+                {preset.swatches.map((swatch, index) => (
+                  <span
+                    key={`${preset.name}-${index}`}
+                    aria-hidden
+                    className="h-3 w-3 rounded-full border border-black/10 dark:border-white/20"
+                    style={{ backgroundColor: swatch }}
+                  />
+                ))}
+              </div>
+              <div className="flex items-center gap-1">
                 <span
-                  key={`${preset.name}-${index}`}
                   aria-hidden
-                  className="h-3 w-3 rounded-full border border-black/10 dark:border-white/20"
-                  style={{ backgroundColor: swatch }}
+                  className="h-2 w-2 rounded-full border border-black/10 dark:border-white/20"
+                  style={{ backgroundColor: preset.info }}
                 />
-              ))}
+                <span
+                  aria-hidden
+                  className="h-2 w-2 rounded-full border border-black/10 dark:border-white/20"
+                  style={{ backgroundColor: preset.danger }}
+                />
+              </div>
             </div>
           </button>
         )
@@ -254,7 +262,7 @@ const ThemePresetControl = memo(function ThemePresetControl() {
 
 function ThemePanel() {
   return (
-    <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
+    <div className="divide-y divide-line">
       <SettingRow description="Light, dark, or follow system preference" label="Theme Mode">
         <ThemeModeControl />
       </SettingRow>
@@ -288,7 +296,7 @@ function EditorPanel() {
   const updateEditor = useSettingsStore(s => s.updateEditor)
 
   return (
-    <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
+    <div className="divide-y divide-line">
       <SettingRow description="Editor font" label="Font Family">
         <Select
           options={fontFamilyOptions}
@@ -366,7 +374,7 @@ function PreviewPanel() {
   const updatePreview = useSettingsStore(s => s.updatePreview)
 
   return (
-    <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
+    <div className="divide-y divide-line">
       <SettingRow
         description={`${PREVIEW_SETTING_LIMITS.fontSize.min} - ${PREVIEW_SETTING_LIMITS.fontSize.max}px`}
         label="Font Size"
@@ -432,7 +440,7 @@ function GeneralPanel() {
   const updateGeneral = useSettingsStore(s => s.updateGeneral)
 
   return (
-    <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
+    <div className="divide-y divide-line">
       <SettingRow description="Automatically save changes" label="Auto Save">
         <Toggle checked={general.autoSave} onChange={v => updateGeneral({ autoSave: v })} />
       </SettingRow>
@@ -509,15 +517,15 @@ export default memo(function SettingsModal({ isOpen, onClose }: SettingsModalPro
       className="z-60 fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       onClick={handleBackdropClick}
     >
-      <div className="animate-dropdown flex h-[480px] w-[640px] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800">
+      <div className="animate-dropdown flex h-[480px] w-[640px] flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-2xl">
         {/* Header */}
-        <div className="flex h-12 flex-none items-center justify-between border-b border-gray-200 px-4 dark:border-gray-700">
+        <div className="flex h-12 flex-none items-center justify-between border-b border-line px-4">
           <div className="flex items-center gap-2">
-            <Settings className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-            <span className="text-sm font-semibold text-gray-900 dark:text-white">Settings</span>
+            <Settings className="h-4 w-4 text-fg-muted" />
+            <span className="text-sm font-semibold text-fg">Settings</span>
           </div>
           <button
-            className="rounded p-1.5 text-gray-500 transition-all duration-150 hover:scale-110 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+            className="rounded p-1.5 text-fg-muted transition-all duration-150 hover:scale-110 hover:bg-surface-muted hover:text-fg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95"
             onClick={onClose}
           >
             <X className="h-4 w-4" />
@@ -526,7 +534,7 @@ export default memo(function SettingsModal({ isOpen, onClose }: SettingsModalPro
 
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar */}
-          <div className="flex w-40 flex-none flex-col border-r border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
+          <div className="flex w-40 flex-none flex-col border-r border-line bg-surface-canvas">
             <nav className="flex-1 py-2">
               {categories.map(({ key, label, icon: Icon }) => (
                 <button
@@ -534,8 +542,8 @@ export default memo(function SettingsModal({ isOpen, onClose }: SettingsModalPro
                   className={clsx(
                     'flex w-full items-center gap-2 px-4 py-2 text-xs font-medium transition-colors',
                     key === activeCategory
-                      ? 'bg-electric-yellow/10 text-electric-dark dark:text-electric-yellow'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200'
+                      ? 'bg-electric-yellow/10 text-electric-dark'
+                      : 'text-fg-secondary hover:bg-surface-muted hover:text-fg'
                   )}
                   onClick={() => setActiveCategory(key)}
                 >
@@ -546,16 +554,16 @@ export default memo(function SettingsModal({ isOpen, onClose }: SettingsModalPro
             </nav>
 
             {/* Reset buttons */}
-            <div className="border-t border-gray-200 p-2 dark:border-gray-700">
+            <div className="border-t border-line p-2">
               <button
-                className="flex w-full items-center gap-1.5 rounded px-2 py-1.5 text-[10px] text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                className="flex w-full items-center gap-1.5 rounded px-2 py-1.5 text-[10px] text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg-secondary"
                 onClick={() => resetCategory(activeCategory)}
               >
                 <RotateCcw className="h-3 w-3" />
                 Reset {categories.find(c => c.key === activeCategory)?.label}
               </button>
               <button
-                className="flex w-full items-center gap-1.5 rounded px-2 py-1.5 text-[10px] text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                className="flex w-full items-center gap-1.5 rounded px-2 py-1.5 text-[10px] text-fg-muted transition-colors hover:bg-danger/10 hover:text-danger"
                 onClick={resetAll}
               >
                 <RotateCcw className="h-3 w-3" />

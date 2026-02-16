@@ -7,22 +7,42 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Semantic design tokens
+        // ── Semantic surfaces (bg-surface, bg-surface-canvas, …) ──
         surface: {
           canvas: withAlpha('--s-bg-canvas'),
           DEFAULT: withAlpha('--s-bg-surface'),
           elevated: withAlpha('--s-bg-elevated'),
           muted: withAlpha('--s-bg-muted'),
         },
-        text: {
-          primary: withAlpha('--s-text-primary'),
+
+        // ── Foreground (text-fg, text-fg-secondary, text-fg-muted) ──
+        fg: {
+          DEFAULT: withAlpha('--s-text-primary'),
           secondary: withAlpha('--s-text-secondary'),
           muted: withAlpha('--s-text-muted'),
         },
-        border: {
+
+        // ── Borders (border-line, border-line-strong) ──
+        line: {
           DEFAULT: withAlpha('--s-border-default'),
           strong: withAlpha('--s-border-strong'),
         },
+
+        // ── Accent & status ──
+        accent: {
+          DEFAULT: withAlpha('--s-accent'),
+          strong: withAlpha('--s-accent-strong'),
+        },
+        info: withAlpha('--s-info'),
+        danger: withAlpha('--s-danger'),
+        success: withAlpha('--s-success'),
+        warning: withAlpha('--s-warning'),
+        link: {
+          DEFAULT: withAlpha('--s-link'),
+          hover: withAlpha('--s-link-hover'),
+        },
+
+        // ── Legacy brand aliases ──
         brand: {
           accent: withAlpha('--color-brand-accent'),
           'accent-strong': withAlpha('--color-brand-accent-strong'),
@@ -31,7 +51,7 @@ export default {
           success: withAlpha('--color-brand-success'),
         },
 
-        // Backward compatible aliases
+        // ── Backward compatible named colors ──
         electric: {
           yellow: withAlpha('--color-electric-yellow'),
           dark: withAlpha('--color-electric-dark'),

@@ -53,7 +53,7 @@ export default memo(function Sidebar({ onFileOpen }: SidebarProps) {
     <aside
       aria-label="Sidebar"
       className={clsx(
-        'flex flex-col overflow-hidden border-r border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900',
+        'flex flex-col overflow-hidden border-r border-line bg-surface-canvas',
         !isResizing && 'transition-[width] duration-200 ease-in-out'
       )}
       style={{ width: isOpen ? width : 0 }}
@@ -61,7 +61,7 @@ export default memo(function Sidebar({ onFileOpen }: SidebarProps) {
       <div
         role="tablist"
         aria-label="Sidebar sections"
-        className="flex h-8 flex-none items-center border-b border-gray-200 dark:border-gray-700"
+        className="flex h-8 flex-none items-center border-b border-line"
       >
         {tabs.map(({ key, label }) => (
           <button
@@ -73,9 +73,7 @@ export default memo(function Sidebar({ onFileOpen }: SidebarProps) {
             aria-selected={activeTab === key}
             className={clsx(
               'flex-1 text-center text-[10px] font-semibold tracking-wider',
-              activeTab === key
-                ? 'text-gray-900 dark:text-white'
-                : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300'
+              activeTab === key ? 'text-fg' : 'text-fg-muted hover:text-fg-secondary'
             )}
             data-tab={key}
             onClick={handleTabClick}
@@ -117,7 +115,7 @@ export default memo(function Sidebar({ onFileOpen }: SidebarProps) {
       {isTauri() && (
         <button
           type="button"
-          className="flex h-9 flex-none items-center justify-center gap-1.5 border-t border-gray-200 text-xs text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+          className="flex h-9 flex-none items-center justify-center gap-1.5 border-t border-line text-xs text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg-secondary"
           onClick={handleOpenFolder}
         >
           <FolderOpen className="h-3.5 w-3.5" />
@@ -126,7 +124,7 @@ export default memo(function Sidebar({ onFileOpen }: SidebarProps) {
       )}
 
       {!isTauri() && (
-        <div className="flex h-9 flex-none items-center justify-center border-t border-gray-200 text-[10px] text-gray-400 dark:border-gray-700">
+        <div className="flex h-9 flex-none items-center justify-center border-t border-line text-[10px] text-fg-muted">
           Open in Tauri for file browsing
         </div>
       )}

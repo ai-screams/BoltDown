@@ -16,7 +16,7 @@ export default memo(function Footer({ className }: { className?: string }) {
   return (
     <footer
       className={clsx(
-        'flex h-8 flex-none items-center justify-between border-t border-gray-200 bg-white px-4 dark:border-gray-700 dark:bg-gray-800',
+        'flex h-8 flex-none items-center justify-between border-t border-line bg-surface px-4',
         className
       )}
     >

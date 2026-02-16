@@ -57,7 +57,7 @@ function addCopyButtons(container: HTMLElement) {
 
     const btn = document.createElement('button')
     btn.className =
-      'copy-btn absolute right-2 top-2 rounded bg-gray-700/80 px-2 py-1 text-xs text-gray-200 opacity-0 transition-opacity hover:bg-gray-600 group-hover:opacity-100'
+      'copy-btn absolute right-2 top-2 rounded bg-surface-elevated/80 px-2 py-1 text-xs text-fg-secondary opacity-0 transition-opacity hover:bg-surface-elevated group-hover:opacity-100'
     btn.textContent = 'Copy'
     btn.type = 'button'
     btn.setAttribute('aria-label', 'Copy code block')
