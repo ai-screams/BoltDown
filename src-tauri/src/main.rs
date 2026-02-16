@@ -4,6 +4,15 @@
 use std::path::PathBuf;
 use tauri::Manager;
 
+const SKIP_DIRS: &[&str] = &[
+    "node_modules",
+    "target",
+    "dist",
+    "build",
+    "__pycache__",
+    ".git",
+];
+
 /// Validate that a path does not contain traversal components after resolution.
 /// For destination paths where the file may not yet exist, validates the parent directory.
 fn validate_path(path_str: &str) -> Result<PathBuf, String> {
@@ -98,20 +107,19 @@ struct FileEntry {
 
 #[tauri::command]
 async fn list_directory(path: String) -> Result<Vec<FileEntry>, String> {
-    let mut dir = tokio::fs::read_dir(&path)
+    let validated = validate_path(&path)?;
+
+    let metadata = tokio::fs::metadata(&validated)
+        .await
+        .map_err(|e| format!("Failed to read path metadata: {}", e))?;
+
+    if !metadata.is_dir() {
+        return Err("Path is not a directory".to_string());
+    }
+
+    let mut dir = tokio::fs::read_dir(&validated)
         .await
         .map_err(|e| format!("Failed to read directory: {}", e))?;
-
-    let skip_dirs: std::collections::HashSet<&str> = [
-        "node_modules",
-        "target",
-        "dist",
-        "build",
-        "__pycache__",
-        ".git",
-    ]
-    .into_iter()
-    .collect();
 
     let mut entries = Vec::new();
 
@@ -120,9 +128,9 @@ async fn list_directory(path: String) -> Result<Vec<FileEntry>, String> {
         .await
         .map_err(|e| format!("Failed to read entry: {}", e))?
     {
-        let name = entry.file_name().to_string_lossy().to_string();
+        let name = entry.file_name().to_string_lossy().into_owned();
 
-        if name.starts_with('.') || skip_dirs.contains(name.as_str()) {
+        if name.starts_with('.') || SKIP_DIRS.contains(&name.as_str()) {
             continue;
         }
 
@@ -140,7 +148,7 @@ async fn list_directory(path: String) -> Result<Vec<FileEntry>, String> {
 
         entries.push(FileEntry {
             name,
-            path: entry.path().to_string_lossy().to_string(),
+            path: entry.path().to_string_lossy().into_owned(),
             is_dir: metadata.is_dir(),
             size: metadata.len(),
             modified,
@@ -164,13 +172,11 @@ async fn read_settings(app_handle: tauri::AppHandle) -> Result<String, String> {
         .map_err(|e| format!("Failed to resolve app data dir: {}", e))?
         .join("settings.json");
 
-    if !path.exists() {
-        return Ok("null".to_string());
+    match tokio::fs::read_to_string(&path).await {
+        Ok(content) => Ok(content),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok("null".to_string()),
+        Err(e) => Err(format!("Failed to read settings: {}", e)),
     }
-
-    tokio::fs::read_to_string(&path)
-        .await
-        .map_err(|e| format!("Failed to read settings: {}", e))
 }
 
 #[tauri::command]
