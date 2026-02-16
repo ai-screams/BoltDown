@@ -34,15 +34,16 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 
 ## Configuration Files
 
-| File                   | Purpose                                                           |
-| ---------------------- | ----------------------------------------------------------------- |
-| `package.json`         | Dependencies, scripts (dev/build/lint/validate)                   |
-| `vite.config.ts`       | Build: path aliases, vendor chunk splitting (CM/Mermaid/markdown) |
-| `tsconfig.json`        | Strict TS, path aliases (@/, @components/, etc.)                  |
-| `tailwind.config.js`   | Brand colors (electric-yellow, deep-blue), Inter/Pretendard fonts |
-| `eslint.config.js`     | ESLint v9 flat config, TS/React/a11y/import-order                 |
-| `.prettierrc`          | No semi, single quote, 100 width, Tailwind class sort             |
-| `commitlint.config.js` | Conventional Commits enforcement                                  |
+| File                   | Purpose                                                                         |
+| ---------------------- | ------------------------------------------------------------------------------- |
+| `package.json`         | Dependencies, scripts (dev/build/lint/validate)                                 |
+| `vite.config.ts`       | Build: path aliases, vendor chunk splitting (CM/Mermaid/markdown)               |
+| `tsconfig.json`        | Strict TS, path aliases (@/, @components/, etc.)                                |
+| `tailwind.config.js`   | Brand colors (electric-yellow, deep-blue), Inter/Pretendard fonts               |
+| `eslint.config.js`     | ESLint v9 flat config, TS/React/a11y/import-order, perfectionist sort-jsx-props |
+| `.prettierrc`          | No semi, single quote, 100 width, Tailwind class sort                           |
+| `commitlint.config.js` | Conventional Commits enforcement                                                |
+| `knip.config.js`       | Dead code detection configuration                                               |
 
 ## Key Components & Stores
 
@@ -72,6 +73,7 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 ## For AI Agents
 
 - **Code style**: `semi: false`, `singleQuote: true`, `arrowParens: 'avoid'`, `printWidth: 100`
+- **JSX prop order**: eslint-plugin-perfectionist enforces: key → ref → identity props → aria-\* → className → unknown → multiline → shorthand → callbacks
 - **Keyboard shortcuts**: Cmd+O (open), Cmd+S (save), Cmd+N (new tab), Cmd+\\ (mode cycle split/source/zen), Cmd+, (settings), Cmd+F (find), Cmd+H (find & replace), Shift+Cmd+E (toggle sidebar)
 - **Path aliases**: `@/` → `src/`, `@components/` → `src/components/`, etc.
 - **Zustand pattern**: Always use primitive-returning selectors (not object destructuring)
@@ -79,8 +81,11 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 - **Derived state**: `isDirty = content !== savedContent` (not stored)
 - **Sidebar sync**: `loadParentDirectory(filePath, openSidebar?)` consolidates directory loading logic
 - **File tree icons**: Use `@react-symbols/icons/utils` — `FileIcon` auto-assigns by extension, `FolderIcon` by folder name
+- **Accessibility**: ARIA attributes on interactive elements, prefers-reduced-motion support in CSS
+- **Error boundaries**: Use ErrorBoundary component to wrap potentially error-throwing components
 - **Type checking**: `npx tsc --noEmit` before committing
 - **Linting**: `npx eslint src/` before committing
+- **Dead code**: `npm run knip` to detect unused exports/dependencies
 - **Build**: `npx vite build` to verify; `npm run tauri:build` for DMG
 
 ## Tech Stack
