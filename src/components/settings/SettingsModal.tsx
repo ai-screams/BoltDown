@@ -2,6 +2,11 @@ import { clsx } from 'clsx'
 import { Eye, Keyboard, Monitor, Moon, Palette, RotateCcw, Settings, Sun, X } from 'lucide-react'
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 
+import {
+  EDITOR_SETTING_LIMITS,
+  GENERAL_SETTING_LIMITS,
+  PREVIEW_SETTING_LIMITS,
+} from '@/constants/settingsLimits'
 import { useSettingsStore } from '@/stores/settingsStore'
 import type {
   FontFamily,
@@ -214,19 +219,25 @@ function EditorPanel() {
           onChange={v => updateEditor({ fontFamily: v })}
         />
       </SettingRow>
-      <SettingRow description="10 - 24px" label="Font Size">
+      <SettingRow
+        description={`${EDITOR_SETTING_LIMITS.fontSize.min} - ${EDITOR_SETTING_LIMITS.fontSize.max}px`}
+        label="Font Size"
+      >
         <NumberInput
-          max={24}
-          min={10}
+          max={EDITOR_SETTING_LIMITS.fontSize.max}
+          min={EDITOR_SETTING_LIMITS.fontSize.min}
           value={editor.fontSize}
           onChange={v => updateEditor({ fontSize: v })}
         />
       </SettingRow>
-      <SettingRow description="1.2 - 2.4" label="Line Height">
+      <SettingRow
+        description={`${EDITOR_SETTING_LIMITS.lineHeight.min} - ${EDITOR_SETTING_LIMITS.lineHeight.max}`}
+        label="Line Height"
+      >
         <NumberInput
-          max={2.4}
-          min={1.2}
-          step={0.1}
+          max={EDITOR_SETTING_LIMITS.lineHeight.max}
+          min={EDITOR_SETTING_LIMITS.lineHeight.min}
+          step={EDITOR_SETTING_LIMITS.lineHeight.step}
           value={editor.lineHeight}
           onChange={v => updateEditor({ lineHeight: v })}
         />
@@ -251,10 +262,13 @@ function EditorPanel() {
         <Toggle checked={editor.focusMode} onChange={v => updateEditor({ focusMode: v })} />
       </SettingRow>
       {editor.focusMode && (
-        <SettingRow description="Bright lines around cursor (0-3)" label="Focus Context Lines">
+        <SettingRow
+          description={`Bright lines around cursor (${EDITOR_SETTING_LIMITS.focusContextLines.min}-${EDITOR_SETTING_LIMITS.focusContextLines.max})`}
+          label="Focus Context Lines"
+        >
           <NumberInput
-            max={3}
-            min={0}
+            max={EDITOR_SETTING_LIMITS.focusContextLines.max}
+            min={EDITOR_SETTING_LIMITS.focusContextLines.min}
             value={editor.focusContextLines}
             onChange={v => updateEditor({ focusContextLines: v })}
           />
@@ -276,36 +290,48 @@ function PreviewPanel() {
 
   return (
     <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
-      <SettingRow description="12 - 24px" label="Font Size">
+      <SettingRow
+        description={`${PREVIEW_SETTING_LIMITS.fontSize.min} - ${PREVIEW_SETTING_LIMITS.fontSize.max}px`}
+        label="Font Size"
+      >
         <NumberInput
-          max={24}
-          min={12}
+          max={PREVIEW_SETTING_LIMITS.fontSize.max}
+          min={PREVIEW_SETTING_LIMITS.fontSize.min}
           value={preview.fontSize}
           onChange={v => updatePreview({ fontSize: v })}
         />
       </SettingRow>
-      <SettingRow description="1.2 - 2.4" label="Line Height">
+      <SettingRow
+        description={`${PREVIEW_SETTING_LIMITS.lineHeight.min} - ${PREVIEW_SETTING_LIMITS.lineHeight.max}`}
+        label="Line Height"
+      >
         <NumberInput
-          max={2.4}
-          min={1.2}
-          step={0.1}
+          max={PREVIEW_SETTING_LIMITS.lineHeight.max}
+          min={PREVIEW_SETTING_LIMITS.lineHeight.min}
+          step={PREVIEW_SETTING_LIMITS.lineHeight.step}
           value={preview.lineHeight}
           onChange={v => updatePreview({ lineHeight: v })}
         />
       </SettingRow>
-      <SettingRow description="10 - 20px" label="Code Block Font Size">
+      <SettingRow
+        description={`${PREVIEW_SETTING_LIMITS.codeBlockFontSize.min} - ${PREVIEW_SETTING_LIMITS.codeBlockFontSize.max}px`}
+        label="Code Block Font Size"
+      >
         <NumberInput
-          max={20}
-          min={10}
+          max={PREVIEW_SETTING_LIMITS.codeBlockFontSize.max}
+          min={PREVIEW_SETTING_LIMITS.codeBlockFontSize.min}
           value={preview.codeBlockFontSize}
           onChange={v => updatePreview({ codeBlockFontSize: v })}
         />
       </SettingRow>
-      <SettingRow description="600 - 1200px" label="Max Width">
+      <SettingRow
+        description={`${PREVIEW_SETTING_LIMITS.maxWidth.min} - ${PREVIEW_SETTING_LIMITS.maxWidth.max}px`}
+        label="Max Width"
+      >
         <NumberInput
-          max={1200}
-          min={600}
-          step={50}
+          max={PREVIEW_SETTING_LIMITS.maxWidth.max}
+          min={PREVIEW_SETTING_LIMITS.maxWidth.min}
+          step={PREVIEW_SETTING_LIMITS.maxWidth.step}
           value={preview.maxWidth}
           onChange={v => updatePreview({ maxWidth: v })}
         />
@@ -333,11 +359,14 @@ function GeneralPanel() {
       <SettingRow description="Automatically save changes" label="Auto Save">
         <Toggle checked={general.autoSave} onChange={v => updateGeneral({ autoSave: v })} />
       </SettingRow>
-      <SettingRow description="1000 - 10000ms" label="Auto Save Delay">
+      <SettingRow
+        description={`${GENERAL_SETTING_LIMITS.autoSaveDelay.min} - ${GENERAL_SETTING_LIMITS.autoSaveDelay.max}ms`}
+        label="Auto Save Delay"
+      >
         <NumberInput
-          max={10000}
-          min={1000}
-          step={500}
+          max={GENERAL_SETTING_LIMITS.autoSaveDelay.max}
+          min={GENERAL_SETTING_LIMITS.autoSaveDelay.min}
+          step={GENERAL_SETTING_LIMITS.autoSaveDelay.step}
           value={general.autoSaveDelay}
           onChange={v => updateGeneral({ autoSaveDelay: v })}
         />

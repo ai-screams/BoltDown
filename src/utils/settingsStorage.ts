@@ -1,7 +1,6 @@
+import { STORAGE_KEYS } from '@/constants/storage'
 import type { AppSettings } from '@/types/settings'
 import { invokeTauri, isTauri } from '@/utils/tauri'
-
-const STORAGE_KEY = 'boltdown-settings'
 
 function parseSettingsJson(raw: string): Partial<AppSettings> | null {
   try {
@@ -24,7 +23,7 @@ export async function loadSettingsFromStorage(): Promise<Partial<AppSettings> | 
   }
 
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(STORAGE_KEYS.settings)
     return raw ? parseSettingsJson(raw) : null
   } catch (e) {
     console.error('Failed to load settings from localStorage:', e)
@@ -45,7 +44,7 @@ export async function saveSettingsToStorage(settings: AppSettings): Promise<void
   }
 
   try {
-    localStorage.setItem(STORAGE_KEY, json)
+    localStorage.setItem(STORAGE_KEYS.settings, json)
   } catch (e) {
     console.error('Failed to save settings to localStorage:', e)
   }

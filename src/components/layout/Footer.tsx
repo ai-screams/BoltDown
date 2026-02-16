@@ -1,12 +1,16 @@
 import { clsx } from 'clsx'
 import { memo } from 'react'
 
+import { DOCUMENT_STATS_POLICY } from '@/constants/feedback'
 import { useDocumentStats } from '@/hooks/useDocumentStats'
 import { useEditorStore } from '@/stores/editorStore'
 
 export default memo(function Footer({ className }: { className?: string }) {
   const stats = useDocumentStats()
-  const readingTime = Math.max(1, Math.ceil(stats.words / 225))
+  const readingTime = Math.max(
+    1,
+    Math.ceil(stats.words / DOCUMENT_STATS_POLICY.readingWordsPerMinute)
+  )
   const statusText = useEditorStore(s => s.statusText)
 
   return (

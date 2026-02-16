@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 
+import { FILE_DEFAULTS } from '@/constants/file'
 import { WELCOME_CONTENT } from '@/constants/welcomeContent'
 import type { Tab } from '@/types/editor'
 
@@ -17,7 +18,7 @@ function createTab(filePath: string | null, fileName: string, content: string): 
   }
 }
 
-const initialTab = createTab(null, 'Untitled.md', WELCOME_CONTENT)
+const initialTab = createTab(null, FILE_DEFAULTS.untitledName, WELCOME_CONTENT)
 
 interface TabState {
   tabs: Tab[]
@@ -53,7 +54,7 @@ export const useTabStore = create<TabState>((set, get) => ({
   closeTab: id => {
     const { tabs, activeTabId } = get()
     if (tabs.length === 1) {
-      const fresh = createTab(null, 'Untitled.md', '')
+      const fresh = createTab(null, FILE_DEFAULTS.untitledName, '')
       set({ tabs: [fresh], activeTabId: fresh.id })
       return
     }

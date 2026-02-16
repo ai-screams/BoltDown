@@ -1,3 +1,5 @@
+@import './styles/tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,25 +10,6 @@
   /* Font Faces */
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
-
-  /* Root Variables */
-  :root {
-    /* BoltDown Brand Colors */
-    --color-electric-yellow: #facc15;
-    --color-electric-dark: #ca8a04;
-    --color-deep-blue: #1e3a8a;
-    --color-thunder-gray: #64748b;
-    --color-volt-orange: #f97316;
-    --color-ion-purple: #7c3aed;
-    --color-charge-green: #10b981;
-
-    /* Spacing */
-    --spacing-xs: 4px;
-    --spacing-sm: 8px;
-    --spacing-md: 16px;
-    --spacing-lg: 24px;
-    --spacing-xl: 32px;
-  }
 
   /* Dark Mode */
   .dark {
@@ -48,14 +31,14 @@
   }
 
   body {
-    font-family: 'Inter', 'Pretendard', system-ui, sans-serif;
+    font-family: var(--p-font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   code,
   pre {
-    font-family: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, monospace;
+    font-family: var(--p-font-mono);
   }
 }
 
@@ -114,10 +97,10 @@
   .token.prolog,
   .token.doctype,
   .token.cdata {
-    color: #6a737d;
+    color: rgb(var(--c-prism-comment) / 1);
   }
   .token.punctuation {
-    color: #e1e4e8;
+    color: rgb(var(--c-prism-punctuation) / 1);
   }
   .token.property,
   .token.tag,
@@ -126,7 +109,7 @@
   .token.constant,
   .token.symbol,
   .token.deleted {
-    color: #f97583;
+    color: rgb(var(--c-prism-property) / 1);
   }
   .token.selector,
   .token.attr-name,
@@ -134,82 +117,26 @@
   .token.char,
   .token.builtin,
   .token.inserted {
-    color: #9ecbff;
+    color: rgb(var(--c-prism-selector) / 1);
   }
   .token.operator,
   .token.entity,
   .token.url {
-    color: #79b8ff;
+    color: rgb(var(--c-prism-operator) / 1);
   }
   .token.atrule,
   .token.attr-value,
   .token.keyword {
-    color: #b392f0;
+    color: rgb(var(--c-prism-keyword) / 1);
   }
   .token.function,
   .token.class-name {
-    color: #e1e4e8;
+    color: rgb(var(--c-prism-function) / 1);
   }
   .token.regex,
   .token.important,
   .token.variable {
-    color: #ffab70;
-  }
-
-  /* Light theme token overrides */
-  :root .token.comment,
-  :root .token.prolog,
-  :root .token.doctype,
-  :root .token.cdata {
-    color: #6a737d;
-  }
-  :root .token.punctuation {
-    color: #24292e;
-  }
-  :root .token.property,
-  :root .token.tag,
-  :root .token.boolean,
-  :root .token.number,
-  :root .token.constant,
-  :root .token.symbol,
-  :root .token.deleted {
-    color: #d73a49;
-  }
-  :root .token.selector,
-  :root .token.attr-name,
-  :root .token.string,
-  :root .token.char,
-  :root .token.builtin,
-  :root .token.inserted {
-    color: #032f62;
-  }
-  :root .token.operator,
-  :root .token.entity,
-  :root .token.url {
-    color: #005cc5;
-  }
-  :root .token.atrule,
-  :root .token.attr-value,
-  :root .token.keyword {
-    color: #6f42c1;
-  }
-  :root .token.function,
-  :root .token.class-name {
-    color: #6f42c1;
-  }
-  :root .token.regex,
-  :root .token.important,
-  :root .token.variable {
-    color: #e36209;
-  }
-
-  /* Dark theme token overrides */
-  .dark .token.punctuation {
-    color: #e1e4e8;
-  }
-  .dark .token.function,
-  .dark .token.class-name {
-    color: #e1e4e8;
+    color: rgb(var(--c-prism-regex) / 1);
   }
 }
 
@@ -291,44 +218,27 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    background: rgb(var(--c-scrollbar-thumb) / 1);
     border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
-  }
-
-  .dark ::-webkit-scrollbar-thumb {
-    background: #475569;
-  }
-
-  .dark ::-webkit-scrollbar-thumb:hover {
-    background: #64748b;
+    background: rgb(var(--c-scrollbar-thumb-hover) / 1);
   }
 }
 
 /* Find & Replace match highlighting */
 @layer components {
   .cm-searchMatch {
-    background-color: rgba(250, 204, 21, 0.3);
+    background-color: var(--c-search-match-bg);
     border-radius: 2px;
   }
   .cm-searchMatch-selected {
-    background-color: rgba(250, 204, 21, 0.6);
+    background-color: var(--c-search-match-selected-bg);
     border-radius: 2px;
     box-shadow:
-      0 0 0 1px rgba(202, 138, 4, 0.8),
-      0 0 0 3px rgba(250, 204, 21, 0.2);
-  }
-  .dark .cm-searchMatch {
-    background-color: rgba(250, 204, 21, 0.2);
-  }
-  .dark .cm-searchMatch-selected {
-    background-color: rgba(250, 204, 21, 0.5);
-    box-shadow:
-      0 0 0 1px rgba(202, 138, 4, 0.6),
-      0 0 0 3px rgba(250, 204, 21, 0.15);
+      0 0 0 1px var(--c-search-match-selected-ring),
+      0 0 0 3px var(--c-search-match-selected-glow);
   }
 }
 

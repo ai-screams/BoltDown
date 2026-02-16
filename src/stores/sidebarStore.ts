@@ -1,19 +1,14 @@
 import { create } from 'zustand'
 
+import { SIDEBAR_POLICY, SIDEBAR_WIDTH_LIMITS } from '@/constants/sidebar'
+import { STORAGE_KEYS } from '@/constants/storage'
 import type { FileTreeNode, RecentFile, SidebarTab } from '@/types/sidebar'
 import { loadDirectoryEntries } from '@/utils/directoryLoader'
 import { getDirectoryPath } from '@/utils/imagePath'
 
-const STORAGE_KEY_WIDTH = 'boltdown-sidebar-width'
-const STORAGE_KEY_RECENT = 'boltdown-recent-files'
-const MAX_RECENT = 20
-const DEFAULT_WIDTH = 240
-const MIN_WIDTH = 180
-const MAX_WIDTH = 480
-
 const loadRecentFiles = (): RecentFile[] => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY_RECENT)
+    const raw = localStorage.getItem(STORAGE_KEYS.recentFiles)
     return raw ? (JSON.parse(raw) as RecentFile[]) : []
   } catch {
     return []
@@ -22,13 +17,14 @@ const loadRecentFiles = (): RecentFile[] => {
 
 const loadWidth = (): number => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY_WIDTH)
-    if (!raw) return DEFAULT_WIDTH
+    const raw = localStorage.getItem(STORAGE_KEYS.sidebarWidth)
+    if (!raw) return SIDEBAR_WIDTH_LIMITS.default
     const parsed = parseInt(raw, 10)
-    if (Number.isNaN(parsed)) return DEFAULT_WIDTH
-    return Math.max(MIN_WIDTH, Math.min(parsed, MAX_WIDTH))
+    if (Number.isNaN(parsed)) return SIDEBAR_WIDTH_LIMITS.default
+
+    return Math.max(SIDEBAR_WIDTH_LIMITS.min, Math.min(parsed, SIDEBAR_WIDTH_LIMITS.max))
   } catch {
-    return DEFAULT_WIDTH
+    return SIDEBAR_WIDTH_LIMITS.default
   }
 }
 
@@ -50,11 +46,11 @@ function debouncedSaveWidth(width: number) {
   if (widthWriteTimer) clearTimeout(widthWriteTimer)
   widthWriteTimer = setTimeout(() => {
     try {
-      localStorage.setItem(STORAGE_KEY_WIDTH, String(width))
+      localStorage.setItem(STORAGE_KEYS.sidebarWidth, String(width))
     } catch {
       // Ignore storage errors (private mode/quota exceeded)
     }
-  }, 300)
+  }, SIDEBAR_POLICY.saveDebounceMs)
 }
 
 interface SidebarState {
@@ -90,7 +86,7 @@ export const useSidebarStore = create<SidebarState>((set, get) => ({
   toggle: () => set(s => ({ isOpen: !s.isOpen })),
   setOpen: open => set({ isOpen: open }),
   setWidth: width => {
-    const clamped = Math.max(MIN_WIDTH, Math.min(width, MAX_WIDTH))
+    const clamped = Math.max(SIDEBAR_WIDTH_LIMITS.min, Math.min(width, SIDEBAR_WIDTH_LIMITS.max))
     debouncedSaveWidth(clamped)
     set({ width: clamped })
   },
@@ -102,9 +98,12 @@ export const useSidebarStore = create<SidebarState>((set, get) => ({
     set(s => ({ treeData: updateChildren(s.treeData, parentId, children) })),
   addRecentFile: (path, name) => {
     const filtered = get().recentFiles.filter(f => f.path !== path)
-    const updated = [{ path, name, openedAt: Date.now() }, ...filtered].slice(0, MAX_RECENT)
+    const updated = [{ path, name, openedAt: Date.now() }, ...filtered].slice(
+      0,
+      SIDEBAR_POLICY.maxRecentFiles
+    )
     try {
-      localStorage.setItem(STORAGE_KEY_RECENT, JSON.stringify(updated))
+      localStorage.setItem(STORAGE_KEYS.recentFiles, JSON.stringify(updated))
     } catch {
       // Ignore storage errors (private mode/quota exceeded)
     }

@@ -1,10 +1,14 @@
+import { SETTINGS_DEFAULTS } from '@/constants/settingsLimits'
+
 export type ThemeMode = 'light' | 'dark' | 'system'
+export type ThemeName = 'bolt' | (string & {})
 export type MermaidSecurityLevel = 'strict' | 'loose'
 
 export type FontFamily = 'jetbrains-mono' | 'fira-code' | 'consolas' | 'system-mono'
 
 export interface ThemeSettings {
   mode: ThemeMode
+  name: ThemeName
 }
 
 export interface EditorSettings {
@@ -45,33 +49,34 @@ export type SettingsCategory = keyof AppSettings
 
 export const DEFAULT_THEME: ThemeSettings = {
   mode: 'system',
+  name: 'bolt',
 }
 
 export const DEFAULT_EDITOR: EditorSettings = {
   fontFamily: 'jetbrains-mono',
-  fontSize: 14,
-  lineHeight: 1.6,
-  tabSize: 2,
-  wordWrap: true,
-  spellcheck: true,
-  lineNumbers: true,
-  focusMode: false,
-  focusContextLines: 0,
-  typewriterMode: false,
+  fontSize: SETTINGS_DEFAULTS.editor.fontSize,
+  lineHeight: SETTINGS_DEFAULTS.editor.lineHeight,
+  tabSize: SETTINGS_DEFAULTS.editor.tabSize,
+  wordWrap: SETTINGS_DEFAULTS.editor.wordWrap,
+  spellcheck: SETTINGS_DEFAULTS.editor.spellcheck,
+  lineNumbers: SETTINGS_DEFAULTS.editor.lineNumbers,
+  focusMode: SETTINGS_DEFAULTS.editor.focusMode,
+  focusContextLines: SETTINGS_DEFAULTS.editor.focusContextLines,
+  typewriterMode: SETTINGS_DEFAULTS.editor.typewriterMode,
 }
 
 export const DEFAULT_PREVIEW: PreviewSettings = {
-  fontSize: 16,
-  lineHeight: 1.6,
-  codeBlockFontSize: 14,
-  maxWidth: 800,
+  fontSize: SETTINGS_DEFAULTS.preview.fontSize,
+  lineHeight: SETTINGS_DEFAULTS.preview.lineHeight,
+  codeBlockFontSize: SETTINGS_DEFAULTS.preview.codeBlockFontSize,
+  maxWidth: SETTINGS_DEFAULTS.preview.maxWidth,
   mermaidSecurityLevel: 'strict',
 }
 
 export const DEFAULT_GENERAL: GeneralSettings = {
-  autoSave: false,
-  autoSaveDelay: 3000,
-  restoreLastFile: true,
+  autoSave: SETTINGS_DEFAULTS.general.autoSave,
+  autoSaveDelay: SETTINGS_DEFAULTS.general.autoSaveDelay,
+  restoreLastFile: SETTINGS_DEFAULTS.general.restoreLastFile,
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {

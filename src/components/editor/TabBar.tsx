@@ -3,6 +3,8 @@ import { FileText, PanelLeft, Plus, X } from 'lucide-react'
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 
+import { STATUS_TIMEOUT_MS } from '@/constants/feedback'
+import { FILE_DEFAULTS } from '@/constants/file'
 import { useEditorStore } from '@/stores/editorStore'
 import { useSidebarStore } from '@/stores/sidebarStore'
 import { useTabStore } from '@/stores/tabStore'
@@ -23,7 +25,7 @@ export default memo(function TabBar() {
   const renameInputRef = useRef<HTMLInputElement>(null)
 
   const handleNewTab = useCallback(() => {
-    openTab(null, 'Untitled.md', '')
+    openTab(null, FILE_DEFAULTS.untitledName, '')
   }, [openTab])
 
   const handleClose = useCallback(
@@ -61,7 +63,7 @@ export default memo(function TabBar() {
           renameTab(tabId, newFileName, newPath)
         } catch (e) {
           console.warn('Failed to rename file:', e)
-          useEditorStore.getState().flashStatus('Rename failed', 3000)
+          useEditorStore.getState().flashStatus('Rename failed', STATUS_TIMEOUT_MS.error)
         }
       } else {
         renameTab(tabId, newFileName, null)

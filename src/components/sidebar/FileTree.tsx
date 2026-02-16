@@ -1,6 +1,8 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { Tree, type TreeApi } from 'react-arborist'
 
+import { STATUS_TIMEOUT_MS } from '@/constants/feedback'
+import { FILE_POLICY } from '@/constants/file'
 import { useEditorStore } from '@/stores/editorStore'
 import { useSidebarStore } from '@/stores/sidebarStore'
 import { useTabStore } from '@/stores/tabStore'
@@ -14,8 +16,6 @@ import FileTreeNodeComponent from './FileTreeNode'
 interface FileTreeProps {
   onFileOpen: (path: string, name: string) => void
 }
-
-const MAX_COPY_ATTEMPTS = 100
 
 function getFileName(path: string): string {
   return path.split(/[/\\]/).pop() ?? path
@@ -126,7 +126,7 @@ export default memo(function FileTree({ onFileOpen }: FileTreeProps) {
         let copyPath = joinPath(dir, copyName)
         let nextCopyIndex = 2
         let available = false
-        for (let attempt = 0; attempt < MAX_COPY_ATTEMPTS; attempt++) {
+        for (let attempt = 0; attempt < FILE_POLICY.maxCopyAttempts; attempt++) {
           try {
             await invokeTauri<string>('read_file', { path: copyPath })
             // File exists, try next
@@ -140,7 +140,9 @@ export default memo(function FileTree({ onFileOpen }: FileTreeProps) {
         }
 
         if (!available) {
-          useEditorStore.getState().flashStatus('Duplicate failed: too many copies', 4000)
+          useEditorStore
+            .getState()
+            .flashStatus('Duplicate failed: too many copies', STATUS_TIMEOUT_MS.warning)
           return
         }
 

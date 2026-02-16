@@ -7,6 +7,7 @@ import Prism from 'prismjs'
 import { useTabStore } from '@/stores/tabStore'
 import type { MermaidSecurityLevel } from '@/types/settings'
 import { resolveImageSrcForDisplay } from '@/utils/imagePath'
+import { getMermaidThemeFromDom } from '@/utils/themeRuntime'
 
 import 'prismjs/components/prism-bash'
 import 'prismjs/components/prism-css'
@@ -25,23 +26,11 @@ let mermaidConfigCache: { theme: 'dark' | 'default'; securityLevel: MermaidSecur
 let mermaidRenderCount = 0
 let mermaidRenderToken = 0
 
-function isDarkThemeActive() {
-  return document.documentElement.classList.contains('dark')
-}
-
 function getCodeBlockPalette() {
-  if (isDarkThemeActive()) {
-    return {
-      background: '#1e293b',
-      text: '#e2e8f0',
-      badge: '#94a3b8',
-    }
-  }
-
   return {
-    background: '#f3f4f6',
-    text: '#111827',
-    badge: '#6b7280',
+    background: 'rgb(var(--c-code-block-bg) / 1)',
+    text: 'rgb(var(--c-code-block-text) / 1)',
+    badge: 'rgb(var(--c-code-block-badge) / 1)',
   }
 }
 
@@ -53,7 +42,7 @@ function scheduleEditorMeasure(view: EditorView) {
 }
 
 function getMermaidTheme(): 'dark' | 'default' {
-  return document.documentElement.classList.contains('dark') ? 'dark' : 'default'
+  return getMermaidThemeFromDom()
 }
 
 async function getMermaid(securityLevel: MermaidSecurityLevel) {
@@ -367,7 +356,7 @@ class TableWidget extends WidgetType {
     headers.forEach((h, i) => {
       const th = document.createElement('th')
       th.textContent = h
-      th.style.cssText = `border: 1px solid #d1d5db; padding: 6px 12px; font-weight: 600; text-align: ${alignments[i] ?? 'left'}; background: rgba(100, 116, 139, 0.08);`
+      th.style.cssText = `border: 1px solid rgb(var(--c-wys-table-border) / 1); padding: 6px 12px; font-weight: 600; text-align: ${alignments[i] ?? 'left'}; background: var(--c-wys-table-head-bg);`
       headerRow.appendChild(th)
     })
     thead.appendChild(headerRow)
@@ -378,12 +367,12 @@ class TableWidget extends WidgetType {
       const cells = parseCells(lines[r]!)
       const tr = document.createElement('tr')
       if (r % 2 === 1) {
-        tr.style.background = 'rgba(100, 116, 139, 0.04)'
+        tr.style.background = 'var(--c-wys-table-row-alt-bg)'
       }
       cells.forEach((c, i) => {
         const td = document.createElement('td')
         td.textContent = c
-        td.style.cssText = `border: 1px solid #d1d5db; padding: 6px 12px; text-align: ${alignments[i] ?? 'left'};`
+        td.style.cssText = `border: 1px solid rgb(var(--c-wys-table-border) / 1); padding: 6px 12px; text-align: ${alignments[i] ?? 'left'};`
         tr.appendChild(td)
       })
       tbody.appendChild(tr)
@@ -461,12 +450,13 @@ class MermaidWidget extends WidgetType {
 
     const panel = document.createElement('div')
     panel.style.cssText =
-      'border-radius: 6px; padding: 8px; background: rgba(148, 163, 184, 0.08); overflow-x: auto;'
+      'border-radius: 6px; padding: 8px; background: var(--c-wys-mermaid-panel-bg); overflow-x: auto;'
     wrapper.appendChild(panel)
 
     const loading = document.createElement('div')
     loading.textContent = 'Rendering Mermaid diagram...'
-    loading.style.cssText = `color: ${isDarkThemeActive() ? '#94a3b8' : '#64748b'}; font-size: 0.8em; text-align: center; padding: 8px 0;`
+    loading.style.cssText =
+      'color: rgb(var(--c-wys-mermaid-loading-text) / 1); font-size: 0.8em; text-align: center; padding: 8px 0;'
     panel.appendChild(loading)
 
     void renderMermaidInto(panel, this.code, this.securityLevel, () => {
@@ -491,7 +481,7 @@ const headingStyles: Record<string, string> = {
   '3': 'font-size: 1.25em; font-weight: 600; line-height: 1.4;',
   '4': 'font-size: 1.1em; font-weight: 600; line-height: 1.4;',
   '5': 'font-size: 1em; font-weight: 600; line-height: 1.5;',
-  '6': 'font-size: 0.9em; font-weight: 600; line-height: 1.5; color: #6b7280;',
+  '6': 'font-size: 0.9em; font-weight: 600; line-height: 1.5; color: rgb(var(--c-wys-heading-6-text) / 1);',
 }
 
 function buildDecorations(
@@ -502,7 +492,6 @@ function buildDecorations(
   const cursor = state.selection.main
   const cursorLine = state.doc.lineAt(cursor.head).number
   const codeRanges: DocRange[] = []
-  const hrBorderColor = isDarkThemeActive() ? '#374151' : '#e5e7eb'
   const tree = ensureSyntaxTree(state, state.doc.length, 50) ?? syntaxTree(state)
 
   tree.iterate({
@@ -582,7 +571,7 @@ function buildDecorations(
             Decoration.mark({
               attributes: {
                 style:
-                  'background: rgba(100, 116, 139, 0.15); padding: 1px 4px; border-radius: 3px; font-family: monospace; font-size: 0.9em;',
+                  'background: var(--c-wys-inline-code-bg); padding: 1px 4px; border-radius: 3px; font-family: monospace; font-size: 0.9em;',
               },
             }).range(from + 1, to - 1)
           )
@@ -612,7 +601,10 @@ function buildDecorations(
           decorations.push(Decoration.replace({}).range(to - 2, to))
           decorations.push(
             Decoration.mark({
-              attributes: { style: 'text-decoration: line-through; color: #9ca3af;' },
+              attributes: {
+                style:
+                  'text-decoration: line-through; color: rgb(var(--c-wys-strikethrough-text) / 1);',
+              },
             }).range(from + 2, to - 2)
           )
         }
@@ -623,7 +615,8 @@ function buildDecorations(
         decorations.push(
           Decoration.line({
             attributes: {
-              style: `border-bottom: 1px solid ${hrBorderColor}; padding: 12px 0; line-height: 1; color: transparent;`,
+              style:
+                'border-bottom: 1px solid rgb(var(--c-wys-hr-border) / 1); padding: 12px 0; line-height: 1; color: transparent;',
             },
           }).range(state.doc.lineAt(from).from)
         )
@@ -646,7 +639,8 @@ function buildDecorations(
           decorations.push(
             Decoration.mark({
               attributes: {
-                style: 'color: #3b82f6; text-decoration: underline; cursor: pointer;',
+                style:
+                  'color: rgb(var(--c-wys-link-text) / 1); text-decoration: underline; cursor: pointer;',
               },
             }).range(openBracket.to, closeBracket.from)
           )
@@ -744,7 +738,7 @@ function buildDecorations(
             Decoration.line({
               attributes: {
                 style:
-                  'border-left: 3px solid #d1d5db; padding-left: 12px; color: #6b7280; font-style: italic;',
+                  'border-left: 3px solid rgb(var(--c-wys-blockquote-border) / 1); padding-left: 12px; color: rgb(var(--c-wys-blockquote-text) / 1); font-style: italic;',
               },
             }).range(line.from)
           )

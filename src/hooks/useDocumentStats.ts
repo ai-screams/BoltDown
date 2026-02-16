@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 
+import { DOCUMENT_STATS_POLICY } from '@/constants/feedback'
 import { useTabStore } from '@/stores/tabStore'
 
 interface DocumentStats {
@@ -10,7 +11,7 @@ interface DocumentStats {
 
 const EMPTY_STATS: DocumentStats = { chars: 0, words: 0, lines: 0 }
 
-export function useDocumentStats(debounceMs = 150): DocumentStats {
+export function useDocumentStats(debounceMs = DOCUMENT_STATS_POLICY.debounceMs): DocumentStats {
   const content = useTabStore(s => {
     const tab = s.tabs.find(t => t.id === s.activeTabId)
     return tab?.content ?? ''

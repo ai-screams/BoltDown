@@ -5,6 +5,7 @@ import { useSettingsStore } from '@/stores/settingsStore'
 import { useTabStore } from '@/stores/tabStore'
 import type { MermaidSecurityLevel } from '@/types/settings'
 import { resolveImageSrcForDisplay } from '@/utils/imagePath'
+import { getMermaidThemeFromDom } from '@/utils/themeRuntime'
 
 async function renderMermaidBlocks(
   container: HTMLElement,
@@ -16,7 +17,7 @@ async function renderMermaidBlocks(
 
   const token = `${++tokenRef.current}`
   container.dataset['mermaidToken'] = token
-  const theme = document.documentElement.classList.contains('dark') ? 'dark' : 'default'
+  const theme = getMermaidThemeFromDom()
   const configKey = `${theme}:${securityLevel}`
 
   const mermaid = (await import('mermaid')).default
@@ -130,6 +131,22 @@ export default memo(function MarkdownPreview() {
   useEffect(() => {
     enhancePreview()
   }, [html, enhancePreview])
+
+  useEffect(() => {
+    const root = document.documentElement
+    const observer = new MutationObserver(() => {
+      enhancePreview()
+    })
+
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: ['class', 'data-theme', 'data-theme-resolved'],
+    })
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [enhancePreview])
 
   // Apply code block font size via CSS custom property
   useEffect(() => {

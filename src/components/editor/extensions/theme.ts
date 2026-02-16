@@ -4,41 +4,41 @@ function createBoltdownTheme(dark: boolean) {
   return EditorView.theme(
     {
       '&': {
-        fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
+        fontFamily: 'var(--p-font-mono)',
         fontSize: '14px',
         height: '100%',
       },
       '.cm-content': {
         padding: '16px',
-        caretColor: '#FACC15',
+        caretColor: 'rgb(var(--s-accent) / 1)',
       },
       '.cm-cursor': {
-        borderLeftColor: '#FACC15',
+        borderLeftColor: 'rgb(var(--s-accent) / 1)',
         borderLeftWidth: '2px',
       },
       '.cm-gutters': {
-        backgroundColor: dark ? '#1e293b' : '#f8fafc',
-        borderRight: dark ? '1px solid #334155' : '1px solid #e2e8f0',
-        color: dark ? '#64748b' : '#94a3b8',
+        backgroundColor: 'rgb(var(--c-cm-gutter-bg) / 1)',
+        borderRight: '1px solid rgb(var(--c-cm-gutter-border) / 1)',
+        color: 'rgb(var(--c-cm-gutter-text) / 1)',
       },
       '.cm-activeLineGutter': {
-        backgroundColor: dark ? '#334155' : '#f1f5f9',
+        backgroundColor: 'rgb(var(--c-cm-gutter-active-bg) / 1)',
       },
       '.cm-activeLine': {
-        backgroundColor: 'rgba(250, 204, 21, 0.08)',
-        boxShadow: 'inset 3px 0 0 rgba(250, 204, 21, 0.85)',
+        backgroundColor: 'var(--c-cm-active-line-bg)',
+        boxShadow: 'inset 3px 0 0 var(--c-cm-active-line-shadow)',
         borderRadius: '4px',
         transition: 'background-color 120ms ease-out, box-shadow 120ms ease-out',
       },
       '&.cm-focused .cm-activeLine': {
-        backgroundColor: 'rgba(250, 204, 21, 0.14)',
-        boxShadow: 'inset 3px 0 0 rgba(250, 204, 21, 1)',
+        backgroundColor: 'var(--c-cm-active-line-bg-focused)',
+        boxShadow: 'inset 3px 0 0 var(--c-cm-active-line-shadow-focused)',
       },
       '.cm-selectionBackground': {
-        backgroundColor: dark ? '#FACC1530 !important' : '#FACC1540 !important',
+        backgroundColor: 'var(--c-cm-selection-bg) !important',
       },
       '&.cm-focused .cm-selectionBackground': {
-        backgroundColor: dark ? '#FACC1550 !important' : '#FACC1560 !important',
+        backgroundColor: 'var(--c-cm-selection-bg-focused) !important',
       },
       '.cm-line': {
         lineHeight: '1.6',

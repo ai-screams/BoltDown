@@ -1,30 +1,56 @@
 /** @type {import('tailwindcss').Config} */
+const withAlpha = cssVar => `rgb(var(${cssVar}) / <alpha-value>)`
+
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        // BoltDown Brand Colors
+        // Semantic design tokens
+        surface: {
+          canvas: withAlpha('--s-bg-canvas'),
+          DEFAULT: withAlpha('--s-bg-surface'),
+          elevated: withAlpha('--s-bg-elevated'),
+          muted: withAlpha('--s-bg-muted'),
+        },
+        text: {
+          primary: withAlpha('--s-text-primary'),
+          secondary: withAlpha('--s-text-secondary'),
+          muted: withAlpha('--s-text-muted'),
+        },
+        border: {
+          DEFAULT: withAlpha('--s-border-default'),
+          strong: withAlpha('--s-border-strong'),
+        },
+        brand: {
+          accent: withAlpha('--color-brand-accent'),
+          'accent-strong': withAlpha('--color-brand-accent-strong'),
+          primary: withAlpha('--color-brand-primary'),
+          info: withAlpha('--color-brand-info'),
+          success: withAlpha('--color-brand-success'),
+        },
+
+        // Backward compatible aliases
         electric: {
-          yellow: '#FACC15',
-          dark: '#CA8A04',
+          yellow: withAlpha('--color-electric-yellow'),
+          dark: withAlpha('--color-electric-dark'),
         },
         deep: {
-          blue: '#1E3A8A',
-          navy: '#1E293B',
+          blue: withAlpha('--color-deep-blue'),
+          navy: withAlpha('--color-deep-navy'),
         },
         thunder: {
-          gray: '#64748B',
+          gray: withAlpha('--color-thunder-gray'),
         },
         volt: {
-          orange: '#F97316',
+          orange: withAlpha('--color-volt-orange'),
         },
         ion: {
-          purple: '#7C3AED',
+          purple: withAlpha('--color-ion-purple'),
         },
         charge: {
-          green: '#10B981',
+          green: withAlpha('--color-charge-green'),
         },
       },
       fontFamily: {
@@ -32,7 +58,7 @@ export default {
         mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'monospace'],
       },
       animation: {
-        'bolt': 'bolt 0.3s ease-in-out',
+        bolt: 'bolt 0.3s ease-in-out',
       },
       keyframes: {
         bolt: {

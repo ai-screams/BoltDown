@@ -1,5 +1,6 @@
 import { useEffect, useRef, type MutableRefObject } from 'react'
 
+import { FILE_DEFAULTS } from '@/constants/file'
 import { useEditorStore } from '@/stores/editorStore'
 import { useFindReplaceStore } from '@/stores/findReplaceStore'
 import { useSidebarStore } from '@/stores/sidebarStore'
@@ -71,7 +72,7 @@ export function useKeyboardShortcuts({
 
       if (mod && e.key === 'n') {
         e.preventDefault()
-        useTabStore.getState().openTab(null, 'Untitled.md', '')
+        useTabStore.getState().openTab(null, FILE_DEFAULTS.untitledName, '')
         return
       }
 

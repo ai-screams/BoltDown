@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 
+import { STATUS_TIMEOUT_MS } from '@/constants/feedback'
 import type { EditorMode } from '@/types/editor'
 
 interface EditorState {
@@ -15,7 +16,7 @@ export const useEditorStore = create<EditorState>(set => ({
   mode: 'split',
   setMode: mode => set({ mode }),
   statusText: '',
-  flashStatus: (text, ms = 2000) => {
+  flashStatus: (text, ms = STATUS_TIMEOUT_MS.default) => {
     if (statusTimer) clearTimeout(statusTimer)
     set({ statusText: text })
     statusTimer = setTimeout(() => set({ statusText: '' }), ms)

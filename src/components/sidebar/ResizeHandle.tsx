@@ -1,10 +1,7 @@
 import { memo, useCallback, useRef, useState } from 'react'
 
+import { SIDEBAR_WIDTH_LIMITS } from '@/constants/sidebar'
 import { useSidebarStore } from '@/stores/sidebarStore'
-
-const MIN_WIDTH = 180
-const MAX_WIDTH = 480
-const DEFAULT_WIDTH = 240
 
 export default memo(function ResizeHandle() {
   const setWidth = useSidebarStore(s => s.setWidth)
@@ -23,7 +20,10 @@ export default memo(function ResizeHandle() {
       const onMouseMove = (ev: MouseEvent) => {
         cancelAnimationFrame(rafRef.current)
         rafRef.current = requestAnimationFrame(() => {
-          const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, ev.clientX))
+          const newWidth = Math.min(
+            SIDEBAR_WIDTH_LIMITS.max,
+            Math.max(SIDEBAR_WIDTH_LIMITS.min, ev.clientX)
+          )
           setWidth(newWidth)
         })
       }
@@ -47,8 +47,14 @@ export default memo(function ResizeHandle() {
   )
 
   const handleDoubleClick = useCallback(() => {
-    setWidth(DEFAULT_WIDTH)
+    setWidth(SIDEBAR_WIDTH_LIMITS.default)
   }, [setWidth])
+
+  const dragStyle = isDragging
+    ? {
+        boxShadow: '0 0 8px rgb(var(--c-sidebar-resize-glow) / 0.6)',
+      }
+    : undefined
 
   return (
     <div
@@ -57,9 +63,10 @@ export default memo(function ResizeHandle() {
       aria-orientation="vertical"
       className={`group relative flex-none cursor-col-resize transition-all duration-150 ${
         isDragging
-          ? 'w-1.5 bg-electric-yellow shadow-[0_0_8px_rgba(250,204,21,0.6)]'
-          : 'w-1 bg-gray-200 hover:w-1.5 hover:bg-electric-yellow/50 dark:bg-gray-700 dark:hover:bg-electric-yellow/50'
+          ? 'w-1.5 bg-electric-yellow'
+          : 'w-1 bg-border hover:w-1.5 hover:bg-electric-yellow/50'
       }`}
+      style={dragStyle}
       onDoubleClick={handleDoubleClick}
       onMouseDown={handleMouseDown}
     />

@@ -2,13 +2,16 @@ import { foldGutter, syntaxTree } from '@codemirror/language'
 import type { EditorState, Extension } from '@codemirror/state'
 import { EditorView, highlightActiveLineGutter, lineNumbers } from '@codemirror/view'
 
+import { STATUS_TIMEOUT_MS } from '@/constants/feedback'
+import { BYTES_PER_MEGABYTE, IMAGE_POLICY } from '@/constants/file'
 import { useEditorStore } from '@/stores/editorStore'
 import { useTabStore } from '@/stores/tabStore'
 import { getDirectoryPath, joinPath, toPosixPath } from '@/utils/imagePath'
 import { isTauri } from '@/utils/tauri'
 
 // Constants
-export const MAX_IMAGE_SIZE = 10 * 1024 * 1024 // 10 MB
+export const MAX_IMAGE_SIZE = IMAGE_POLICY.maxBytes
+const MAX_IMAGE_SIZE_MB = IMAGE_POLICY.maxBytes / BYTES_PER_MEGABYTE
 export const supportedImageExtensions = /\.(png|jpe?g|gif|webp|svg|bmp|avif|ico)$/i
 export const nestedListIndent = '    '
 export const orderedListMarkerRegex = /^(\s*)(\d+)([.)])(\s*)/
@@ -150,9 +153,15 @@ export async function toImageMarkdown(
           })
         } else {
           if (file.size > MAX_IMAGE_SIZE) {
-            const sizeMb = (file.size / 1024 / 1024).toFixed(1)
-            useEditorStore.getState().flashStatus(`Image too large (${sizeMb}MB, max 10MB)`, 4000)
-            return `<!-- Image "${altText}" skipped: ${sizeMb}MB exceeds 10MB limit -->`
+            const sizeMb = (file.size / BYTES_PER_MEGABYTE).toFixed(1)
+            useEditorStore
+              .getState()
+              .flashStatus(
+                `Image too large (${sizeMb}MB, max ${MAX_IMAGE_SIZE_MB}MB)`,
+                STATUS_TIMEOUT_MS.warning
+              )
+
+            return `<!-- Image "${altText}" skipped: ${sizeMb}MB exceeds ${MAX_IMAGE_SIZE_MB}MB limit -->`
           }
           const data = Array.from(new Uint8Array(await file.arrayBuffer()))
           await invoke('write_binary_file', {
@@ -180,7 +189,10 @@ export async function toImageMarkdown(
   if (isTauri()) {
     useEditorStore
       .getState()
-      .flashStatus('Inserted embedded image data (save file first for local image paths)', 4000)
+      .flashStatus(
+        'Inserted embedded image data (save file first for local image paths)',
+        STATUS_TIMEOUT_MS.warning
+      )
   }
   return `![${altText}](<${dataUrl}>)`
 }

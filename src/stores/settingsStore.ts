@@ -1,11 +1,14 @@
 import { create } from 'zustand'
 
+import { SETTINGS_POLICY } from '@/constants/settingsLimits'
+import { MEDIA_QUERIES, STORAGE_KEYS } from '@/constants/storage'
 import type {
   AppSettings,
   EditorSettings,
   GeneralSettings,
   PreviewSettings,
   SettingsCategory,
+  ThemeName,
   ThemeMode,
   ThemeSettings,
 } from '@/types/settings'
@@ -20,21 +23,44 @@ function debouncedSave(settings: AppSettings) {
   if (saveTimer) clearTimeout(saveTimer)
   saveTimer = setTimeout(() => {
     void saveSettingsToStorage(settings)
-  }, 500)
+  }, SETTINGS_POLICY.saveDebounceMs)
 }
 
 function getSystemTheme(): 'light' | 'dark' {
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  return window.matchMedia(MEDIA_QUERIES.prefersDark).matches ? 'dark' : 'light'
 }
 
-function applyTheme(mode: ThemeMode) {
-  const resolved = mode === 'system' ? getSystemTheme() : mode
-  document.documentElement.classList.toggle('dark', resolved === 'dark')
+function resolveThemeMode(mode: ThemeMode): 'light' | 'dark' {
+  return mode === 'system' ? getSystemTheme() : mode
+}
+
+function applyTheme(theme: ThemeSettings) {
+  const root = document.documentElement
+  const resolved = resolveThemeMode(theme.mode)
+  root.classList.toggle('dark', resolved === 'dark')
+  root.dataset.theme = theme.name
+  root.dataset.themeMode = theme.mode
+  root.dataset.themeResolved = resolved
+}
+
+const THEME_MODES: ThemeMode[] = ['light', 'dark', 'system']
+
+function sanitizeTheme(theme: Partial<ThemeSettings> | undefined): ThemeSettings {
+  const mode = THEME_MODES.includes(theme?.mode as ThemeMode)
+    ? (theme?.mode as ThemeMode)
+    : DEFAULT_THEME.mode
+  const name =
+    typeof theme?.name === 'string' && theme.name.trim() ? theme.name : DEFAULT_THEME.name
+
+  return {
+    mode,
+    name: name as ThemeName,
+  }
 }
 
 function mergeWithDefaults(stored: Partial<AppSettings>, defaults: AppSettings): AppSettings {
   return {
-    theme: { ...defaults.theme, ...stored.theme },
+    theme: sanitizeTheme({ ...defaults.theme, ...stored.theme }),
     editor: { ...defaults.editor, ...stored.editor },
     preview: { ...defaults.preview, ...stored.preview },
     general: { ...defaults.general, ...stored.general },
@@ -62,16 +88,25 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
     patch: Partial<AppSettings[K]>
   ): void => {
     const previous = get().settings
-    const next = {
-      ...previous,
-      [category]: {
-        ...previous[category],
-        ...patch,
-      },
-    } as AppSettings
+    const next =
+      category === 'theme'
+        ? ({
+            ...previous,
+            theme: sanitizeTheme({
+              ...previous.theme,
+              ...(patch as Partial<ThemeSettings>),
+            }),
+          } as AppSettings)
+        : ({
+            ...previous,
+            [category]: {
+              ...previous[category],
+              ...patch,
+            },
+          } as AppSettings)
 
     set({ settings: next })
-    if (category === 'theme') applyTheme(next.theme.mode)
+    if (category === 'theme') applyTheme(next.theme)
     debouncedSave(next)
   }
 
@@ -87,13 +122,13 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
     resetCategory: category => {
       const next = { ...get().settings, [category]: DEFAULT_SETTINGS[category] }
       set({ settings: next })
-      if (category === 'theme') applyTheme(DEFAULT_THEME.mode)
+      if (category === 'theme') applyTheme(DEFAULT_THEME)
       debouncedSave(next)
     },
 
     resetAll: () => {
       set({ settings: DEFAULT_SETTINGS })
-      applyTheme(DEFAULT_SETTINGS.theme.mode)
+      applyTheme(DEFAULT_SETTINGS.theme)
       debouncedSave(DEFAULT_SETTINGS)
     },
 
@@ -102,30 +137,30 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
       if (stored) {
         const merged = mergeWithDefaults(stored, DEFAULT_SETTINGS)
         set({ settings: merged, isLoaded: true })
-        applyTheme(merged.theme.mode)
+        applyTheme(merged.theme)
       } else {
         set({ isLoaded: true })
-        applyTheme(DEFAULT_SETTINGS.theme.mode)
+        applyTheme(DEFAULT_SETTINGS.theme)
       }
 
       if (!themeListenerRegistered) {
         themeListenerRegistered = true
-        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+        const mediaQuery = window.matchMedia(MEDIA_QUERIES.prefersDark)
         mediaQuery.addEventListener('change', () => {
           const { settings } = get()
           if (settings.theme.mode === 'system') {
-            applyTheme('system')
+            applyTheme(settings.theme)
           }
         })
       }
 
-      const oldTheme = localStorage.getItem('boltdown-theme')
+      const oldTheme = localStorage.getItem(STORAGE_KEYS.legacyTheme)
       if (oldTheme && !stored?.theme) {
         const mode = oldTheme as ThemeMode
-        if (['light', 'dark', 'system'].includes(mode)) {
+        if (THEME_MODES.includes(mode)) {
           get().updateTheme({ mode })
         }
-        localStorage.removeItem('boltdown-theme')
+        localStorage.removeItem(STORAGE_KEYS.legacyTheme)
       }
     },
   }

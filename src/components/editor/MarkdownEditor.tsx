@@ -5,6 +5,8 @@ import { Compartment, EditorState, type Extension } from '@codemirror/state'
 import { EditorView, highlightActiveLine, keymap } from '@codemirror/view'
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 
+import { STATUS_TIMEOUT_MS } from '@/constants/feedback'
+import { MEDIA_QUERIES } from '@/constants/storage'
 import { useEditorView } from '@/contexts/EditorViewContext'
 import { useEditorStore } from '@/stores/editorStore'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -32,7 +34,7 @@ export default memo(function MarkdownEditor() {
   const mode = useEditorStore(s => s.mode)
   const themeMode = useSettingsStore(s => s.settings.theme.mode)
   const [systemDark, setSystemDark] = useState(
-    () => window.matchMedia('(prefers-color-scheme: dark)').matches
+    () => window.matchMedia(MEDIA_QUERIES.prefersDark).matches
   )
   const isDark = themeMode === 'dark' || (themeMode === 'system' && systemDark)
   const editorViewRef = useEditorView()
@@ -63,7 +65,7 @@ export default memo(function MarkdownEditor() {
   activeTabIdRef.current = activeTabId
 
   useEffect(() => {
-    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const media = window.matchMedia(MEDIA_QUERIES.prefersDark)
     const handleChange = (event: MediaQueryListEvent) => {
       setSystemDark(event.matches)
     }
@@ -187,7 +189,9 @@ export default memo(function MarkdownEditor() {
           return
         }
 
-        useEditorStore.getState().flashStatus('Only image files are supported', 3000)
+        useEditorStore
+          .getState()
+          .flashStatus('Only image files are supported', STATUS_TIMEOUT_MS.error)
       }
 
       view.dom.addEventListener('dragover', handleDragOver)

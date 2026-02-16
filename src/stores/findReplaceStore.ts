@@ -1,8 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-const MAX_SEARCH_LENGTH = 1000
-const MAX_REPLACE_LENGTH = 10000
+import { FIND_REPLACE_INPUT_LIMITS } from '@/constants/findReplace'
+import { STORAGE_KEYS } from '@/constants/storage'
 
 interface FindReplaceState {
   isOpen: boolean
@@ -37,18 +37,24 @@ export const useFindReplaceStore = create<FindReplaceState>()(
       toggleReplace: () => set(s => ({ showReplace: !s.showReplace })),
       setSearchText: (text: string) =>
         set({
-          searchText: text.length > MAX_SEARCH_LENGTH ? text.slice(0, MAX_SEARCH_LENGTH) : text,
+          searchText:
+            text.length > FIND_REPLACE_INPUT_LIMITS.searchMaxChars
+              ? text.slice(0, FIND_REPLACE_INPUT_LIMITS.searchMaxChars)
+              : text,
         }),
       setReplaceText: (text: string) =>
         set({
-          replaceText: text.length > MAX_REPLACE_LENGTH ? text.slice(0, MAX_REPLACE_LENGTH) : text,
+          replaceText:
+            text.length > FIND_REPLACE_INPUT_LIMITS.replaceMaxChars
+              ? text.slice(0, FIND_REPLACE_INPUT_LIMITS.replaceMaxChars)
+              : text,
         }),
       toggleCaseSensitive: () => set(s => ({ caseSensitive: !s.caseSensitive })),
       toggleRegex: () => set(s => ({ useRegex: !s.useRegex })),
       toggleWholeWord: () => set(s => ({ wholeWord: !s.wholeWord })),
     }),
     {
-      name: 'find-replace-preferences',
+      name: STORAGE_KEYS.findReplacePreferences,
       partialize: (state): Pick<FindReplaceState, 'caseSensitive' | 'useRegex' | 'wholeWord'> => ({
         caseSensitive: state.caseSensitive,
         useRegex: state.useRegex,

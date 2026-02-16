@@ -14,30 +14,25 @@ import { ArrowRightLeft, ChevronDown, ChevronRight, ChevronUp, Search, X } from 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 
+import {
+  FIND_REPLACE_ERRORS,
+  FIND_REPLACE_SEARCH_POLICY,
+  REGEX_SAFETY_POLICY,
+} from '@/constants/findReplace'
 import { useEditorView } from '@/contexts/EditorViewContext'
 import { useFindReplaceStore } from '@/stores/findReplaceStore'
 
-// --- Constants ---
-const MAX_RESULTS_DISPLAY = 200
-const MAX_TOTAL_MATCHES = 10000
-const SEARCH_DEBOUNCE_MS = 150
-const SEARCH_TIMEOUT_MS = 2000
-const ERROR_INVALID_REGEX = 'Invalid regex'
-const ERROR_REPLACE_FAILED = 'Replace failed'
-
-// --- ReDoS protection ---
-const DANGEROUS_REGEX_PATTERNS = [
-  /\(.*[+*]\)(?:[+*]|\{)/, // (a+)+ or (a*)*
-  /\((?:[^()]*\|){3,}[^()]*\)/, // (a|b|c|d)+ excessive alternation
-]
-const MAX_REGEX_LENGTH = 500
-const MAX_REGEX_GROUPS = 10
-
 function validateRegexComplexity(pattern: string): string | null {
-  if (pattern.length > MAX_REGEX_LENGTH) return `Pattern too long (max ${MAX_REGEX_LENGTH} chars)`
+  if (pattern.length > REGEX_SAFETY_POLICY.maxPatternLength) {
+    return `Pattern too long (max ${REGEX_SAFETY_POLICY.maxPatternLength} chars)`
+  }
+
   const groupCount = (pattern.match(/\(/g) || []).length
-  if (groupCount > MAX_REGEX_GROUPS) return `Pattern too complex (max ${MAX_REGEX_GROUPS} groups)`
-  for (const dangerous of DANGEROUS_REGEX_PATTERNS) {
+  if (groupCount > REGEX_SAFETY_POLICY.maxCaptureGroups) {
+    return `Pattern too complex (max ${REGEX_SAFETY_POLICY.maxCaptureGroups} groups)`
+  }
+
+  for (const dangerous of REGEX_SAFETY_POLICY.dangerousPatterns) {
     if (dangerous.test(pattern)) return 'Pattern may cause performance issues'
   }
   return null
@@ -59,8 +54,8 @@ function getMatches(doc: Text, query: SearchQuery): MatchInfo[] {
   const startTime = window.performance.now()
   let result = cursor.next()
   while (!result.done) {
-    if (window.performance.now() - startTime > SEARCH_TIMEOUT_MS) {
-      throw new Error('Search timeout — pattern may be too complex')
+    if (window.performance.now() - startTime > FIND_REPLACE_SEARCH_POLICY.timeoutMs) {
+      throw new Error(FIND_REPLACE_ERRORS.timeout)
     }
     // Defer line info — store only positions for non-displayed matches
     matches.push({
@@ -70,11 +65,11 @@ function getMatches(doc: Text, query: SearchQuery): MatchInfo[] {
       lineFrom: -1,
       text: '',
     })
-    if (matches.length >= MAX_TOTAL_MATCHES) break
+    if (matches.length >= FIND_REPLACE_SEARCH_POLICY.maxTotalMatches) break
     result = cursor.next()
   }
   // Populate line info only for displayed matches (lazy)
-  const limit = Math.min(matches.length, MAX_RESULTS_DISPLAY)
+  const limit = Math.min(matches.length, FIND_REPLACE_SEARCH_POLICY.maxResultsDisplay)
   for (let i = 0; i < limit; i++) {
     const m = matches[i]!
     const line = doc.lineAt(m.from)
@@ -239,11 +234,11 @@ export default memo(function FindReplaceModal() {
           setCurrentIndex(-1)
         }
       } catch {
-        setRegexError(ERROR_INVALID_REGEX)
+        setRegexError(FIND_REPLACE_ERRORS.invalidRegex)
         setMatches([])
         setCurrentIndex(-1)
       }
-    }, SEARCH_DEBOUNCE_MS)
+    }, FIND_REPLACE_SEARCH_POLICY.debounceMs)
     return () => clearTimeout(timer)
   }, [
     searchText,
@@ -366,7 +361,7 @@ export default memo(function FindReplaceModal() {
       replaceNext(view)
       setDocVersion(v => v + 1)
     } catch (e) {
-      const message = e instanceof Error ? e.message : ERROR_REPLACE_FAILED
+      const message = e instanceof Error ? e.message : FIND_REPLACE_ERRORS.replaceFailed
       console.error('Replace failed:', e)
       setRegexError(message)
     }
@@ -383,9 +378,12 @@ export default memo(function FindReplaceModal() {
       if (statusTimerRef.current) {
         window.clearTimeout(statusTimerRef.current)
       }
-      statusTimerRef.current = window.setTimeout(() => setStatusMessage(null), 2000)
+      statusTimerRef.current = window.setTimeout(
+        () => setStatusMessage(null),
+        FIND_REPLACE_SEARCH_POLICY.statusClearMs
+      )
     } catch (e) {
-      const message = e instanceof Error ? e.message : ERROR_REPLACE_FAILED
+      const message = e instanceof Error ? e.message : FIND_REPLACE_ERRORS.replaceFailed
       console.error('Replace all failed:', e)
       setRegexError(message)
     }
@@ -512,8 +510,11 @@ export default memo(function FindReplaceModal() {
     [handleClose]
   )
 
-  // Display matches capped at MAX_RESULTS_DISPLAY
-  const displayMatches = useMemo(() => matches.slice(0, MAX_RESULTS_DISPLAY), [matches])
+  // Display matches capped at policy limit
+  const displayMatches = useMemo(
+    () => matches.slice(0, FIND_REPLACE_SEARCH_POLICY.maxResultsDisplay),
+    [matches]
+  )
 
   if (!isOpen) return null
 
@@ -522,7 +523,7 @@ export default memo(function FindReplaceModal() {
   const matchCountText = regexError
     ? regexError
     : searchText
-      ? `${currentIndex >= 0 ? currentIndex + 1 : '-'} of ${matches.length}${matches.length >= MAX_TOTAL_MATCHES ? '+' : ''}`
+      ? `${currentIndex >= 0 ? currentIndex + 1 : '-'} of ${matches.length}${matches.length >= FIND_REPLACE_SEARCH_POLICY.maxTotalMatches ? '+' : ''}`
       : '0 results'
 
   return (
@@ -715,9 +716,10 @@ export default memo(function FindReplaceModal() {
                     onClick={() => handleJumpTo(match, i)}
                   />
                 ))}
-                {matches.length > MAX_RESULTS_DISPLAY && (
+                {matches.length > FIND_REPLACE_SEARCH_POLICY.maxResultsDisplay && (
                   <div className="px-4 py-2 text-center text-[10px] text-gray-400 dark:text-gray-500">
-                    Showing {MAX_RESULTS_DISPLAY} of {matches.length} matches
+                    Showing {FIND_REPLACE_SEARCH_POLICY.maxResultsDisplay} of {matches.length}{' '}
+                    matches
                   </div>
                 )}
               </>

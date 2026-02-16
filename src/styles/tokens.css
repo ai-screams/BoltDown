@@ -1,0 +1,166 @@
+@layer base {
+  :root,
+  :root[data-theme='bolt'] {
+    /* Primitive color channels */
+    --p-color-white: 255 255 255;
+    --p-color-black: 0 0 0;
+    --p-color-slate-50: 248 250 252;
+    --p-color-slate-100: 241 245 249;
+    --p-color-slate-200: 226 232 240;
+    --p-color-slate-300: 203 213 225;
+    --p-color-slate-400: 148 163 184;
+    --p-color-slate-500: 100 116 139;
+    --p-color-slate-600: 71 85 105;
+    --p-color-slate-700: 51 65 85;
+    --p-color-slate-800: 30 41 59;
+    --p-color-slate-900: 15 23 42;
+
+    --p-color-electric-yellow: 250 204 21;
+    --p-color-electric-dark: 202 138 4;
+    --p-color-deep-blue: 30 58 138;
+    --p-color-volt-orange: 249 115 22;
+    --p-color-ion-purple: 124 58 237;
+    --p-color-charge-green: 16 185 129;
+
+    /* Primitive typography */
+    --p-font-sans: 'Inter', 'Pretendard', system-ui, sans-serif;
+    --p-font-mono: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, monospace;
+
+    /* Semantic color channels */
+    --s-bg-canvas: var(--p-color-slate-50);
+    --s-bg-surface: var(--p-color-white);
+    --s-bg-elevated: var(--p-color-white);
+    --s-bg-muted: var(--p-color-slate-100);
+
+    --s-text-primary: 17 24 39;
+    --s-text-secondary: 75 85 99;
+    --s-text-muted: 107 114 128;
+
+    --s-border-default: var(--p-color-slate-200);
+    --s-border-strong: var(--p-color-slate-300);
+
+    --s-accent: var(--p-color-electric-yellow);
+    --s-accent-strong: var(--p-color-electric-dark);
+    --s-link: var(--p-color-deep-blue);
+    --s-link-hover: var(--p-color-electric-dark);
+    --s-success: var(--p-color-charge-green);
+    --s-warning: var(--p-color-volt-orange);
+
+    /* Component color channels */
+    --c-code-block-bg: 243 244 246;
+    --c-code-block-text: 17 24 39;
+    --c-code-block-badge: 107 114 128;
+
+    --c-wys-table-border: 209 213 219;
+    --c-wys-table-head-bg: rgb(100 116 139 / 0.08);
+    --c-wys-table-row-alt-bg: rgb(100 116 139 / 0.04);
+    --c-wys-mermaid-panel-bg: rgb(148 163 184 / 0.08);
+    --c-wys-mermaid-loading-text: 100 116 139;
+    --c-wys-heading-6-text: 107 114 128;
+    --c-wys-hr-border: 229 231 235;
+    --c-wys-inline-code-bg: rgb(100 116 139 / 0.15);
+    --c-wys-strikethrough-text: 156 163 175;
+    --c-wys-link-text: 59 130 246;
+    --c-wys-blockquote-border: 209 213 219;
+    --c-wys-blockquote-text: 107 114 128;
+    --c-sidebar-resize-glow: var(--s-accent);
+
+    --c-cm-gutter-bg: var(--p-color-slate-50);
+    --c-cm-gutter-border: var(--p-color-slate-200);
+    --c-cm-gutter-text: var(--p-color-slate-400);
+    --c-cm-gutter-active-bg: var(--p-color-slate-100);
+    --c-cm-active-line-bg: rgb(var(--s-accent) / 0.08);
+    --c-cm-active-line-shadow: rgb(var(--s-accent) / 0.85);
+    --c-cm-active-line-bg-focused: rgb(var(--s-accent) / 0.14);
+    --c-cm-active-line-shadow-focused: rgb(var(--s-accent) / 1);
+    --c-cm-selection-bg: rgb(var(--s-accent) / 0.25);
+    --c-cm-selection-bg-focused: rgb(var(--s-accent) / 0.38);
+
+    --c-prism-comment: 106 115 125;
+    --c-prism-punctuation: 36 41 46;
+    --c-prism-property: 215 58 73;
+    --c-prism-selector: 3 47 98;
+    --c-prism-operator: 0 92 197;
+    --c-prism-keyword: 111 66 193;
+    --c-prism-function: 111 66 193;
+    --c-prism-regex: 227 98 9;
+
+    --c-scrollbar-thumb: 203 213 225;
+    --c-scrollbar-thumb-hover: 148 163 184;
+
+    --c-search-match-bg: rgb(var(--s-accent) / 0.3);
+    --c-search-match-selected-bg: rgb(var(--s-accent) / 0.6);
+    --c-search-match-selected-ring: rgb(var(--s-accent-strong) / 0.8);
+    --c-search-match-selected-glow: rgb(var(--s-accent) / 0.2);
+
+    /* Legacy aliases for existing Tailwind utility names */
+    --color-brand-accent: var(--s-accent);
+    --color-brand-accent-strong: var(--s-accent-strong);
+    --color-brand-primary: var(--s-link);
+    --color-brand-info: var(--p-color-volt-orange);
+    --color-brand-success: var(--s-success);
+
+    --color-electric-yellow: var(--p-color-electric-yellow);
+    --color-electric-dark: var(--p-color-electric-dark);
+    --color-deep-blue: var(--p-color-deep-blue);
+    --color-deep-navy: var(--p-color-slate-800);
+    --color-thunder-gray: var(--p-color-slate-500);
+    --color-volt-orange: var(--p-color-volt-orange);
+    --color-ion-purple: var(--p-color-ion-purple);
+    --color-charge-green: var(--p-color-charge-green);
+
+    /* Legacy spacing aliases */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+  }
+
+  :root.dark,
+  :root[data-theme='bolt'].dark {
+    --s-bg-canvas: var(--p-color-slate-900);
+    --s-bg-surface: var(--p-color-slate-800);
+    --s-bg-elevated: var(--p-color-slate-700);
+    --s-bg-muted: var(--p-color-slate-700);
+
+    --s-text-primary: 241 245 249;
+    --s-text-secondary: 203 213 225;
+    --s-text-muted: 148 163 184;
+
+    --s-border-default: var(--p-color-slate-600);
+    --s-border-strong: var(--p-color-slate-500);
+
+    --s-link: var(--p-color-electric-yellow);
+    --s-link-hover: 253 224 71;
+
+    --c-code-block-bg: 30 41 59;
+    --c-code-block-text: 226 232 240;
+    --c-code-block-badge: 148 163 184;
+    --c-wys-mermaid-loading-text: 148 163 184;
+    --c-wys-hr-border: 55 65 81;
+
+    --c-cm-gutter-bg: var(--p-color-slate-800);
+    --c-cm-gutter-border: var(--p-color-slate-700);
+    --c-cm-gutter-text: var(--p-color-slate-500);
+    --c-cm-gutter-active-bg: var(--p-color-slate-700);
+    --c-cm-selection-bg: rgb(var(--s-accent) / 0.18);
+    --c-cm-selection-bg-focused: rgb(var(--s-accent) / 0.32);
+
+    --c-prism-punctuation: 225 228 232;
+    --c-prism-property: 249 117 131;
+    --c-prism-selector: 158 203 255;
+    --c-prism-operator: 121 184 255;
+    --c-prism-keyword: 179 146 240;
+    --c-prism-function: 225 228 232;
+    --c-prism-regex: 255 171 112;
+
+    --c-scrollbar-thumb: 71 85 105;
+    --c-scrollbar-thumb-hover: 100 116 139;
+
+    --c-search-match-bg: rgb(var(--s-accent) / 0.2);
+    --c-search-match-selected-bg: rgb(var(--s-accent) / 0.5);
+    --c-search-match-selected-ring: rgb(var(--s-accent-strong) / 0.6);
+    --c-search-match-selected-glow: rgb(var(--s-accent) / 0.15);
+  }
+}
