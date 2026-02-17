@@ -5,6 +5,7 @@ import type StateInline from 'markdown-it/lib/rules_inline/state_inline.mjs'
 import Prism from 'prismjs'
 
 import { escapeHtml } from '@/utils/markdownText'
+import { tocPlugin } from '@/utils/tocPlugin'
 
 import 'katex/dist/katex.min.css'
 import 'prismjs/components/prism-bash'
@@ -82,6 +83,35 @@ function mathBlock(
   return true
 }
 
+function sourceLineFromToken(
+  token: { map?: [number, number] | null } | null | undefined
+): number | null {
+  const startLine = token?.map?.[0]
+  if (startLine === undefined || startLine < 0) return null
+  return startLine + 1
+}
+
+function withSourceLineAttr(html: string, line: number | null): string {
+  if (!line || !html.startsWith('<')) return html
+  if (/^<pre\b[^>]*\bdata-source-line=/.test(html)) return html
+  return html.replace(/^<([a-zA-Z][\w:-]*)/, `<$1 data-source-line="${line}"`)
+}
+
+function addBlockSourceLineAttributes(parser: MarkdownIt): void {
+  parser.core.ruler.after('block', 'source_line_attrs', state => {
+    for (const token of state.tokens) {
+      const line = sourceLineFromToken(token)
+      if (!line) continue
+
+      const isOpeningBlock = token.block && token.nesting === 1
+      const isStandaloneBlock = token.block && token.nesting === 0
+      if (!isOpeningBlock && !isStandaloneBlock) continue
+
+      token.attrSet('data-source-line', String(line))
+    }
+  })
+}
+
 export const md: MarkdownIt = new MarkdownIt({
   html: true,
   linkify: true,
@@ -104,6 +134,25 @@ md.inline.ruler.after('escape', 'math_inline', mathInline)
 md.block.ruler.before('fence', 'math_block', mathBlock, {
   alt: ['paragraph', 'reference', 'blockquote', 'list'],
 })
+addBlockSourceLineAttributes(md)
+
+const defaultFenceRenderer = md.renderer.rules.fence
+md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+  const rendered = defaultFenceRenderer
+    ? defaultFenceRenderer(tokens, idx, options, env, self)
+    : self.renderToken(tokens, idx, options)
+  const line = sourceLineFromToken(tokens[idx])
+  return withSourceLineAttr(rendered, line)
+}
+
+const defaultCodeBlockRenderer = md.renderer.rules.code_block
+md.renderer.rules.code_block = (tokens, idx, options, env, self) => {
+  const rendered = defaultCodeBlockRenderer
+    ? defaultCodeBlockRenderer(tokens, idx, options, env, self)
+    : self.renderToken(tokens, idx, options)
+  const line = sourceLineFromToken(tokens[idx])
+  return withSourceLineAttr(rendered, line)
+}
 
 md.renderer.rules['math_inline'] = (tokens, idx) => {
   try {
@@ -117,17 +166,19 @@ md.renderer.rules['math_inline'] = (tokens, idx) => {
 }
 
 md.renderer.rules['math_block'] = (tokens, idx) => {
+  const line = sourceLineFromToken(tokens[idx])
+  const lineAttr = line ? ` data-source-line="${line}"` : ''
+
   try {
-    return `<div class="katex-block">${katex.renderToString(tokens[idx]!.content, {
+    return `<div${lineAttr} class="katex-block">${katex.renderToString(tokens[idx]!.content, {
       throwOnError: false,
       strict: 'ignore',
       displayMode: true,
     })}</div>`
   } catch {
-    return `<pre><code>${escapeHtml(tokens[idx]!.content)}</code></pre>`
+    return `<pre${lineAttr}><code>${escapeHtml(tokens[idx]!.content)}</code></pre>`
   }
 }
 
 // Register TOC plugin
-import { tocPlugin } from './tocPlugin'
 md.use(tocPlugin)

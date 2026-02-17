@@ -1,6 +1,7 @@
 import { memo, useCallback, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 
+import { useSplitScrollSync } from '@/hooks/useSplitScrollSync'
 import { useEditorStore } from '@/stores/editorStore'
 
 interface MainLayoutProps {
@@ -17,7 +18,10 @@ export default memo(function MainLayout({ editor, preview, toolbar }: MainLayout
   const [splitRatio, setSplitRatio] = useState(0.5)
   const [isDragging, setIsDragging] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const previewScrollRef = useRef<HTMLDivElement>(null)
   const rafRef = useRef(0)
+
+  useSplitScrollSync({ enabled: mode === 'split', previewScrollRef })
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
@@ -73,7 +77,9 @@ export default memo(function MainLayout({ editor, preview, toolbar }: MainLayout
               onDoubleClick={handleDoubleClick}
               onMouseDown={handleMouseDown}
             />
-            <div className="flex-1 overflow-auto overscroll-contain">{preview}</div>
+            <div ref={previewScrollRef} className="flex-1 overflow-auto overscroll-contain">
+              {preview}
+            </div>
           </>
         ) : (
           <div className="w-full overflow-hidden">{editor}</div>
