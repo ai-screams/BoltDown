@@ -4,6 +4,7 @@ import type StateBlock from 'markdown-it/lib/rules_block/state_block.mjs'
 import type StateInline from 'markdown-it/lib/rules_inline/state_inline.mjs'
 import Prism from 'prismjs'
 
+import { LruCache } from '@/utils/cache'
 import { escapeHtml } from '@/utils/markdownText'
 import { tocPlugin } from '@/utils/tocPlugin'
 
@@ -18,6 +19,8 @@ import 'prismjs/components/prism-python'
 import 'prismjs/components/prism-rust'
 import 'prismjs/components/prism-tsx'
 import 'prismjs/components/prism-typescript'
+
+const katexCache = new LruCache<string>(200)
 
 // KaTeX inline math: $...$
 function mathInline(state: StateInline, silent: boolean): boolean {
@@ -155,28 +158,45 @@ md.renderer.rules.code_block = (tokens, idx, options, env, self) => {
 }
 
 md.renderer.rules['math_inline'] = (tokens, idx) => {
+  const content = tokens[idx]!.content
+  const cacheKey = `i:${content}`
+  const cached = katexCache.get(cacheKey)
+  if (cached !== undefined) return cached
+
   try {
-    return katex.renderToString(tokens[idx]!.content, {
+    const html = katex.renderToString(content, {
       throwOnError: false,
       strict: 'ignore',
     })
+    katexCache.set(cacheKey, html)
+    return html
   } catch {
-    return `<code>${escapeHtml(tokens[idx]!.content)}</code>`
+    const fallback = `<code>${escapeHtml(content)}</code>`
+    katexCache.set(cacheKey, fallback)
+    return fallback
   }
 }
 
 md.renderer.rules['math_block'] = (tokens, idx) => {
+  const content = tokens[idx]!.content
   const line = sourceLineFromToken(tokens[idx])
   const lineAttr = line ? ` data-source-line="${line}"` : ''
+  const cacheKey = `b:${content}`
+  const cached = katexCache.get(cacheKey)
+  if (cached !== undefined) return `<div${lineAttr} class="katex-block">${cached}</div>`
 
   try {
-    return `<div${lineAttr} class="katex-block">${katex.renderToString(tokens[idx]!.content, {
+    const html = katex.renderToString(content, {
       throwOnError: false,
       strict: 'ignore',
       displayMode: true,
-    })}</div>`
+    })
+    katexCache.set(cacheKey, html)
+    return `<div${lineAttr} class="katex-block">${html}</div>`
   } catch {
-    return `<pre${lineAttr}><code>${escapeHtml(tokens[idx]!.content)}</code></pre>`
+    const fallback = escapeHtml(content)
+    katexCache.set(cacheKey, fallback)
+    return `<pre${lineAttr}><code>${fallback}</code></pre>`
   }
 }
 

@@ -16,6 +16,7 @@ export function useAutoSave(): void {
   const autoSaveDelay = useSettingsStore(s => s.settings.general.autoSaveDelay)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isSavingRef = useRef(false)
+  const pendingBlurSaveRef = useRef(false)
 
   useEffect(() => {
     if (!autoSave) return
@@ -41,15 +42,17 @@ export function useAutoSave(): void {
           if (current.filePath && desktop) {
             // Disk save: Tauri + has file path
             try {
-              await invokeTauri('write_file', { path: current.filePath, content: current.content })
-              markClean(current.id, current.content)
+              const contentToSave = current.content
+              await invokeTauri('write_file', { path: current.filePath, content: contentToSave })
+              markClean(current.id, contentToSave)
               savedCount++
             } catch (e) {
               console.error(`Auto-save failed for ${current.filePath}:`, e)
             }
           } else {
             // In-memory save: untitled tabs or browser mode
-            markClean(current.id, current.content)
+            const contentToSave = current.content
+            markClean(current.id, contentToSave)
             savedCount++
           }
         }
@@ -59,6 +62,10 @@ export function useAutoSave(): void {
         }
       } finally {
         isSavingRef.current = false
+        if (pendingBlurSaveRef.current) {
+          pendingBlurSaveRef.current = false
+          void saveDirtyTabs()
+        }
       }
     }
 
@@ -79,7 +86,11 @@ export function useAutoSave(): void {
     // Save immediately on window blur
     const handleBlur = () => {
       if (timerRef.current) clearTimeout(timerRef.current)
-      void saveDirtyTabs()
+      if (isSavingRef.current) {
+        pendingBlurSaveRef.current = true
+      } else {
+        void saveDirtyTabs()
+      }
     }
     window.addEventListener('blur', handleBlur)
 

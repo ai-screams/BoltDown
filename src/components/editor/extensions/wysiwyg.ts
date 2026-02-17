@@ -6,6 +6,7 @@ import Prism from 'prismjs'
 
 import { useTabStore } from '@/stores/tabStore'
 import type { MermaidSecurityLevel } from '@/types/settings'
+import { LruCache } from '@/utils/cache'
 import { resolveImageSrcForDisplay } from '@/utils/imagePath'
 import { sanitizeCodeHtml, sanitizeKatexHtml, sanitizeSvgHtml } from '@/utils/sanitize'
 import { getMermaidThemeFromDom } from '@/utils/themeRuntime'
@@ -20,6 +21,9 @@ import 'prismjs/components/prism-python'
 import 'prismjs/components/prism-rust'
 import 'prismjs/components/prism-tsx'
 import 'prismjs/components/prism-typescript'
+
+const wysiwygKatexCache = new LruCache<string>(200)
+const mermaidSvgCache = new LruCache<string>(50)
 
 let mermaidModulePromise: Promise<(typeof import('mermaid'))['default']> | null = null
 let mermaidConfigCache: { theme: 'dark' | 'default'; securityLevel: MermaidSecurityLevel } | null =
@@ -170,6 +174,15 @@ async function renderMermaidInto(
   securityLevel: MermaidSecurityLevel,
   onRendered?: () => void
 ) {
+  const theme = getMermaidThemeFromDom()
+  const cacheKey = `${code}:${theme}:${securityLevel}`
+  const cachedSvg = mermaidSvgCache.get(cacheKey)
+  if (cachedSvg !== undefined) {
+    container.innerHTML = cachedSvg
+    onRendered?.()
+    return
+  }
+
   const token = `${++mermaidRenderToken}`
   container.dataset.mermaidToken = token
 
@@ -179,7 +192,9 @@ async function renderMermaidInto(
     const { svg } = await mermaid.render(id, code)
 
     if (!container.isConnected || container.dataset.mermaidToken !== token) return
-    container.innerHTML = sanitizeSvgHtml(svg)
+    const sanitized = sanitizeSvgHtml(svg)
+    mermaidSvgCache.set(cacheKey, sanitized)
+    container.innerHTML = sanitized
     onRendered?.()
   } catch {
     if (!container.isConnected || container.dataset.mermaidToken !== token) return
@@ -373,12 +388,18 @@ class InlineMathWidget extends WidgetType {
   toDOM() {
     const span = document.createElement('span')
     span.className = 'cm-inline-math-widget'
-    span.innerHTML = sanitizeKatexHtml(
-      katex.renderToString(this.content, {
-        throwOnError: false,
-        strict: 'ignore',
-      })
-    )
+    const cacheKey = `i:${this.content}`
+    let html = wysiwygKatexCache.get(cacheKey)
+    if (html === undefined) {
+      html = sanitizeKatexHtml(
+        katex.renderToString(this.content, {
+          throwOnError: false,
+          strict: 'ignore',
+        })
+      )
+      wysiwygKatexCache.set(cacheKey, html)
+    }
+    span.innerHTML = html
     return span
   }
   eq(other: InlineMathWidget) {
@@ -398,13 +419,19 @@ class BlockMathWidget extends WidgetType {
     const div = document.createElement('div')
     div.className = 'cm-block-math-widget'
     div.style.cssText = 'text-align: center; padding: 12px 0;'
-    div.innerHTML = sanitizeKatexHtml(
-      katex.renderToString(this.content, {
-        throwOnError: false,
-        strict: 'ignore',
-        displayMode: true,
-      })
-    )
+    const cacheKey = `b:${this.content}`
+    let html = wysiwygKatexCache.get(cacheKey)
+    if (html === undefined) {
+      html = sanitizeKatexHtml(
+        katex.renderToString(this.content, {
+          throwOnError: false,
+          strict: 'ignore',
+          displayMode: true,
+        })
+      )
+      wysiwygKatexCache.set(cacheKey, html)
+    }
+    div.innerHTML = html
     return div
   }
   eq(other: BlockMathWidget) {
@@ -923,10 +950,17 @@ export function wysiwygExtension(mermaidSecurityLevel: MermaidSecurityLevel = 's
       return buildDecorations(state, mermaidSecurityLevel)
     },
     update(decorations, tr) {
-      if (tr.docChanged || tr.selection) {
-        return buildDecorations(tr.state, mermaidSecurityLevel)
-      }
-      return decorations
+      // No changes at all: reuse existing decorations
+      if (!tr.docChanged && !tr.selection) return decorations
+
+      // Full rebuild on any doc or selection change.
+      // The LRU caches for KaTeX (wysiwygKatexCache) and Mermaid (mermaidSvgCache)
+      // make each rebuild cheap — the expensive rendering is served from cache,
+      // so only the tree walk and decoration assembly cost remains.
+      // A truly incremental approach (mapping + partial rebuild) was considered
+      // but is fragile with the two-tier reveal system and cross-referencing
+      // between code ranges and math decorations.
+      return buildDecorations(tr.state, mermaidSecurityLevel)
     },
     provide: field => EditorView.decorations.from(field),
   })
