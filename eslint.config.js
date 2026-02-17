@@ -65,6 +65,7 @@ export default [
         crypto: 'readonly',
         ResizeObserver: 'readonly',
         React: 'readonly',
+        __APP_VERSION__: 'readonly',
       },
     },
     plugins: {

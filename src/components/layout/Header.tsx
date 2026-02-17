@@ -7,10 +7,14 @@ import {
   Eye,
   FileText,
   FolderOpen,
+  HelpCircle,
+  Info,
+  Keyboard,
   Monitor,
   Moon,
   Printer,
   Save,
+  ScrollText,
   Sun,
   Zap,
 } from 'lucide-react'
@@ -32,13 +36,150 @@ const modes: { mode: EditorMode; icon: typeof Columns2; label: string }[] = [
 const themeIcon = { light: Sun, dark: Moon, system: Monitor }
 const themeLabel = { light: 'Light', dark: 'Dark', system: 'System' }
 const EXPORT_MENU_ID = 'header-export-menu'
+const HELP_MENU_ID = 'header-help-menu'
+
+const helpActions = [
+  { key: 'shortcuts', icon: Keyboard, label: 'Keyboard Shortcuts', action: 'onOpenShortcuts' },
+  { key: 'changelog', icon: ScrollText, label: 'Changelog', action: 'onOpenChangelog' },
+  { key: 'about', icon: Info, label: 'About BoltDown', action: 'onOpenAbout' },
+] as const
+
+interface HelpMenuProps {
+  onOpenShortcuts: () => void
+  onOpenChangelog: () => void
+  onOpenAbout: () => void
+}
+
+const HelpMenu = memo(function HelpMenu({
+  onOpenShortcuts,
+  onOpenChangelog,
+  onOpenAbout,
+}: HelpMenuProps) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
+
+  const handlers: Record<string, () => void> = {
+    onOpenShortcuts,
+    onOpenChangelog,
+    onOpenAbout,
+  }
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  useEffect(() => {
+    if (open && itemRefs.current[0]) {
+      itemRefs.current[0]?.focus()
+    }
+  }, [open])
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    const focusedIndex = itemRefs.current.findIndex(r => r === document.activeElement)
+    if (focusedIndex === -1) return
+
+    let nextIndex = focusedIndex
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault()
+        nextIndex = (focusedIndex + 1) % helpActions.length
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        nextIndex = (focusedIndex - 1 + helpActions.length) % helpActions.length
+        break
+      case 'Home':
+        e.preventDefault()
+        nextIndex = 0
+        break
+      case 'End':
+        e.preventDefault()
+        nextIndex = helpActions.length - 1
+        break
+      case 'Escape':
+        e.preventDefault()
+        setOpen(false)
+        return
+      default:
+        return
+    }
+    itemRefs.current[nextIndex]?.focus()
+  }, [])
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        aria-controls={HELP_MENU_ID}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-label="Help"
+        className={clsx(
+          'rounded p-1.5 transition-[color,background-color,opacity,transform] duration-150 hover:scale-110 hover:bg-surface-muted hover:text-fg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95',
+          open ? 'bg-surface-muted text-fg-secondary' : 'text-fg-muted'
+        )}
+        title="Help"
+        onClick={() => setOpen(prev => !prev)}
+      >
+        <HelpCircle aria-hidden="true" className="h-4 w-4" />
+      </button>
+      {open && (
+        <div
+          id={HELP_MENU_ID}
+          role="menu"
+          className="animate-dropdown absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-line bg-surface py-1 shadow-lg"
+          onKeyDown={handleKeyDown}
+        >
+          {helpActions.map((item, index) => {
+            const Icon = item.icon
+            return (
+              <button
+                key={item.key}
+                ref={el => {
+                  itemRefs.current[index] = el
+                }}
+                role="menuitem"
+                type="button"
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-fg-secondary transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50"
+                onClick={() => {
+                  handlers[item.action]?.()
+                  setOpen(false)
+                }}
+              >
+                <Icon aria-hidden="true" className="h-3.5 w-3.5" />
+                {item.label}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+})
 
 interface HeaderProps {
   onOpenFile: () => void
   onSaveFile: () => void
+  onOpenShortcuts: () => void
+  onOpenChangelog: () => void
+  onOpenAbout: () => void
 }
 
-export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
+export default memo(function Header({
+  onOpenFile,
+  onSaveFile,
+  onOpenShortcuts,
+  onOpenChangelog,
+  onOpenAbout,
+}: HeaderProps) {
   const mode = useEditorStore(s => s.mode)
   const setMode = useEditorStore(s => s.setMode)
   const themeMode = useSettingsStore(s => s.settings.theme.mode)
@@ -221,6 +362,12 @@ export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
             </button>
           ))}
         </div>
+
+        <HelpMenu
+          onOpenAbout={onOpenAbout}
+          onOpenChangelog={onOpenChangelog}
+          onOpenShortcuts={onOpenShortcuts}
+        />
 
         <button
           type="button"

@@ -13,6 +13,7 @@ interface KeyboardShortcutDeps {
   saveFileAs: () => Promise<void>
   settingsOpenRef: MutableRefObject<boolean>
   setSettingsOpen: React.Dispatch<React.SetStateAction<boolean>>
+  setShortcutsOpen: React.Dispatch<React.SetStateAction<boolean>>
 }
 
 export function useKeyboardShortcuts({
@@ -21,6 +22,7 @@ export function useKeyboardShortcuts({
   saveFileAs,
   settingsOpenRef,
   setSettingsOpen,
+  setShortcutsOpen,
 }: KeyboardShortcutDeps) {
   // Stable refs for file operations
   const openFileRef = useRef(openFile)
@@ -120,8 +122,14 @@ export function useKeyboardShortcuts({
         useFindReplaceStore.getState().open(true)
         return
       }
+
+      if (mod && e.key === '/') {
+        e.preventDefault()
+        setShortcutsOpen(prev => !prev)
+        return
+      }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [settingsOpenRef, setSettingsOpen])
+  }, [settingsOpenRef, setSettingsOpen, setShortcutsOpen])
 }

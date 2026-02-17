@@ -139,13 +139,23 @@ export default memo(function FindReplaceModal() {
   )
 
   // 2. Search state (changes on user input)
-  const { searchText, replaceText, caseSensitive, useRegex, wholeWord } = useFindReplaceStore(
+  const {
+    searchText,
+    replaceText,
+    caseSensitive,
+    useRegex,
+    wholeWord,
+    searchTruncated,
+    replaceTruncated,
+  } = useFindReplaceStore(
     useShallow(s => ({
       searchText: s.searchText,
       replaceText: s.replaceText,
       caseSensitive: s.caseSensitive,
       useRegex: s.useRegex,
       wholeWord: s.wholeWord,
+      searchTruncated: s.searchTruncated,
+      replaceTruncated: s.replaceTruncated,
     }))
   )
 
@@ -568,137 +578,151 @@ export default memo(function FindReplaceModal() {
         </div>
 
         {/* Search Row */}
-        <div className="flex items-center gap-2 border-b border-line px-4 py-2">
-          <input
-            ref={searchInputRef}
-            type="text"
-            aria-label="Find text"
-            className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg-secondary placeholder-fg-muted focus-visible:border-electric-yellow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-electric-yellow/50"
-            placeholder="Search…"
-            value={searchText}
-            onChange={e => setSearchText(e.target.value)}
-          />
+        <div className="flex flex-col border-b border-line px-4 py-2">
+          <div className="flex items-center gap-2">
+            <input
+              ref={searchInputRef}
+              type="text"
+              aria-label="Find text"
+              className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg-secondary placeholder-fg-muted focus-visible:border-electric-yellow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-electric-yellow/50"
+              placeholder="Search…"
+              value={searchText}
+              onChange={e => setSearchText(e.target.value)}
+            />
 
-          {/* Toggle buttons (A1: aria-pressed + aria-label) */}
-          <div className="flex gap-0.5">
-            <button
-              type="button"
-              aria-label="Case Sensitive"
-              aria-pressed={caseSensitive}
+            {/* Toggle buttons (A1: aria-pressed + aria-label) */}
+            <div className="flex gap-0.5">
+              <button
+                type="button"
+                aria-label="Case Sensitive"
+                aria-pressed={caseSensitive}
+                className={clsx(
+                  'rounded px-1.5 py-1 text-[10px] font-bold transition-colors',
+                  caseSensitive
+                    ? 'bg-electric-yellow text-deep-blue'
+                    : 'text-fg-muted hover:bg-surface-muted hover:text-fg-secondary'
+                )}
+                title="Case Sensitive (Alt+C)"
+                onClick={toggleCaseSensitive}
+              >
+                Aa
+              </button>
+              <button
+                type="button"
+                aria-label="Regular Expression"
+                aria-pressed={useRegex}
+                className={clsx(
+                  'rounded px-1.5 py-1 text-[10px] font-bold transition-colors',
+                  useRegex
+                    ? 'bg-electric-yellow text-deep-blue'
+                    : 'text-fg-muted hover:bg-surface-muted hover:text-fg-secondary'
+                )}
+                title="Regular Expression (Alt+R)"
+                onClick={toggleRegex}
+              >
+                .*
+              </button>
+              <button
+                type="button"
+                aria-label="Whole Word"
+                aria-pressed={wholeWord}
+                className={clsx(
+                  'rounded px-1.5 py-1 text-[10px] font-bold transition-colors',
+                  wholeWord
+                    ? 'bg-electric-yellow text-deep-blue'
+                    : 'text-fg-muted hover:bg-surface-muted hover:text-fg-secondary'
+                )}
+                title="Whole Word (Alt+W)"
+                onClick={toggleWholeWord}
+              >
+                W
+              </button>
+            </div>
+
+            {/* Match counter (A2: aria-live, Design: font-mono tabular-nums) */}
+            <span
+              role="status"
+              aria-atomic="true"
+              aria-live="polite"
               className={clsx(
-                'rounded px-1.5 py-1 text-[10px] font-bold transition-colors',
-                caseSensitive
-                  ? 'bg-electric-yellow text-deep-blue'
-                  : 'text-fg-muted hover:bg-surface-muted hover:text-fg-secondary'
+                'min-w-[80px] text-center font-mono text-[10px] font-medium tabular-nums',
+                regexError ? 'text-danger' : 'text-fg-muted'
               )}
-              title="Case Sensitive (Alt+C)"
-              onClick={toggleCaseSensitive}
             >
-              Aa
-            </button>
-            <button
-              type="button"
-              aria-label="Regular Expression"
-              aria-pressed={useRegex}
-              className={clsx(
-                'rounded px-1.5 py-1 text-[10px] font-bold transition-colors',
-                useRegex
-                  ? 'bg-electric-yellow text-deep-blue'
-                  : 'text-fg-muted hover:bg-surface-muted hover:text-fg-secondary'
-              )}
-              title="Regular Expression (Alt+R)"
-              onClick={toggleRegex}
-            >
-              .*
-            </button>
-            <button
-              type="button"
-              aria-label="Whole Word"
-              aria-pressed={wholeWord}
-              className={clsx(
-                'rounded px-1.5 py-1 text-[10px] font-bold transition-colors',
-                wholeWord
-                  ? 'bg-electric-yellow text-deep-blue'
-                  : 'text-fg-muted hover:bg-surface-muted hover:text-fg-secondary'
-              )}
-              title="Whole Word (Alt+W)"
-              onClick={toggleWholeWord}
-            >
-              W
-            </button>
+              {statusMessage ?? matchCountText}
+            </span>
+
+            {/* Prev / Next */}
+            <div className="flex gap-0.5">
+              <button
+                type="button"
+                aria-label="Previous match"
+                className="rounded p-1 text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg-secondary disabled:opacity-30"
+                disabled={!hasMatches}
+                title="Previous Match (Shift+Enter)"
+                onClick={handleFindPrev}
+              >
+                <ChevronUp aria-hidden="true" className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                aria-label="Next match"
+                className="rounded p-1 text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg-secondary disabled:opacity-30"
+                disabled={!hasMatches}
+                title="Next Match (Enter)"
+                onClick={handleFindNext}
+              >
+                <ChevronDown aria-hidden="true" className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
-
-          {/* Match counter (A2: aria-live, Design: font-mono tabular-nums) */}
-          <span
-            role="status"
-            aria-atomic="true"
-            aria-live="polite"
-            className={clsx(
-              'min-w-[80px] text-center font-mono text-[10px] font-medium tabular-nums',
-              regexError ? 'text-danger' : 'text-fg-muted'
-            )}
-          >
-            {statusMessage ?? matchCountText}
-          </span>
-
-          {/* Prev / Next */}
-          <div className="flex gap-0.5">
-            <button
-              type="button"
-              aria-label="Previous match"
-              className="rounded p-1 text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg-secondary disabled:opacity-30"
-              disabled={!hasMatches}
-              title="Previous Match (Shift+Enter)"
-              onClick={handleFindPrev}
-            >
-              <ChevronUp aria-hidden="true" className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              aria-label="Next match"
-              className="rounded p-1 text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg-secondary disabled:opacity-30"
-              disabled={!hasMatches}
-              title="Next Match (Enter)"
-              onClick={handleFindNext}
-            >
-              <ChevronDown aria-hidden="true" className="h-3.5 w-3.5" />
-            </button>
-          </div>
+          {searchTruncated && (
+            <p role="alert" className="mt-1 text-[10px] text-warning">
+              Search text truncated to 1,000 characters
+            </p>
+          )}
         </div>
 
         {/* Replace Row */}
         {showReplace && (
-          <div className="flex items-center gap-2 border-b border-line px-4 py-2">
-            <input
-              ref={replaceInputRef}
-              type="text"
-              aria-label="Replace text"
-              className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg-secondary placeholder-fg-muted focus-visible:border-electric-yellow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-electric-yellow/50"
-              placeholder="Replace…"
-              value={replaceText}
-              onChange={e => setReplaceText(e.target.value)}
-              onKeyDown={handleKeyDown}
-            />
-            <button
-              type="button"
-              aria-label="Replace current match"
-              className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium text-fg-secondary transition-colors hover:bg-surface-muted hover:text-fg disabled:opacity-30"
-              disabled={!hasMatches}
-              title="Replace"
-              onClick={handleReplace}
-            >
-              <ArrowRightLeft aria-hidden="true" className="h-3 w-3" />
-              Replace
-            </button>
-            <button
-              type="button"
-              className="rounded-md px-2 py-1 text-[10px] font-medium text-fg-secondary transition-colors hover:bg-surface-muted hover:text-fg disabled:opacity-30"
-              disabled={!hasMatches}
-              title="Replace All"
-              onClick={handleReplaceAll}
-            >
-              Replace All{hasMatches ? ` (${matches.length})` : ''}
-            </button>
+          <div className="flex flex-col border-b border-line px-4 py-2">
+            <div className="flex items-center gap-2">
+              <input
+                ref={replaceInputRef}
+                type="text"
+                aria-label="Replace text"
+                className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg-secondary placeholder-fg-muted focus-visible:border-electric-yellow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-electric-yellow/50"
+                placeholder="Replace…"
+                value={replaceText}
+                onChange={e => setReplaceText(e.target.value)}
+                onKeyDown={handleKeyDown}
+              />
+              <button
+                type="button"
+                aria-label="Replace current match"
+                className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium text-fg-secondary transition-colors hover:bg-surface-muted hover:text-fg disabled:opacity-30"
+                disabled={!hasMatches}
+                title="Replace"
+                onClick={handleReplace}
+              >
+                <ArrowRightLeft aria-hidden="true" className="h-3 w-3" />
+                Replace
+              </button>
+              <button
+                type="button"
+                className="rounded-md px-2 py-1 text-[10px] font-medium text-fg-secondary transition-colors hover:bg-surface-muted hover:text-fg disabled:opacity-30"
+                disabled={!hasMatches}
+                title="Replace All"
+                onClick={handleReplaceAll}
+              >
+                Replace All{hasMatches ? ` (${matches.length})` : ''}
+              </button>
+            </div>
+            {replaceTruncated && (
+              <p role="alert" className="mt-1 text-[10px] text-warning">
+                Replace text truncated to 10,000 characters
+              </p>
+            )}
           </div>
         )}
 
