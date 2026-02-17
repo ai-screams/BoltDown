@@ -236,6 +236,59 @@ function trackImageLoads(previewScrollEl: HTMLDivElement, onImageLoaded: () => v
   return () => controller.abort()
 }
 
+/**
+ * Smooth scroll animator using RAF-based linear interpolation.
+ * Animates scrollTop towards a target position with configurable lerp factor.
+ */
+class SmoothScroller {
+  private target = -1
+  private rafId = 0
+  private readonly el: HTMLElement
+  private readonly alpha: number
+  private readonly onFrame: (scrollTop: number) => void
+
+  constructor(el: HTMLElement, onFrame: (scrollTop: number) => void, alpha = 0.25) {
+    this.el = el
+    this.onFrame = onFrame
+    this.alpha = alpha
+  }
+
+  scrollTo(target: number): void {
+    this.target = target
+    if (this.rafId === 0) {
+      this.rafId = requestAnimationFrame(this.tick)
+    }
+  }
+
+  cancel(): void {
+    if (this.rafId !== 0) {
+      cancelAnimationFrame(this.rafId)
+      this.rafId = 0
+    }
+  }
+
+  dispose(): void {
+    this.cancel()
+  }
+
+  private tick = (): void => {
+    const current = this.el.scrollTop
+    const diff = this.target - current
+
+    if (Math.abs(diff) < SCROLL_EPSILON_PX) {
+      this.el.scrollTop = this.target
+      this.onFrame(this.target)
+      this.rafId = 0
+      return
+    }
+
+    const next = current + diff * this.alpha
+    this.el.scrollTop = next
+    this.onFrame(next)
+    this.rafId = requestAnimationFrame(this.tick)
+  }
+}
+
 export function useSplitScrollSync({ enabled, previewScrollRef }: UseSplitScrollSyncOptions): void {
   const editorViewRef = useEditorView()
 
@@ -280,6 +333,8 @@ export function useSplitScrollSync({ enabled, previewScrollRef }: UseSplitScroll
     anchorsDirtyRef.current = false
   })
 
+  const previewSmootherRef = useRef<SmoothScroller | null>(null)
+
   const syncFromEditor = useEffectEvent(() => {
     if (!enabled) return
     if (driverLockRef.current === 'preview') return
@@ -301,8 +356,7 @@ export function useSplitScrollSync({ enabled, previewScrollRef }: UseSplitScroll
     if (Math.abs(previewScrollEl.scrollTop - targetTop) <= SCROLL_EPSILON_PX) return
 
     lockDriver('editor')
-    lastProgrammaticPreviewTopRef.current = targetTop
-    previewScrollEl.scrollTop = targetTop
+    previewSmootherRef.current?.scrollTo(targetTop)
   })
 
   const syncFromPreview = useEffectEvent(() => {
@@ -368,8 +422,7 @@ export function useSplitScrollSync({ enabled, previewScrollRef }: UseSplitScroll
     if (Math.abs(previewScrollEl.scrollTop - targetScrollTop) <= SCROLL_EPSILON_PX) return
 
     lockDriver('editor')
-    lastProgrammaticPreviewTopRef.current = targetScrollTop
-    previewScrollEl.scrollTop = targetScrollTop
+    previewSmootherRef.current?.scrollTo(targetScrollTop)
   })
 
   const scheduleEditorSync = useEffectEvent(() => {
@@ -444,6 +497,15 @@ export function useSplitScrollSync({ enabled, previewScrollRef }: UseSplitScroll
       }
       editorPollRAF = window.requestAnimationFrame(pollEditorScroll)
 
+      // --- Initialize smooth scroller ---
+      previewSmootherRef.current = new SmoothScroller(
+        previewScrollEl,
+        (scrollTop: number) => {
+          lastProgrammaticPreviewTopRef.current = scrollTop
+        },
+        0.25
+      )
+
       // --- Preview scroll detection via DOM event ---
       const handlePreviewScroll = () => {
         // Ignore scroll changes we caused programmatically
@@ -453,6 +515,8 @@ export function useSplitScrollSync({ enabled, previewScrollRef }: UseSplitScroll
         ) {
           return
         }
+        // Cancel smooth scroll animation when user manually scrolls
+        previewSmootherRef.current?.cancel()
         schedulePreviewSync()
       }
 
@@ -512,6 +576,8 @@ export function useSplitScrollSync({ enabled, previewScrollRef }: UseSplitScroll
         mutationObserver.disconnect()
         resizeObserver.disconnect()
         cleanupImageTracking()
+        previewSmootherRef.current?.dispose()
+        previewSmootherRef.current = null
       }
     }
 
