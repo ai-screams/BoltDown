@@ -7,6 +7,7 @@ import Prism from 'prismjs'
 import { useTabStore } from '@/stores/tabStore'
 import type { MermaidSecurityLevel } from '@/types/settings'
 import { resolveImageSrcForDisplay } from '@/utils/imagePath'
+import { sanitizeCodeHtml, sanitizeKatexHtml, sanitizeSvgHtml } from '@/utils/sanitize'
 import { getMermaidThemeFromDom } from '@/utils/themeRuntime'
 
 import 'prismjs/components/prism-bash'
@@ -178,7 +179,7 @@ async function renderMermaidInto(
     const { svg } = await mermaid.render(id, code)
 
     if (!container.isConnected || container.dataset.mermaidToken !== token) return
-    container.innerHTML = svg
+    container.innerHTML = sanitizeSvgHtml(svg)
     onRendered?.()
   } catch {
     if (!container.isConnected || container.dataset.mermaidToken !== token) return
@@ -372,10 +373,12 @@ class InlineMathWidget extends WidgetType {
   toDOM() {
     const span = document.createElement('span')
     span.className = 'cm-inline-math-widget'
-    span.innerHTML = katex.renderToString(this.content, {
-      throwOnError: false,
-      strict: 'ignore',
-    })
+    span.innerHTML = sanitizeKatexHtml(
+      katex.renderToString(this.content, {
+        throwOnError: false,
+        strict: 'ignore',
+      })
+    )
     return span
   }
   eq(other: InlineMathWidget) {
@@ -395,11 +398,13 @@ class BlockMathWidget extends WidgetType {
     const div = document.createElement('div')
     div.className = 'cm-block-math-widget'
     div.style.cssText = 'text-align: center; padding: 12px 0;'
-    div.innerHTML = katex.renderToString(this.content, {
-      throwOnError: false,
-      strict: 'ignore',
-      displayMode: true,
-    })
+    div.innerHTML = sanitizeKatexHtml(
+      katex.renderToString(this.content, {
+        throwOnError: false,
+        strict: 'ignore',
+        displayMode: true,
+      })
+    )
     return div
   }
   eq(other: BlockMathWidget) {
@@ -511,7 +516,7 @@ class CodeBlockWidget extends WidgetType {
 
     const grammar = Prism.languages[this.language]
     if (grammar) {
-      codeEl.innerHTML = Prism.highlight(this.code, grammar, this.language)
+      codeEl.innerHTML = sanitizeCodeHtml(Prism.highlight(this.code, grammar, this.language))
     } else {
       codeEl.textContent = this.code
     }

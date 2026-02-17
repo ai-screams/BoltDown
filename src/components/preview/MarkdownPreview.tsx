@@ -5,6 +5,7 @@ import { useSettingsStore } from '@/stores/settingsStore'
 import { useTabStore } from '@/stores/tabStore'
 import type { MermaidSecurityLevel } from '@/types/settings'
 import { resolveImageSrcForDisplay } from '@/utils/imagePath'
+import { sanitizeSvgHtml } from '@/utils/sanitize'
 import { getMermaidThemeFromDom } from '@/utils/themeRuntime'
 
 async function renderMermaidBlocks(
@@ -38,7 +39,7 @@ async function renderMermaidBlocks(
 
         if (!container.isConnected || container.dataset['mermaidToken'] !== token) return
 
-        block.innerHTML = svg
+        block.innerHTML = sanitizeSvgHtml(svg)
         block.dataset['renderedConfig'] = configKey
         block.classList.add('mermaid-rendered')
       } catch {

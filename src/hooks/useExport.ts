@@ -5,6 +5,7 @@ import { STATUS_TIMEOUT_MS } from '@/constants/feedback'
 import { useEditorStore } from '@/stores/editorStore'
 import { getActiveTabSnapshot } from '@/stores/tabStore'
 import { escapeHtml } from '@/utils/markdownText'
+import { sanitizePreviewHtml } from '@/utils/sanitize'
 import { invokeTauri, isTauri } from '@/utils/tauri'
 
 // Lazy-load markdown parser
@@ -67,6 +68,7 @@ function buildStandaloneHtml(html: string, title: string, tokens: ExportThemeTok
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' https://cdn.jsdelivr.net; img-src data: https:; font-src https://cdn.jsdelivr.net;">
 <title>${escapeHtml(title)}</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.25/dist/katex.min.css">
 <style>
@@ -123,7 +125,7 @@ export function useExport() {
     if (!tab) return
 
     const md = await getMd()
-    const html = md.render(tab.content)
+    const html = sanitizePreviewHtml(md.render(tab.content))
     const title = tab.fileName.replace(/\.[^.]+$/, '')
     const fullHtml = buildStandaloneHtml(html, title, getExportThemeTokens())
 
@@ -163,7 +165,7 @@ export function useExport() {
     if (!tab) return false
 
     const md = await getMd()
-    const html = md.render(tab.content)
+    const html = sanitizePreviewHtml(md.render(tab.content))
     try {
       await navigator.clipboard.write([
         new ClipboardItem({

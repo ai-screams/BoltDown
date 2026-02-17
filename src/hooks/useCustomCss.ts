@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 
 import { CUSTOM_CSS_LIMITS } from '@/constants/settingsLimits'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { sanitizeCustomCss } from '@/utils/sanitize'
 
 const STYLE_ELEMENT_ID = 'boltdown-custom-css'
 
@@ -23,7 +24,7 @@ export function useCustomCss(): void {
         document.head.appendChild(el)
       }
 
-      el.textContent = customCss
+      el.textContent = sanitizeCustomCss(customCss)
     }, CUSTOM_CSS_LIMITS.debounceMs)
 
     return () => {
