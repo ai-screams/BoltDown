@@ -2,7 +2,7 @@
 
 > 단일 백로그. Phase 구분 없이 우선순위(Priority)로 관리.
 > SSoT: 이 파일이 모든 미완료 작업의 유일한 출처.
-> 최종 갱신: 2026-02-17 (Waves 1-8 완료 후 정리)
+> 최종 갱신: 2026-02-17 (Waves 1-8 완료 후 정리, S9 추가)
 
 ---
 
@@ -12,9 +12,7 @@
 
 ### S-LOW
 
-| ID  | Issue                    | Location                                     | Description                                                       |
-| --- | ------------------------ | -------------------------------------------- | ----------------------------------------------------------------- |
-| S9  | JSON.parse 스키마 미검증 | `settingsStorage.ts:7`, `sidebarStore.ts:12` | Settings JSON 런타임 스키마 검증 없음. zod 등으로 검증 추가 고려. |
+(모든 항목 완료)
 
 ---
 
@@ -49,7 +47,7 @@
 
 ### Housekeeping
 
-- **S9**: JSON 스키마 검증 (settings는 이미 `mergeWithDefaults`로 보호됨, 우선순위 낮음)
+(모든 항목 완료)
 
 ---
 
@@ -98,9 +96,10 @@
 - **Q6** ✅ loadSettings 책임 분리 (module-level helpers)
 - **Q11** ✅ ImageWidget DI 리팩토링 (constructor injection)
 
-### Wave 8 — Fact-Check & Fix (TBD)
+### Wave 8 — Fact-Check & Fix (d464ff2)
 
 - **U3** ✅ Tree data flash 수정 (원자적 `set({rootPath, treeData})`)
+- **S9** ✅ loadRecentFiles 런타임 타입 검증 (type guard + `Array.filter`)
 
 ### Non-Issues (팩트체크 후 제거)
 

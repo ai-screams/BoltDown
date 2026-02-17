@@ -6,10 +6,19 @@ import type { FileTreeNode, RecentFile, SidebarTab } from '@/types/sidebar'
 import { loadDirectoryEntries } from '@/utils/directoryLoader'
 import { getDirectoryPath } from '@/utils/imagePath'
 
+const isRecentFile = (v: unknown): v is RecentFile =>
+  typeof v === 'object' &&
+  v !== null &&
+  typeof (v as RecentFile).path === 'string' &&
+  typeof (v as RecentFile).name === 'string'
+
 const loadRecentFiles = (): RecentFile[] => {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.recentFiles)
-    return raw ? (JSON.parse(raw) as RecentFile[]) : []
+    if (!raw) return []
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter(isRecentFile)
   } catch {
     return []
   }
