@@ -109,6 +109,7 @@ export default memo(function TabBar() {
   return (
     <div className="flex h-8 flex-none items-center border-b border-line bg-surface-muted">
       <button
+        aria-label="Toggle sidebar"
         className={clsx(
           'flex h-8 w-8 flex-none items-center justify-center border-r border-line transition-colors',
           sidebarOpen
@@ -118,7 +119,7 @@ export default memo(function TabBar() {
         title="Toggle Sidebar (Cmd+Shift+E)"
         onClick={toggleSidebar}
       >
-        <PanelLeft className="h-3.5 w-3.5" />
+        <PanelLeft aria-hidden="true" className="h-3.5 w-3.5" />
       </button>
       <div className="flex flex-1 items-center overflow-x-auto">
         {tabs.map(tab => {
@@ -138,11 +139,11 @@ export default memo(function TabBar() {
               onClick={() => !isRenaming && setActiveTab(tab.id)}
               onDoubleClick={e => !isRenaming && handleDoubleClick(e, tab.id, tab.fileName)}
             >
-              <FileText className="h-3 w-3 flex-none" />
+              <FileText aria-hidden="true" className="h-3 w-3 flex-none" />
               {isRenaming ? (
                 <input
                   ref={renameInputRef}
-                  className="min-w-0 flex-1 rounded border border-electric-yellow bg-surface px-1 py-0.5 text-xs text-fg outline-none focus:ring-1 focus:ring-electric-yellow/50"
+                  className="min-w-0 flex-1 rounded border border-electric-yellow bg-surface px-1 py-0.5 text-xs text-fg focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-electric-yellow/50"
                   value={renameValue}
                   onBlur={() => void commitRename(tab.id)}
                   onChange={e => setRenameValue(e.target.value)}
@@ -167,22 +168,25 @@ export default memo(function TabBar() {
                 </>
               )}
               {!isRenaming && (
-                <span
+                <button
+                  type="button"
+                  aria-label="Close tab"
                   className="ml-auto flex-none rounded p-0.5 opacity-0 hover:bg-surface-muted group-hover:opacity-100"
                   onClick={e => handleClose(e, tab.id)}
                 >
-                  <X className="h-3 w-3" />
-                </span>
+                  <X aria-hidden="true" className="h-3 w-3" />
+                </button>
               )}
             </div>
           )
         })}
         <button
-          className="flex h-8 w-8 flex-none items-center justify-center text-fg-muted transition-all duration-150 hover:scale-110 hover:bg-surface hover:text-fg-secondary active:scale-95"
+          aria-label="New tab"
+          className="flex h-8 w-8 flex-none items-center justify-center text-fg-muted transition-[color,background-color,opacity,transform] duration-150 hover:scale-110 hover:bg-surface hover:text-fg-secondary active:scale-95"
           title="New Tab (Cmd+N)"
           onClick={handleNewTab}
         >
-          <Plus className="h-3.5 w-3.5" />
+          <Plus aria-hidden="true" className="h-3.5 w-3.5" />
         </button>
       </div>
     </div>

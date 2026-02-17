@@ -101,7 +101,7 @@ export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
   return (
     <header className="flex h-12 flex-none items-center justify-between border-b border-line bg-surface px-4">
       <div className="flex items-center gap-2">
-        <Zap className="h-5 w-5 text-electric-yellow" fill="currentColor" />
+        <Zap aria-hidden="true" className="h-5 w-5 text-electric-yellow" fill="currentColor" />
         <span className="text-sm font-semibold text-fg">BoltDown</span>
         <div className="ml-2 flex items-center gap-0.5">
           <IconButton icon={FolderOpen} label="Open file" shortcut="Cmd+O" onClick={onOpenFile} />
@@ -114,11 +114,11 @@ export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
               aria-expanded={exportOpen}
               aria-haspopup="menu"
               aria-label="Export"
-              className="rounded p-1.5 text-fg-muted transition-all duration-150 hover:scale-110 hover:bg-surface-muted hover:text-fg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95"
+              className="rounded p-1.5 text-fg-muted transition-[color,background-color,opacity,transform] duration-150 hover:scale-110 hover:bg-surface-muted hover:text-fg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95"
               title="Export"
               onClick={toggleExportOpen}
             >
-              <Download className="h-4 w-4" />
+              <Download aria-hidden="true" className="h-4 w-4" />
             </button>
             {exportOpen && (
               <div
@@ -139,7 +139,7 @@ export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
                         setExportOpen(false)
                       }}
                     >
-                      <ActionIcon className="h-3.5 w-3.5" />
+                      <ActionIcon aria-hidden="true" className="h-3.5 w-3.5" />
                       {action.label}
                     </button>
                   )
@@ -159,7 +159,7 @@ export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
               aria-label={`Switch to ${label} mode`}
               aria-pressed={m === mode}
               className={clsx(
-                'flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95',
+                'flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-[color,background-color,opacity,transform] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95',
                 m === mode
                   ? 'bg-electric-yellow text-deep-blue shadow-sm'
                   : 'text-fg-muted hover:text-fg-secondary'
@@ -167,7 +167,7 @@ export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
               title={label}
               onClick={() => setMode(m)}
             >
-              <Icon className="h-3.5 w-3.5" />
+              <Icon aria-hidden="true" className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">{label}</span>
             </button>
           ))}
@@ -176,11 +176,11 @@ export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
         <button
           type="button"
           aria-label={`Theme mode: ${themeLabel[themeMode]}`}
-          className="rounded p-1.5 text-fg-muted transition-all duration-150 hover:scale-110 hover:bg-surface-muted hover:text-fg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95"
+          className="rounded p-1.5 text-fg-muted transition-[color,background-color,opacity,transform] duration-150 hover:scale-110 hover:bg-surface-muted hover:text-fg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95"
           title={`Theme mode: ${themeLabel[themeMode]}`}
           onClick={cycleTheme}
         >
-          <ThemeIcon className="h-4 w-4" />
+          <ThemeIcon aria-hidden="true" className="h-4 w-4" />
         </button>
       </div>
     </header>

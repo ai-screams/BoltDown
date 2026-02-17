@@ -523,10 +523,12 @@ export default memo(function FindReplaceModal() {
   return (
     <div
       ref={backdropRef}
-      className="z-60 fixed inset-0 flex items-start justify-center bg-black/40 pt-4 backdrop-blur-sm"
+      className="z-60 fixed inset-0 flex items-start justify-center overscroll-contain bg-black/40 pt-4 backdrop-blur-sm"
       onClick={handleBackdropClick}
     >
       <div
+        role="dialog"
+        aria-modal="true"
         className="animate-dropdown flex w-[calc(100vw-2rem)] max-w-[560px] flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-2xl"
         onKeyDown={handleKeyDown}
       >
@@ -541,13 +543,14 @@ export default memo(function FindReplaceModal() {
               onClick={toggleReplace}
             >
               <ChevronRight
+                aria-hidden="true"
                 className={clsx(
                   'h-4 w-4 transition-transform duration-150',
                   showReplace && 'rotate-90'
                 )}
               />
             </button>
-            <Search className="h-4 w-4 text-fg-muted" />
+            <Search aria-hidden="true" className="h-4 w-4 text-fg-muted" />
             <span className="text-sm font-semibold text-fg">
               Find {showReplace ? '& Replace' : ''}
             </span>
@@ -555,11 +558,11 @@ export default memo(function FindReplaceModal() {
           <button
             type="button"
             aria-label="Close find and replace"
-            className="rounded p-1.5 text-fg-muted transition-all duration-150 hover:scale-110 hover:bg-surface-muted hover:text-fg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95"
+            className="rounded p-1.5 text-fg-muted transition-[color,background-color,opacity,transform] duration-150 hover:scale-110 hover:bg-surface-muted hover:text-fg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95"
             title="Close"
             onClick={handleClose}
           >
-            <X className="h-4 w-4" />
+            <X aria-hidden="true" className="h-4 w-4" />
           </button>
         </div>
 
@@ -569,8 +572,8 @@ export default memo(function FindReplaceModal() {
             ref={searchInputRef}
             type="text"
             aria-label="Find text"
-            className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg-secondary placeholder-fg-muted focus:border-electric-yellow focus:outline-none focus:ring-1 focus:ring-electric-yellow/50"
-            placeholder="Search..."
+            className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg-secondary placeholder-fg-muted focus-visible:border-electric-yellow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-electric-yellow/50"
+            placeholder="Search…"
             value={searchText}
             onChange={e => setSearchText(e.target.value)}
           />
@@ -647,7 +650,7 @@ export default memo(function FindReplaceModal() {
               title="Previous Match (Shift+Enter)"
               onClick={handleFindPrev}
             >
-              <ChevronUp className="h-3.5 w-3.5" />
+              <ChevronUp aria-hidden="true" className="h-3.5 w-3.5" />
             </button>
             <button
               type="button"
@@ -657,7 +660,7 @@ export default memo(function FindReplaceModal() {
               title="Next Match (Enter)"
               onClick={handleFindNext}
             >
-              <ChevronDown className="h-3.5 w-3.5" />
+              <ChevronDown aria-hidden="true" className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
@@ -669,8 +672,8 @@ export default memo(function FindReplaceModal() {
               ref={replaceInputRef}
               type="text"
               aria-label="Replace text"
-              className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg-secondary placeholder-fg-muted focus:border-electric-yellow focus:outline-none focus:ring-1 focus:ring-electric-yellow/50"
-              placeholder="Replace..."
+              className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg-secondary placeholder-fg-muted focus-visible:border-electric-yellow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-electric-yellow/50"
+              placeholder="Replace…"
               value={replaceText}
               onChange={e => setReplaceText(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -682,7 +685,7 @@ export default memo(function FindReplaceModal() {
               title="Replace"
               onClick={handleReplace}
             >
-              <ArrowRightLeft className="h-3 w-3" />
+              <ArrowRightLeft aria-hidden="true" className="h-3 w-3" />
               Replace
             </button>
             <button
@@ -720,7 +723,7 @@ export default memo(function FindReplaceModal() {
             ) : (
               !regexError && (
                 <div className="flex flex-col items-center gap-2 px-4 py-6 text-center">
-                  <Search className="h-6 w-6 text-fg-muted opacity-50" />
+                  <Search aria-hidden="true" className="h-6 w-6 text-fg-muted opacity-50" />
                   <p className="text-xs text-fg-muted">No matches found</p>
                 </div>
               )
