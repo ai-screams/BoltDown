@@ -3,5 +3,25 @@
   "identifier": "default",
   "description": "Default capability for BoltDown main window",
   "windows": ["main"],
-  "permissions": ["core:default", "dialog:default", "shell:allow-open", "fs:default"]
+  "permissions": [
+    "core:default",
+    "dialog:default",
+    "shell:allow-open",
+    "fs:default",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        "$HOME/**/*",
+        "$DOCUMENT/**/*",
+        "$DESKTOP/**/*",
+        "$DOWNLOAD/**/*",
+        "$APPDATA/**/*"
+      ],
+      "deny": [
+        "$HOME/.ssh/**",
+        "$HOME/.gnupg/**",
+        "$HOME/.aws/**"
+      ]
+    }
+  ]
 }

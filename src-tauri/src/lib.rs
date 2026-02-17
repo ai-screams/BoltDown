@@ -1,38 +1,24 @@
-// BoltDown Library
-// This file can be used for shared utilities and types
+mod commands;
+mod error;
+mod utils;
 
-pub mod utils {
-    /// Convert markdown to HTML (placeholder for future implementation)
-    pub fn markdown_to_html(markdown: &str) -> String {
-        // TODO: Implement with pulldown-cmark or similar
-        markdown.to_string()
-    }
-
-    /// Calculate word count from markdown
-    pub fn word_count(text: &str) -> usize {
-        text.split_whitespace().count()
-    }
-
-    /// Calculate reading time (225 WPM average)
-    pub fn reading_time(text: &str) -> u32 {
-        let words = word_count(text);
-        ((words as f32 / 225.0).ceil() as u32).max(1)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_word_count() {
-        let text = "Hello BoltDown";
-        assert_eq!(utils::word_count(text), 2);
-    }
-
-    #[test]
-    fn test_reading_time() {
-        let text = "word ".repeat(450); // 450 words
-        assert_eq!(utils::reading_time(&text), 2); // 2 minutes
-    }
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_shell::init())
+        .invoke_handler(tauri::generate_handler![
+            commands::file::read_file,
+            commands::file::write_file,
+            commands::file::rename_file,
+            commands::file::delete_file,
+            commands::file::copy_file,
+            commands::file::write_binary_file,
+            commands::directory::list_directory,
+            commands::settings::read_settings,
+            commands::settings::write_settings,
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
 }
