@@ -46,9 +46,9 @@ src-tauri/src/
 
 ### Configuration
 
-- `Cargo.toml` — Rust dependencies (tauri 2.0, tokio, serde, thiserror); aggressive release optimizations (LTO, strip, opt-level=z)
+- `Cargo.toml` — Rust dependencies (tauri 2.0, tokio, serde, thiserror); release optimizations (LTO, strip, opt-level=s)
 - `tauri.conf.json` — App config: window 1400x900 (min 800x600), CSP policy, asset protocol, bundle targets
-- `capabilities/default.json` — Tauri 2.0 ACL permissions: `core:default`, `dialog:default`, `shell:default`, `fs:default` scoped to `main` window
+- `capabilities/default.json` — Tauri 2.0 ACL permissions: `core:default`, `dialog:default`, `shell:allow-open`, `fs:default` scoped to `main` window
 - `build.rs` — Tauri build script
 
 ## IPC Commands
@@ -86,7 +86,7 @@ src-tauri/src/
 - `list_directory` filters: hidden files (starting with `.`), node_modules, target, dist, build, **pycache**, .git
 - `read_settings`/`write_settings` use `AppHandle` pattern to access appDataDir (not user-provided paths)
 - `validate_path()` works for both existing files and new files (validates parent directory for new files)
-- Release profile uses `opt-level = "z"` (size over speed), LTO, strip — produces ~3.7MB DMG
+- Release profile uses `opt-level = "s"` (balanced size and speed), LTO, strip — produces ~3.7MB DMG
 - Test with `cd src-tauri && cargo test`
 - **Tauri 2.0 ACL**: All IPC commands require matching permission in `capabilities/default.json`. Without it, plugin commands silently fail.
 

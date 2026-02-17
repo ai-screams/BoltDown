@@ -8,7 +8,7 @@ React context providers for sharing non-store state across the component tree.
 
 ## Key Files
 
-- `EditorViewContext.tsx` — Provides a `MutableRefObject<EditorView | null>` to share the CodeMirror 6 EditorView instance. Exports `EditorViewProvider` (wrapper) and `useEditorView()` (hook returning ref).
+- `EditorViewContext.tsx` — Provides a `RefObject<EditorView | null>` to share the CodeMirror 6 EditorView instance. Exports `EditorViewProvider` (wrapper) and `useEditorView()` (hook returning ref).
 
 ## For AI Agents
 

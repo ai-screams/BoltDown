@@ -8,7 +8,7 @@ React 19 + TypeScript frontend for BoltDown. Contains all UI components, state m
 
 ## Key Files
 
-- `App.tsx` — Root component with stable slot pattern (tabBar, toolbar, editor, preview hoisted outside render to prevent recreation). Keyboard shortcuts via `useKeyboardShortcuts` hook (Cmd+O/S/N/\\/,/F/H, Shift+Cmd+E). Watches `activeTabId` via `useEffect`, syncs sidebar file tree via `sidebarStore.loadParentDirectory(tab.filePath)` when tab changes. Calls `useCustomCss()` hook to inject custom CSS from settings. **WIG**: `beforeunload` event handler warns about unsaved changes when closing window. Lazy-loads SettingsModal and FindReplaceModal with `lazy()` + `Suspense`. Wraps Sidebar, MarkdownEditor, and MarkdownPreview with ErrorBoundary.
+- `App.tsx` — Root component with stable slot pattern (tabBar, toolbar, editor, preview hoisted outside render to prevent recreation). Keyboard shortcuts via `useKeyboardShortcuts` hook (Cmd+O/S/N/\\/,/F/H, Shift+Cmd+E). Watches `activeTabId` via `useEffect`, syncs sidebar file tree via `sidebarStore.loadParentDirectory(tab.filePath)` when tab changes. Calls `useCustomCss()` hook to inject custom CSS from settings. **WIG**: `beforeunload` event handler warns about unsaved changes when closing window. Lazy-loads SettingsModal, FindReplaceModal, ShortcutsModal, ChangelogModal, and AboutModal with `lazy()` + `Suspense`. Wraps Sidebar, MarkdownEditor, and MarkdownPreview with ErrorBoundary.
 
 - `main.tsx` — React 19 entry point (StrictMode wrapper). Uses `createRoot()` from 'react-dom/client'.
 
@@ -28,7 +28,7 @@ React 19 + TypeScript frontend for BoltDown. Contains all UI components, state m
 
 ## For AI Agents
 
-- All components use `memo()` wrapper pattern: `export default memo(function Name() { ... })`
+- Most function components use `memo()` wrapper pattern; `ErrorBoundary` remains class-based.
 - Import order: external → internal (@/ aliases) → relative
 - Path aliases: `@/` = `src/`, `@components/` = `src/components/`, etc.
 - No barrel files (index.ts) — always import directly from the file
@@ -58,10 +58,13 @@ App (EditorViewProvider wrapper)
 │   ├── EditorPanel (form controls with aria-label)
 │   ├── PreviewPanel
 │   └── GeneralPanel
-└── FindReplaceModal (lazy-loaded)
-    ├── Search controls (aria-pressed toggles)
-    ├── Match counter (aria-live region)
-    └── Results list (memoized rows)
+├── FindReplaceModal (lazy-loaded)
+│   ├── Search controls (aria-pressed toggles)
+│   ├── Match counter (aria-live region)
+│   └── Results list (memoized rows)
+├── ShortcutsModal (lazy-loaded)
+├── ChangelogModal (lazy-loaded)
+└── AboutModal (lazy-loaded)
 ```
 
 ## WIG Compliance

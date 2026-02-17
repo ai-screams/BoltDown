@@ -4,7 +4,7 @@
 
 ## Purpose
 
-All React UI components organized by feature area. Every exported component uses `memo()` wrapper. Full accessibility support with ARIA attributes, keyboard navigation, and screen reader compatibility.
+All React UI components organized by feature area. Most function components use a `memo()` wrapper; `ErrorBoundary` is a class component by design. Full accessibility support with ARIA attributes, keyboard navigation, and screen reader compatibility.
 
 ## Subdirectories
 
@@ -36,13 +36,13 @@ All React UI components organized by feature area. Every exported component uses
 | Header           | Export menu keyboard nav (ArrowDown/Up/Home/End/Escape), auto-focus      |
 | Footer           | `aria-live="polite"` + `aria-atomic="true"` for status announcements     |
 | FileTreeNode     | Context menu keyboard nav, auto-focus first item, role="menu"            |
-| ResizeHandle     | `role="separator"`, `aria-orientation`, `aria-valuenow/min/max`          |
+| ResizeHandle     | `role="separator"`, `aria-orientation`, `aria-label`                     |
 | SettingsModal    | `aria-labelledby` on dialog, `aria-label` on all form controls           |
 | FindReplaceModal | `aria-labelledby` on dialog, `aria-pressed` toggles, `aria-live` counter |
 
 ## For AI Agents
 
-- All components: `export default memo(function ComponentName() { ... })`
+- Most function components: `export default memo(function ComponentName() { ... })`; `ErrorBoundary` remains class-based.
 - Props are minimal — most data comes from Zustand stores via selectors
 - Zustand selectors must return primitives (string, number, boolean) to avoid re-renders
 - Use `clsx` for conditional classNames, `lucide-react` for icons
@@ -65,7 +65,7 @@ All React UI components organized by feature area. Every exported component uses
 5. **FindReplaceModal.tsx**: aria-labelledby, aria-pressed, aria-live counter
 6. **Footer.tsx**: aria-live + aria-atomic on status text
 7. **Sidebar.tsx**: aria-hidden on decorative icon
-8. **ResizeHandle.tsx**: role="separator", aria-orientation, aria-value attributes
+8. **ResizeHandle.tsx**: role="separator", aria-orientation, aria-label
 9. **App.tsx**: beforeunload guard for unsaved changes
 
 All interactive components now support keyboard navigation, provide clear ARIA labels, and announce state changes to screen readers.

@@ -1,8 +1,8 @@
 # BoltDown — Unified Backlog
 
-> 단일 백로그. 모든 활성 작업 완료. Known Issues만 남음.
-> SSoT: 이 파일이 모든 작업 이력의 유일한 출처.
-> 최종 갱신: 2026-02-18 (Waves 1-8 완료, 백로그 클리어)
+> 단일 백로그. 활성 코드 작업은 완료되었고 Known Issues만 유지.
+> SSoT: 이 파일은 현재/활성 계획 상태의 기준 문서이며, 구현 세부 이력은 `AGENTS.md`, `MEMORY.md`, `git log`를 함께 참조.
+> 최종 갱신: 2026-02-18 (Waves 1-9 완료, 문서/메모리 팩트체크 반영)
 
 ---
 
@@ -18,7 +18,7 @@
 
 ---
 
-## Completed (Waves 1-8)
+## Completed (Waves 1-9)
 
 ### Wave 1 — Phase 2 Completion (ba748dd)
 
@@ -67,6 +67,12 @@
 
 - **U3** ✅ Tree data flash 수정 (원자적 `set({rootPath, treeData})`)
 - **S9** ✅ loadRecentFiles 런타임 타입 검증 (type guard + `Array.filter`)
+
+### Wave 9 — Docs & Memory Sync (2026-02-18)
+
+- **D1** ✅ `AGENTS.md` 팩트체크 동기화 (Phase 2 상태/브랜치/ARIA/ACL 문구 정합성)
+- **D2** ✅ `MEMORY.md` 최신 변경 이력 반영 (Wave 7/8 + 문서 동기화)
+- **D3** ✅ Serena memory 갱신 (프로젝트 개요/Phase 상태/검증 로그 최신화)
 
 ### Non-Issues (팩트체크 후 제거)
 
