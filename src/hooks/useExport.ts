@@ -28,7 +28,8 @@ interface ExportThemeTokens {
 
 const CSS_VAR_REF_PATTERN = /^var\(\s*(--[a-z0-9-]+)\s*(?:,\s*(.+))?\)$/i
 
-function resolveCssToken(name: string, seen = new Set<string>()): string {
+function resolveCssToken(name: string, seen = new Set<string>(), depth = 0): string {
+  if (depth > 10) return ''
   if (seen.has(name)) return ''
   seen.add(name)
 
@@ -40,7 +41,7 @@ function resolveCssToken(name: string, seen = new Set<string>()): string {
 
   const reference = match[1]
   const fallback = match[2]?.trim() ?? ''
-  const resolvedReference = resolveCssToken(reference, seen)
+  const resolvedReference = resolveCssToken(reference, seen, depth + 1)
 
   return resolvedReference || fallback
 }

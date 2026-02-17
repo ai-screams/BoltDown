@@ -44,10 +44,8 @@ function applyTheme(theme: ThemeSettings) {
   root.dataset.themeResolved = resolved
 }
 
-const THEME_MODE_SET = new Set<string>(THEME_MODES)
-
 function sanitizeTheme(theme: Partial<ThemeSettings> | undefined): ThemeSettings {
-  const mode = THEME_MODE_SET.has(theme?.mode ?? '')
+  const mode = THEME_MODES.includes((theme?.mode ?? '') as ThemeMode)
     ? (theme?.mode as ThemeMode)
     : DEFAULT_THEME.mode
   const name =
@@ -163,7 +161,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
       const oldTheme = localStorage.getItem(STORAGE_KEYS.legacyTheme)
       if (oldTheme && !stored?.theme) {
         const mode = oldTheme as ThemeMode
-        if (THEME_MODE_SET.has(mode)) {
+        if (THEME_MODES.includes(mode)) {
           get().updateTheme({ mode })
         }
         localStorage.removeItem(STORAGE_KEYS.legacyTheme)

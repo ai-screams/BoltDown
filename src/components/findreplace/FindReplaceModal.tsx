@@ -11,7 +11,7 @@ import { Compartment, EditorSelection, StateEffect, type Text } from '@codemirro
 import { EditorView } from '@codemirror/view'
 import { clsx } from 'clsx'
 import { ArrowRightLeft, ChevronDown, ChevronRight, ChevronUp, Search, X } from 'lucide-react'
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 
 import {
@@ -515,10 +515,7 @@ export default memo(function FindReplaceModal() {
   )
 
   // Display matches capped at policy limit
-  const displayMatches = useMemo(
-    () => matches.slice(0, FIND_REPLACE_SEARCH_POLICY.maxResultsDisplay),
-    [matches]
-  )
+  const displayMatches = matches.slice(0, FIND_REPLACE_SEARCH_POLICY.maxResultsDisplay)
 
   if (!isOpen) return null
 

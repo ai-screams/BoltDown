@@ -118,8 +118,8 @@ export const useSidebarStore = create<SidebarState>((set, get) => ({
       try {
         const entries = await loadDirectoryEntries(dir)
         set({ treeData: entries })
-      } catch {
-        // Directory listing failed — file is already open, silently ignore
+      } catch (error) {
+        console.error('Failed to load parent directory:', dir, error)
       }
     }
     if (openSidebar) set({ isOpen: true })
