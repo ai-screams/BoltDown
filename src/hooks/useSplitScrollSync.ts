@@ -184,6 +184,40 @@ function mapPreviewToEditor(
 }
 
 /**
+ * Find the preview element whose data-source-line is closest to the given line number.
+ * Elements are in document order (ascending line numbers), so we can early-exit.
+ */
+function findClosestSourceLineElement(
+  container: HTMLElement,
+  lineNumber: number
+): HTMLElement | null {
+  // Fast path: exact match
+  const exact = container.querySelector<HTMLElement>(`[data-source-line="${lineNumber}"]`)
+  if (exact) return exact
+
+  const nodes = container.querySelectorAll<HTMLElement>('[data-source-line]')
+  if (nodes.length === 0) return null
+
+  let closest: HTMLElement | null = null
+  let closestDiff = Infinity
+
+  for (const node of nodes) {
+    const raw = node.dataset['sourceLine']
+    if (!raw) continue
+    const num = Number.parseInt(raw, 10)
+    const diff = Math.abs(num - lineNumber)
+    if (diff < closestDiff) {
+      closestDiff = diff
+      closest = node
+    }
+    // Past target and diverging — stop early
+    if (num > lineNumber && diff > closestDiff) break
+  }
+
+  return closest
+}
+
+/**
  * Track image loads in the preview pane and call onImageLoaded when any image finishes loading.
  * Returns a cleanup function to abort listeners.
  */
@@ -294,6 +328,48 @@ export function useSplitScrollSync({ enabled, previewScrollRef }: UseSplitScroll
     lockDriver('preview')
     lastProgrammaticEditorTopRef.current = targetTop
     view.scrollDOM.scrollTop = targetTop
+  })
+
+  /**
+   * Cursor-click sync: when the user clicks in the editor (no scroll change),
+   * scroll the preview so the rendered content appears at the same viewport-relative position.
+   */
+  const syncCursorToPreview = useEffectEvent(() => {
+    if (!enabled) return
+
+    const view = editorViewRef.current
+    const previewScrollEl = previewScrollRef.current
+    if (!view || !previewScrollEl) return
+
+    const head = view.state.selection.main.head
+    const lineNumber = view.state.doc.lineAt(head).number
+    const target = findClosestSourceLineElement(previewScrollEl, lineNumber)
+    if (!target) return
+
+    // Cursor's viewport-relative fraction (0 = top, 1 = bottom)
+    const lineBlock = view.lineBlockAt(head)
+    const cursorViewportOffset = lineBlock.top - view.scrollDOM.scrollTop
+    const editorViewportHeight = view.scrollDOM.clientHeight
+    const cursorFraction = clamp(cursorViewportOffset / editorViewportHeight, 0, 1)
+
+    // Target element's content-space Y in preview
+    const previewRect = previewScrollEl.getBoundingClientRect()
+    const targetRect = target.getBoundingClientRect()
+    const targetContentY = targetRect.top - previewRect.top + previewScrollEl.scrollTop
+
+    // Scroll preview so target appears at the same viewport fraction as cursor
+    const previewScrollable = getScrollableHeight(previewScrollEl)
+    const targetScrollTop = clamp(
+      targetContentY - cursorFraction * previewScrollEl.clientHeight,
+      0,
+      previewScrollable
+    )
+
+    if (Math.abs(previewScrollEl.scrollTop - targetScrollTop) <= SCROLL_EPSILON_PX) return
+
+    lockDriver('editor')
+    lastProgrammaticPreviewTopRef.current = targetScrollTop
+    previewScrollEl.scrollTop = targetScrollTop
   })
 
   const scheduleEditorSync = useEffectEvent(() => {
@@ -410,11 +486,28 @@ export function useSplitScrollSync({ enabled, previewScrollRef }: UseSplitScroll
         scheduleEditorSync()
       })
 
+      // --- Cursor-click sync: click in editor → scroll preview to matching position ---
+      let cursorSyncRAF = 0
+      const handleEditorMouseUp = () => {
+        const scrollTopBefore = view.scrollDOM.scrollTop
+        cancelAnimationFrame(cursorSyncRAF)
+        cursorSyncRAF = window.requestAnimationFrame(() => {
+          // Only cursor-sync if the click didn't cause a scroll (scroll sync handles that case)
+          if (Math.abs(view.scrollDOM.scrollTop - scrollTopBefore) <= SCROLL_EPSILON_PX) {
+            syncCursorToPreview()
+          }
+        })
+      }
+
+      view.scrollDOM.addEventListener('mouseup', handleEditorMouseUp)
+
       markAnchorsDirty()
       scheduleEditorSync()
 
       teardown = () => {
         window.cancelAnimationFrame(editorPollRAF)
+        window.cancelAnimationFrame(cursorSyncRAF)
+        view.scrollDOM.removeEventListener('mouseup', handleEditorMouseUp)
         previewScrollEl.removeEventListener('scroll', handlePreviewScroll)
         mutationObserver.disconnect()
         resizeObserver.disconnect()
