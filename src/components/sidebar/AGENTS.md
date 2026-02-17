@@ -10,7 +10,7 @@ File management sidebar with directory tree browsing, recent files list, and res
 
 - `Sidebar.tsx` — Container with three tabs (FILES / OUTLINE / RECENT). Opens folders via Tauri dialog. Renders FileTree, OutlinePanel, or RecentFiles based on active sidebar tab. Uses `loadDirectoryEntries()` from `utils/directoryLoader.ts`. Decorative icon in tab header marked with `aria-hidden="true"`.
 
-- `FileTree.tsx` — Virtualized directory tree using `react-arborist`. Lazy-loads child directories on expand. Handles node toggle (folders) and file activation (opens in editor tab). Uses shared `loadDirectoryEntries()`.
+- `FileTree.tsx` — Virtualized directory tree using `react-arborist`. Lazy-loads child directories on expand. Handles node toggle (folders) and file activation (opens in editor tab). Uses shared `loadDirectoryEntries()` and `findAvailableCopyPath()` from `@/utils/fileCopy` for duplicate operations.
 
 - `FileTreeNode.tsx` — Custom tree node renderer with color-coded icons by file extension (blue for folders, green for .md, orange for .ts/.tsx, etc.). Handles click-to-toggle (dirs) and click-to-activate (files). Context menu for delete/duplicate with keyboard navigation (ArrowDown/Up/Escape), auto-focus first item on open. Menu items have `role="menuitem"`, clear `aria-label` attributes ("Duplicate", "Delete"). Icons marked with `aria-hidden="true"`.
 

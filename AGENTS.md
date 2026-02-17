@@ -86,6 +86,9 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 - `tocPlugin.ts` — Custom markdown-it plugin. Adds slug-based IDs to headings (h1-h6), implements `[TOC]` block rule, generates TOC HTML via core rule with heading collection
 - `directoryLoader.ts` — Wraps Tauri `list_directory` command, converts to `FileTreeNode[]` format
 - `markdownConfig.ts` — markdown-it config for preview rendering (KaTeX inline/block with `throwOnError: false` + `strict: 'ignore'`, Prism highlighting, TOC plugin)
+- `sanitize.ts` — DOMPurify sanitization with 5 profiles: `sanitizePreviewHtml` (preview + scroll sync data-\* attrs), `sanitizeKatexHtml` (WYSIWYG widgets), `sanitizeCodeHtml` (Prism.js), `sanitizeSvgHtml` (Mermaid), `sanitizeCustomCss` (blocks @import, external URLs, JS execution)
+- `cache.ts` — Generic `LruCache<V>` class (Map-based LRU eviction). Used by wysiwyg.ts (KaTeX/Mermaid caching) and MarkdownPreview.tsx (Mermaid caching)
+- `fileCopy.ts` — `findAvailableCopyPath()` — single `list_directory` IPC call for duplicate file naming (generates "file (copy).md", "file (copy 2).md", etc.)
 
 ### Constants
 
