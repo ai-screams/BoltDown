@@ -2,7 +2,7 @@
 
 > 단일 백로그. Phase 구분 없이 우선순위(Priority)로 관리.
 > SSoT: 이 파일이 모든 미완료 작업의 유일한 출처.
-> 최종 갱신: 2026-02-17 (Waves 1-6 완료 후 정리)
+> 최종 갱신: 2026-02-17 (Waves 1-7 완료 후 정리)
 
 ---
 
@@ -33,12 +33,9 @@
 
 ### Q-MEDIUM
 
-| ID  | Issue                   | Location                 | Description                                                                   |
-| --- | ----------------------- | ------------------------ | ----------------------------------------------------------------------------- |
-| Q4  | wysiwyg.ts God Object   | `wysiwyg.ts` (969 lines) | 23개 위젯 + 15개 헬퍼. 모듈 분리 필요.                                        |
-| Q5  | Auto-save 전체 탭 반복  | `useAutoSave.ts`         | 1개 탭 편집 시 전체 검사. dirty Set 추적 필요.                                |
-| Q6  | loadSettings 혼합 책임  | `settingsStore.ts`       | 로드 + 테마 + 리스너 + 마이그레이션 한 함수. 분리 필요.                       |
-| Q11 | 위젯 내 직접 store 접근 | `wysiwyg.ts:364`         | ImageWidget.toDOM()에서 `useTabStore.getState()` 직접 호출. 의존성 주입 필요. |
+| ID  | Issue                  | Location         | Description                                    |
+| --- | ---------------------- | ---------------- | ---------------------------------------------- |
+| Q5  | Auto-save 전체 탭 반복 | `useAutoSave.ts` | 1개 탭 편집 시 전체 검사. dirty Set 추적 필요. |
 
 ---
 
@@ -46,11 +43,11 @@
 
 > 출처: polish-backlog.md (2026-02-15). Wave 6 완료 후 남은 항목.
 
-| ID  | Issue                               | Location                          | Description                                                                   |
-| --- | ----------------------------------- | --------------------------------- | ----------------------------------------------------------------------------- |
-| U3  | Tree data flash on directory switch | `sidebarStore.ts`                 | `setRootPath` → `setTreeData` 순서 문제. 원자적 업데이트 필요.                |
-| U4  | Zen/Split 렌더링 패리티             | `wysiwyg.ts`, `markdownConfig.ts` | CM6 데코레이션 vs markdown-it 파싱 차이. 회귀 픽스처 세트 필요.               |
-| U5  | Spellcheck underline (macOS Tauri)  | `MarkdownEditor.tsx`              | WKWebView에서 실시간 밑줄 불안정. OS 메뉴 통합 또는 Hunspell 파이프라인 고려. |
+| ID  | Issue                               | Location                        | Description                                                                   |
+| --- | ----------------------------------- | ------------------------------- | ----------------------------------------------------------------------------- |
+| U3  | Tree data flash on directory switch | `sidebarStore.ts`               | `setRootPath` → `setTreeData` 순서 문제. 원자적 업데이트 필요.                |
+| U4  | Zen/Split 렌더링 패리티             | `wysiwyg/`, `markdownConfig.ts` | CM6 데코레이션 vs markdown-it 파싱 차이. 회귀 픽스처 세트 필요.               |
+| U5  | Spellcheck underline (macOS Tauri)  | `MarkdownEditor.tsx`            | WKWebView에서 실시간 밑줄 불안정. OS 메뉴 통합 또는 Hunspell 파이프라인 고려. |
 
 ---
 
@@ -58,10 +55,7 @@
 
 ### Next Sprint — Quality Improvements
 
-1. **Q4** wysiwyg.ts 모듈 분할 (969 lines → separate modules)
-2. **Q5** Auto-save dirty Set 추적
-3. **Q6** loadSettings 책임 분리
-4. **Q11** 위젯 store 접근 의존성 주입
+1. **Q5** Auto-save dirty Set 추적
 
 ### After — Performance & UX
 
@@ -76,7 +70,7 @@
 
 ---
 
-## Completed (Waves 1-6)
+## Completed (Waves 1-7)
 
 ### Wave 1 — Phase 2 Completion (ba748dd)
 
@@ -114,6 +108,12 @@
 - **Q9** ✅ duplicateFile shared util (`findAvailableCopyPath`, IPC 100회 → 1회)
 - **U1** ✅ Cross-platform 경로 (`joinPath`/`getDirectoryPath` 사용)
 - **U2** ✅ Sidebar auto-open 개선 (`sidebarState.isOpen` 존중)
+
+### Wave 7 — Architecture Refactor (23d7fd1)
+
+- **Q4** ✅ wysiwyg.ts 모듈 분할 (969 lines → 10 per-widget modules)
+- **Q6** ✅ loadSettings 책임 분리 (module-level helpers)
+- **Q11** ✅ ImageWidget DI 리팩토링 (constructor injection)
 
 ### Non-Issues (팩트체크 후 제거)
 

@@ -16,7 +16,7 @@ Pure utility functions and configured library instances shared across the fronte
 - `imagePath.ts` — Image path resolution utilities. Exports `resolveImageSrcForDisplay(url, filePath)` — resolves relative/absolute/web image URLs for display in both preview and Zen mode. Handles `file://` URLs via `fromFileUrl()`, POSIX path normalization via `toPosixPath()`, relative path resolution against document directory. Also exports: `isWebUrl`, `isAbsoluteFilePath`, `normalizeMarkdownUrl`, `joinPath`, `getDirectoryPath`, `safeDecodeUri`, `toFileUrl`, `resolveRelativePath`.
 - `markdownText.ts` — Shared markdown text processing. Exports `escapeHtml(str)` for safe HTML entity escaping and `stripInlineMarkdown(text)` for removing markdown formatting (bold, italic, code, links, strikethrough) from heading text. Extracted from inline usage for DRY reuse across outline/preview/export.
 - `sanitize.ts` — DOMPurify sanitization with 5 profiles: `sanitizePreviewHtml` (markdown preview with KaTeX MathML/SVG + data-\* attrs for scroll sync), `sanitizeKatexHtml` (WYSIWYG widgets), `sanitizeCodeHtml` (Prism.js spans), `sanitizeSvgHtml` (Mermaid/SVG with foreignObject), `sanitizeCustomCss` (blocks @import, external URLs, JS execution vectors).
-- `cache.ts` — Generic `LruCache<V>` class. Map-based LRU eviction (first key = oldest entry). Used by wysiwyg.ts (KaTeX/Mermaid widget caching) and MarkdownPreview.tsx (Mermaid diagram caching).
+- `cache.ts` — Generic `LruCache<V>` class. Map-based LRU eviction (first key = oldest entry). Used by wysiwyg/ extension modules (KaTeX/Mermaid widget caching) and MarkdownPreview.tsx (Mermaid diagram caching).
 - `fileCopy.ts` — Exports `findAvailableCopyPath(filePath)` — single `list_directory` IPC call for duplicate file naming. Generates `file (copy).md`, `file (copy 2).md`, etc. Used by FileTree.tsx copy operation.
 
 ## For AI Agents
@@ -29,5 +29,5 @@ Pure utility functions and configured library instances shared across the fronte
 - `directoryLoader.ts` was extracted to eliminate duplicate directory loading code in Sidebar and FileTree
 - `isTauri()` enables graceful degradation — app can run in browser without Tauri
 - `settingsStorage.ts` follows the same `isTauri()` detection pattern as other Tauri-dependent code
-- `imagePath.ts` is used by both wysiwyg.ts (Zen mode image rendering) and MarkdownPreview.tsx (split mode)
+- `imagePath.ts` is used by both wysiwyg/ImageWidget.ts (Zen mode image rendering) and MarkdownPreview.tsx (split mode)
 - `markdownText.ts` is used by `useOutline.ts` (heading text extraction) and `useExport.ts`
