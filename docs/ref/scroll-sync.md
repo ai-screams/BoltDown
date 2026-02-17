@@ -1,6 +1,6 @@
 # Split Mode Scroll Sync — Technical Reference
 
-> Hybrid Segment Proportional 스크롤 동기화 구현 문서
+> DOM-Based Mapping + Anchor Fallback 스크롤 동기화 구현 문서
 > 최종 수정: 2026-02-17
 
 ---
@@ -25,38 +25,47 @@ Split mode에서 좌측 CodeMirror 에디터와 우측 HTML 프리뷰의 스크�
 ## 2. Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    useSplitScrollSync                     │
-│                                                          │
-│  ┌──────────┐    ┌──────────────┐    ┌───────────────┐  │
-│  │ Scroll   │───▸│ Anchor       │───▸│ Interpolation │  │
-│  │ Detection│    │ Builder      │    │ Engine        │  │
-│  └──────────┘    └──────────────┘    └───────────────┘  │
-│       │                │                     │           │
-│       │          ┌─────┴─────┐         ┌─────┴─────┐    │
-│       │          │ data-     │         │ Segment   │    │
-│       │          │ source-   │         │ Proportion│    │
-│       │          │ line      │         │ al Map    │    │
-│       │          └───────────┘         └───────────┘    │
-│       │                                                  │
-│  ┌────┴─────────────────────────────────────────────┐   │
-│  │              Feedback Loop Prevention              │   │
-│  │  Driver Lock · Programmatic Scroll Tracking       │   │
-│  └───────────────────────────────────────────────────┘   │
-│                                                          │
-│  ┌───────────────────────────────────────────────────┐   │
-│  │              DOM Change Detection                  │   │
-│  │  MutationObserver · ResizeObserver · Image Loads  │   │
-│  └───────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                      useSplitScrollSync                       │
+│                                                               │
+│  ┌──────────┐    ┌─────────────────┐    ┌────────────────┐   │
+│  │ Scroll   │───▸│ DOM-Based       │───▸│ Smooth         │   │
+│  │ Detection│    │ Mapping         │    │ Scroller       │   │
+│  │ (RAF/DOM)│    │ (primary)       │    │ (RAF lerp)     │   │
+│  └──────────┘    └────────┬────────┘    └────────────────┘   │
+│       │                   │ null?                              │
+│       │            ┌──────▼────────┐                          │
+│  ┌────┤            │ Anchor-Based  │                          │
+│  │    │            │ Interpolation │                          │
+│  │    │            │ (fallback)    │                          │
+│  │    │            └───────────────┘                          │
+│  │    │                                                       │
+│  │  ┌─▼───────────────┐    ┌─────────────────────────────┐   │
+│  │  │ Click-to-Sync   │───▸│ Offset Correction           │   │
+│  │  │ (mouseup→DOM)   │    │ (exponential decay τ=150ms) │   │
+│  │  └─────────────────┘    └─────────────────────────────┘   │
+│  │                                                            │
+│  │  ┌─────────────────────────────────────────────────────┐  │
+│  └──│              Feedback Loop Prevention                │  │
+│     │  Driver Lock · Programmatic Scroll Tracking          │  │
+│     └─────────────────────────────────────────────────────┘  │
+│                                                               │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │              DOM Change Detection                        │ │
+│  │  MutationObserver · ResizeObserver · Image Loads         │ │
+│  └─────────────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ### 데이터 흐름
 
 1. **Scroll Detection**: 에디터(RAF poll) 또는 프리뷰(DOM scroll event)에서 스크롤 변경 감지
-2. **Anchor Build**: `data-source-line` 속성을 가진 프리뷰 DOM 노드를 순회하여 `(editorTop, previewTop)` 앵커 쌍 생성
-3. **Interpolation**: 현재 scrollTop이 속한 앵커 구간을 binary search로 찾고, 구간 내 비율로 대상 scrollTop 계산
-4. **Feedback Prevention**: driver lock + programmatic scroll tracking으로 무한 루프 차단
+2. **DOM-Based Mapping** (primary): 에디터 뷰포트 상단 라인 → `data-source-line` DOM 요소 직접 조회 → sub-line fraction으로 정밀 매핑
+3. **Anchor Interpolation** (fallback): DOM 요소 미발견 시 캐시된 앵커 배열에서 binary search + 선형 보간
+4. **Smooth Scroll**: SmoothScroller(RAF lerp, α=0.25)로 프리뷰에 부드러운 스크롤 적용
+5. **Click-to-Sync**: 에디터 클릭 시 커서 라인의 프리뷰 요소를 직접 조회하여 viewport fraction 동기화
+6. **Offset Correction**: 클릭↔스크롤 위치 차이를 지수 감쇠(τ=150ms)로 보정
+7. **Feedback Prevention**: driver lock + programmatic scroll tracking으로 무한 루프 차단
 
 ---
 
@@ -178,9 +187,119 @@ Preview DOM                          CodeMirror
 
 ---
 
-## 5. Interpolation Engine
+## 5. DOM-Based Mapping (`mapEditorToPreviewViaDOM`)
 
-### 5.1 Segment Proportional Mapping
+### 5.0 문제 인식
+
+앵커 기반 선형 보간은 높이 비대칭 요소(이미지, Mermaid 다이어그램, KaTeX 블록 수식) 주변에서
+**구조적 부정확성**을 가진다.
+
+```
+예시: 이미지 포함 구간
+Editor:  [이미지 라인: 20px] + [텍스트 라인: 20px]  = 40px
+Preview: [이미지 렌더: 500px] + [텍스트 렌더: 24px] = 524px
+
+선형 보간: 40px에 524px 균등 분배 → 이미지 구간에서 under-scroll
+실제 필요: 20px → 500px (이미지), 20px → 24px (텍스트)
+```
+
+**클릭 동기화가 정확한 이유**: `data-source-line` DOM 요소를 직접 조회하여 위치 계산.
+이 원리를 스크롤 동기화에도 적용한 것이 DOM-based mapping이다.
+
+### 5.1 알고리즘
+
+```
+┌─────────────────────────────────────────────────────┐
+│         mapEditorToPreviewViaDOM 흐름도              │
+│                                                      │
+│  editorScrollTop                                     │
+│       │                                              │
+│       ▼                                              │
+│  lineBlockAtHeight(scrollTop)                        │
+│       │                                              │
+│       ▼                                              │
+│  topLineNum = doc.lineAt(block.from).number          │
+│  subFraction = (scrollTop - block.top) / block.height│
+│       │                                              │
+│       ▼                                              │
+│  ┌─ querySelector(`[data-source-line="${topLine}"]`)  │
+│  │                                                   │
+│  ├─ EXACT MATCH ──────────────────────────┐          │
+│  │  contentY + subFraction × elHeight     │          │
+│  │  (요소 내 정밀 위치 계산)               │          │
+│  │                                        ▼          │
+│  ├─ NO MATCH ─────────────────────────────┐          │
+│  │  Bracket Search: before ≤ line < after │          │
+│  │  ratio = (scrollTop - bEditorTop)      │          │
+│  │        / (aEditorTop - bEditorTop)     │          │
+│  │  bContentY + ratio × (aContentY - bCY) │          │
+│  │                                        ▼          │
+│  └─ NO ELEMENTS ──────────────────────────┐          │
+│     return null → fallback to anchor interp│          │
+│                                            ▼          │
+│                                      previewScrollTop │
+└─────────────────────────────────────────────────────┘
+```
+
+### 5.2 핵심 코드
+
+```typescript
+function mapEditorToPreviewViaDOM(
+  view: EditorView,
+  previewScrollEl: HTMLDivElement,
+  editorScrollTop: number
+): number | null {
+  // 1. 에디터 뷰포트 상단 라인 블록 찾기
+  const topBlock = view.lineBlockAtHeight(editorScrollTop)
+  const topLineNum = view.state.doc.lineAt(topBlock.from).number
+
+  // 2. 라인 블록 내 서브 프랙션 (0=상단, 1=하단)
+  const subFraction = clamp((editorScrollTop - topBlock.top) / topBlock.height, 0, 1)
+
+  // 3. Fast path: 해당 라인의 프리뷰 요소 직접 조회
+  const exact = previewScrollEl.querySelector<HTMLElement>(`[data-source-line="${topLineNum}"]`)
+  if (exact) {
+    const contentY = rect.top - previewRect.top + scrollTop
+    return clamp(contentY + subFraction * rect.height, 0, previewScrollable)
+  }
+
+  // 4. Bracket fallback: 좌우 인접 요소 사이 보간
+  // ...
+}
+```
+
+### 5.3 Exact Match vs Bracket Interpolation
+
+| 경로          | 발생 조건                                         | 정밀도                 | 비용                   |
+| ------------- | ------------------------------------------------- | ---------------------- | ---------------------- |
+| Exact Match   | 뷰포트 상단이 `data-source-line` 요소가 있는 라인 | **정확** (sub-pixel)   | O(1) querySelector     |
+| Bracket       | 뷰포트 상단이 빈 줄, 연속 블록 내부 등            | 인접 요소 간 선형 보간 | O(n) querySelectorAll  |
+| Null fallback | 프리뷰에 `data-source-line` 요소 없음             | 앵커 기반 보간         | O(log n) binary search |
+
+대부분의 스크롤 시점에서 Exact Match 경로를 타며, 이미지/다이어그램 등
+높이 비대칭 요소에서도 **요소 높이에 비례한 정밀 매핑**을 수행한다.
+
+### 5.4 기존 앵커 보간과의 관계
+
+DOM-based mapping은 `syncFromEditor` (에디터→프리뷰)에서 **우선 사용**되며,
+실패 시 기존 앵커 보간으로 fallback한다. `syncFromPreview` (프리뷰→에디터)는
+여전히 앵커 기반 보간을 사용한다 (프리뷰 DOM에서 에디터 위치를 역매핑하는 것은
+라인 블록 조회가 불가능하므로).
+
+```typescript
+// syncFromEditor 내부
+let targetTop = mapEditorToPreviewViaDOM(view, previewScrollEl, scrollTop)
+if (targetTop === null) {
+  // Fallback: 기존 앵커 기반 보간
+  targetTop = mapEditorToPreview(scrollTop, anchors, ...)
+}
+```
+
+---
+
+## 6. Anchor-Based Interpolation Engine (Fallback)
+
+### 6.1 Segment Proportional Mapping
 
 앵커 배열을 구간(segment)으로 분할하고, 각 구간 내에서 선형 보간(linear interpolation)한다.
 
@@ -194,7 +313,7 @@ ratio = (150 - 80) / (280 - 80) = 70/200 = 0.35
 targetPreviewTop = 120 + 0.35 × (800 - 120) = 120 + 238 = 358
 ```
 
-### 5.2 Content-Space vs Scroll-Space 문제
+### 6.2 Content-Space vs Scroll-Space 문제
 
 **핵심 통찰**: 앵커의 `editorTop`/`previewTop`은 content-space (0 ~ contentHeight)에 있지만,
 `scrollTop`은 scroll-space (0 ~ scrollableHeight)에만 존재한다.
@@ -237,7 +356,7 @@ function interpolateScroll(
 이로써 마지막 유효 앵커 이후의 구간이 `(lastAnchor, scrollEnd)` → `(lastAnchorTarget, targetScrollEnd)`로
 정확하게 매핑된다.
 
-### 5.3 Binary Search (`lowerBound`)
+### 6.3 Binary Search (`lowerBound`)
 
 앵커 배열에서 `scrollTop` 이상인 첫 번째 요소를 O(log n)으로 찾는다.
 
@@ -259,7 +378,7 @@ function lowerBound<T>(items: readonly T[], value: number, getValue: (item: T) =
 
 Generic 구현으로 accessor function을 통해 editor→preview, preview→editor 양방향에서 재사용한다.
 
-### 5.4 DRY: 양방향 단일 함수
+### 6.4 DRY: 양방향 단일 함수
 
 `interpolateScroll()`은 accessor function `getFrom`/`getTo`를 파라미터로 받아
 방향에 무관한 단일 구현을 제공한다:
@@ -276,12 +395,12 @@ mapPreviewToEditor(scrollTop, anchors, editorScrollable, previewScrollable)
 
 ---
 
-## 6. Feedback Loop Prevention
+## 7. Feedback Loop Prevention
 
 양방향 동기화에서 A의 스크롤 변경이 B를 움직이고, B의 변경이 다시 A를 움직이는
 무한 루프를 방지해야 한다. 두 가지 메커니즘을 조합한다.
 
-### 6.1 Driver Lock
+### 7.1 Driver Lock
 
 ```
 type SyncDriver = 'editor' | 'preview'
@@ -299,7 +418,7 @@ Timeline:
   t=200  Preview user scroll → lock('preview') → editor.scrollTop = Y
 ```
 
-### 6.2 Programmatic Scroll Tracking
+### 7.2 Programmatic Scroll Tracking
 
 Driver lock만으로는 lock 만료 후 잔여 feedback을 완전히 차단하지 못한다.
 마지막으로 프로그래밍적으로 설정한 scrollTop 값을 기록하고,
@@ -321,7 +440,7 @@ if (Math.abs(st - lastProgrammaticEditorTopRef.current) > SCROLL_EPSILON_PX) {
 
 ---
 
-## 7. WKWebView Compatibility
+## 8. WKWebView Compatibility
 
 ### 문제
 
@@ -356,12 +475,12 @@ const pollEditorScroll = () => {
 
 ---
 
-## 8. DOM Change Detection
+## 9. DOM Change Detection
 
 프리뷰 DOM이 변경되면 앵커가 무효화되므로 재빌드가 필요하다.
 세 가지 감시 메커니즘을 사용한다:
 
-### 8.1 MutationObserver
+### 9.1 MutationObserver
 
 ```typescript
 const mutationObserver = new MutationObserver(() => {
@@ -380,7 +499,7 @@ mutationObserver.observe(previewScrollEl, {
 - `attributes`: 스타일 변경, 이미지 소스 변경, Mermaid 렌더링 완료 등
 - `attributeFilter`로 관련 속성만 감시하여 불필요한 트리거 최소화
 
-### 8.2 ResizeObserver
+### 9.2 ResizeObserver
 
 ```typescript
 const resizeObserver = new ResizeObserver(() => {
@@ -398,7 +517,7 @@ if (previewContent instanceof HTMLElement) {
 - 프리뷰 컨테이너와 첫 번째 자식(content wrapper) 모두 감시
 - 윈도우 리사이즈, split ratio 변경 시 앵커 재빌드 + 즉시 동기화
 
-### 8.3 Image Load Tracking
+### 9.3 Image Load Tracking
 
 ```typescript
 function trackImageLoads(previewScrollEl: HTMLDivElement, onImageLoaded: () => void): () => void {
@@ -421,7 +540,146 @@ function trackImageLoads(previewScrollEl: HTMLDivElement, onImageLoaded: () => v
 
 ---
 
-## 9. Integration Point (`MainLayout.tsx`)
+## 10. Smooth Scroll Animation (`SmoothScroller`)
+
+프리뷰 scrollTop을 즉시 설정하면 클릭→스크롤 전환 시 시각적 부조화가 발생한다.
+RAF 기반 lerp(Linear Interpolation) 애니메이션으로 부드러운 전환을 구현한다.
+
+### 10.1 알고리즘
+
+```typescript
+class SmoothScroller {
+  private tick = (): void => {
+    const current = this.el.scrollTop
+    const diff = this.target - current
+
+    if (Math.abs(diff) < SCROLL_EPSILON_PX) {
+      this.el.scrollTop = this.target // 수렴: 정확한 위치로 스냅
+      this.rafId = 0
+      return
+    }
+
+    const next = current + diff * this.alpha // lerp: α=0.25
+    this.el.scrollTop = next
+    this.rafId = requestAnimationFrame(this.tick)
+  }
+}
+```
+
+- **α = 0.25**: 매 프레임 잔여 거리의 25% 이동. ~120ms settle time (60fps 기준 ~7프레임)
+- **Target 갱신**: 연속 스크롤 시 target만 업데이트, 이미 진행 중인 RAF 루프가 새 target으로 수렴
+- **Cancel**: 사용자가 프리뷰를 직접 스크롤하면 즉시 애니메이션 중단
+- **Dispose**: cleanup에서 RAF 취소
+
+### 10.2 VS Code 비교
+
+| 속성        | VS Code              | BoltDown             |
+| ----------- | -------------------- | -------------------- |
+| 방식        | Exponential ease-out | Linear lerp (α=0.25) |
+| Settle time | ~150ms               | ~120ms               |
+| 장점        | 시작이 빠름          | 구현 단순, 예측 가능 |
+
+---
+
+## 11. Click-to-Sync (`syncCursorToPreview`)
+
+에디터에서 클릭 시 (스크롤 없이) 프리뷰를 해당 위치로 동기화한다.
+
+### 11.1 동작 흐름
+
+```
+mouseup on editor.scrollDOM
+    │
+    ▼
+RAF: scrollTop 변경 없음? (클릭만 발생)
+    │ yes
+    ▼
+cursor line → findClosestSourceLineElement
+    │
+    ▼
+viewport fraction = (lineBlock.top - scrollTop) / viewportHeight
+    │
+    ▼
+previewTarget = elementContentY - fraction × previewViewportHeight
+    │
+    ▼
+SmoothScroller.scrollTo(previewTarget)
+```
+
+- **Viewport fraction**: 커서의 뷰포트 상대 위치(0=상단, 1=하단)를 프리뷰에도 동일하게 적용
+- **Guard**: `scrollTopBefore === scrollTopAfter` (epsilon 이내)일 때만 실행. 스크롤이 발생한 경우는 `syncFromEditor`가 처리
+
+### 11.2 `findClosestSourceLineElement`
+
+```typescript
+function findClosestSourceLineElement(container, lineNumber): HTMLElement | null {
+  // 1. Fast path: exact match via querySelector
+  const exact = container.querySelector(`[data-source-line="${lineNumber}"]`)
+  if (exact) return exact
+
+  // 2. Linear scan: closest by line number distance
+  // DOM order = ascending → early exit when diverging past target
+}
+```
+
+---
+
+## 12. Offset Correction (Click↔Scroll 위치 보정)
+
+클릭 동기화(element-based)와 스크롤 동기화(DOM/anchor-based)는 서로 다른 매핑 전략을 사용하므로
+미세한 위치 차이가 발생할 수 있다. 클릭 직후 스크롤 시 이 차이가 "점프"로 나타난다.
+
+### 12.1 Offset Capture
+
+클릭 동기화 시 두 전략의 차이를 측정하여 저장:
+
+```typescript
+// syncCursorToPreview 내부
+const clickTarget = targetScrollTop                    // element-based 결과
+const scrollTarget = mapEditorToPreviewViaDOM(...)     // scroll-sync가 줄 결과
+scrollOffsetRef.current = clickTarget - scrollTarget
+scrollOffsetTimeRef.current = performance.now()
+```
+
+### 12.2 Exponential Decay
+
+`syncFromEditor` 실행 시 저장된 offset을 지수 감쇠로 적용:
+
+```typescript
+const elapsed = performance.now() - scrollOffsetTimeRef.current
+const decay = Math.exp(-elapsed / OFFSET_DECAY_TAU) // TAU = 150ms
+
+if (decay < 0.01) {
+  scrollOffsetRef.current = 0 // 1% 미만: offset 소멸
+} else {
+  targetTop += scrollOffsetRef.current * decay
+}
+```
+
+```
+Offset
+  ▲
+  │ ██
+  │ ████
+  │ ██████
+  │ ████████
+  │ ██████████
+  │ ████████████
+  │ ██████████████
+  │ ██████████████████
+  └──────────────────────────▶ Time (ms)
+  0    150   300   450   600
+       TAU  2×TAU 3×TAU 4×TAU
+       37%   14%   5%    2%
+```
+
+- **TAU = 150ms**: 150ms 후 offset이 37%로 감소, 450ms 후 ~5%
+- **Reset**: 사용자가 프리뷰를 직접 스크롤하면 offset 즉시 0으로 초기화
+- **Cleanup**: `enabled=false` 전환 시 offset 초기화
+
+---
+
+## 13. Integration Point (`MainLayout.tsx`)
 
 ```typescript
 export default memo(function MainLayout({ editor, preview, toolbar }) {
@@ -448,54 +706,63 @@ export default memo(function MainLayout({ editor, preview, toolbar }) {
 
 ---
 
-## 10. File Structure
+## 14. File Structure
 
 ```
 src/
 ├── hooks/
-│   └── useSplitScrollSync.ts    # 스크롤 동기화 훅 (전체 구현)
-│       ├── clamp()               # 범위 제한 유틸
-│       ├── getScrollableHeight() # scrollHeight - clientHeight
-│       ├── lowerBound()          # Generic binary search
-│       ├── buildScrollAnchors()  # data-source-line → anchor 쌍 생성
-│       ├── interpolateScroll()   # 핵심: segment proportional 보간
-│       ├── mapEditorToPreview()  # editor scrollTop → preview scrollTop
-│       ├── mapPreviewToEditor()  # preview scrollTop → editor scrollTop
-│       ├── trackImageLoads()     # 이미지 로드 감시
-│       └── useSplitScrollSync()  # React hook (이벤트 바인딩, 옵저버, RAF)
+│   └── useSplitScrollSync.ts       # 스크롤 동기화 훅 (전체 구현)
+│       ├── clamp()                  # 범위 제한 유틸
+│       ├── getScrollableHeight()    # scrollHeight - clientHeight
+│       ├── lowerBound()             # Generic binary search
+│       ├── buildScrollAnchors()     # data-source-line → anchor 쌍 생성
+│       ├── interpolateScroll()      # segment proportional 보간 (fallback)
+│       ├── mapEditorToPreview()     # anchor-based: editor → preview (fallback)
+│       ├── mapPreviewToEditor()     # anchor-based: preview → editor
+│       ├── mapEditorToPreviewViaDOM() # DOM-based: editor → preview (primary)
+│       ├── findClosestSourceLineElement() # line → closest data-source-line element
+│       ├── trackImageLoads()        # 이미지 로드 감시
+│       ├── SmoothScroller           # RAF lerp 애니메이션 클래스
+│       └── useSplitScrollSync()     # React hook (이벤트 바인딩, 옵저버, RAF)
+│           ├── syncFromEditor()     # 에디터 스크롤 → 프리뷰 동기화
+│           ├── syncFromPreview()    # 프리뷰 스크롤 → 에디터 동기화
+│           └── syncCursorToPreview() # 에디터 클릭 → 프리뷰 동기화
 ├── utils/
-│   └── markdownConfig.ts         # markdown-it 설정 + data-source-line 주입
+│   └── markdownConfig.ts            # markdown-it 설정 + data-source-line 주입
 │       ├── sourceLineFromToken()
 │       ├── withSourceLineAttr()
 │       └── addBlockSourceLineAttributes()
 └── components/layout/
-    └── MainLayout.tsx            # previewScrollRef 제공 + 훅 연결
+    └── MainLayout.tsx               # previewScrollRef 제공 + 훅 연결
 ```
 
 ---
 
-## 11. Known Limitations & Future Work
+## 15. Known Limitations & Future Work
 
-| 항목                        | 상태      | 설명                                                                                    |
-| --------------------------- | --------- | --------------------------------------------------------------------------------------- |
-| Inline 요소 매핑            | 미지원    | `data-source-line`은 block-level 요소에만 적용. 긴 paragraph 내 위치는 구간 보간에 의존 |
-| 동적 이미지 리사이즈        | 부분 지원 | 최초 로드는 감지하지만, lazy-loaded 이미지의 크기 변경은 MutationObserver에 의존        |
-| Mermaid 렌더링 지연         | 부분 지원 | 비동기 렌더링 완료 후 DOM 변경으로 앵커 재빌드. 렌더링 중간 상태에서 일시적 불일치 가능 |
-| 접힌 코드 블록              | 미지원    | CodeMirror fold가 적용된 상태에서 `lineBlockAt` 반환값이 달라질 수 있음                 |
-| 매우 긴 문서 (5000+ lines)  | 미검증    | 앵커 빌드와 binary search는 O(n log n)이나, DOM 쿼리 비용이 병목 가능                   |
-| Content-space anchor 정밀도 | 제한적    | `getBoundingClientRect()`는 서브픽셀 정밀도이나, 빠른 스크롤 시 리플로우 비용 존재      |
+| 항목                        | 상태        | 설명                                                                                    |
+| --------------------------- | ----------- | --------------------------------------------------------------------------------------- |
+| Inline 요소 매핑            | 미지원      | `data-source-line`은 block-level 요소에만 적용. 긴 paragraph 내 위치는 구간 보간에 의존 |
+| 동적 이미지 리사이즈        | 부분 지원   | 최초 로드는 감지하지만, lazy-loaded 이미지의 크기 변경은 MutationObserver에 의존        |
+| Mermaid 렌더링 지연         | 부분 지원   | 비동기 렌더링 완료 후 DOM 변경으로 앵커 재빌드. 렌더링 중간 상태에서 일시적 불일치 가능 |
+| 접힌 코드 블록              | 미지원      | CodeMirror fold가 적용된 상태에서 `lineBlockAt` 반환값이 달라질 수 있음                 |
+| 매우 긴 문서 (5000+ lines)  | 미검증      | DOM-based는 O(1) querySelector, bracket fallback은 O(n) querySelectorAll                |
+| Content-space anchor 정밀도 | 제한적      | `getBoundingClientRect()`는 서브픽셀 정밀도이나, 빠른 스크롤 시 리플로우 비용 존재      |
+| DOM-based querySelectorAll  | 최적화 가능 | bracket fallback의 전체 노드 순회를 캐시된 sorted array로 대체 가능                     |
 
 ---
 
 ## Appendix: Key CodeMirror 6 APIs
 
-| API                        | 반환                                  | 용도                                 |
-| -------------------------- | ------------------------------------- | ------------------------------------ |
-| `view.state.doc.line(n)`   | `Line { from, to, text }`             | 1-based 줄 번호 → 문자 offset        |
-| `view.lineBlockAt(pos)`    | `BlockInfo { top, height, from, to }` | 문자 offset → content-space Y 좌표   |
-| `view.scrollDOM`           | `HTMLElement`                         | CM6 스크롤 컨테이너 (`.cm-scroller`) |
-| `view.scrollDOM.scrollTop` | `number`                              | 현재 스크롤 위치                     |
-| `view.state.doc.lines`     | `number`                              | 전체 줄 수                           |
+| API                          | 반환                                  | 용도                                  |
+| ---------------------------- | ------------------------------------- | ------------------------------------- |
+| `view.state.doc.line(n)`     | `Line { from, to, text }`             | 1-based 줄 번호 → 문자 offset         |
+| `view.lineBlockAt(pos)`      | `BlockInfo { top, height, from, to }` | 문자 offset → content-space Y 좌표    |
+| `view.scrollDOM`             | `HTMLElement`                         | CM6 스크롤 컨테이너 (`.cm-scroller`)  |
+| `view.scrollDOM.scrollTop`   | `number`                              | 현재 스크롤 위치                      |
+| `view.state.doc.lines`       | `number`                              | 전체 줄 수                            |
+| `view.lineBlockAtHeight(h)`  | `BlockInfo { top, height, from, to }` | content-space Y → 해당 라인 블록      |
+| `view.state.doc.lineAt(pos)` | `Line { number, from, to, text }`     | 문자 offset → Line 객체 (number 포함) |
 
 `BlockInfo.top`은 문서 최상단(content-space origin)으로부터의 Y 좌표이며,
 `documentTop` (기본값 0)이 오프셋으로 적용된다. 에디터의 패딩이 포함되지 않으므로
