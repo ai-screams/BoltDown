@@ -1,53 +1,20 @@
 # BoltDown — Unified Backlog
 
-> 단일 백로그. Phase 구분 없이 우선순위(Priority)로 관리.
-> SSoT: 이 파일이 모든 미완료 작업의 유일한 출처.
-> 최종 갱신: 2026-02-17 (Waves 1-8 완료 후 정리, S9 추가)
+> 단일 백로그. 모든 활성 작업 완료. Known Issues만 남음.
+> SSoT: 이 파일이 모든 작업 이력의 유일한 출처.
+> 최종 갱신: 2026-02-18 (Waves 1-8 완료, 백로그 클리어)
 
 ---
 
-## Security
+## Known Issues
 
-> 출처: PR #28 코드 리뷰 (2026-02-16). Wave 2/6 완료 후 남은 항목.
+> 구조적 한계 또는 외부 의존성으로 인해 당장 해결하지 않는 항목.
 
-### S-LOW
-
-(모든 항목 완료)
-
----
-
-## Performance
-
-### P-MEDIUM
-
-| ID  | Issue                    | Location              | Description                                                   |
-| --- | ------------------------ | --------------------- | ------------------------------------------------------------- |
-| P5  | Preview 매번 전체 재파싱 | `MarkdownPreview.tsx` | content 변경 시 markdown-it 전체 재파싱. 증분 파싱 고려 가능. |
-
----
-
-## UX Polish
-
-> 출처: polish-backlog.md (2026-02-15). Wave 6 완료 후 남은 항목.
-
-| ID  | Issue                              | Location                        | Description                                                                   |
-| --- | ---------------------------------- | ------------------------------- | ----------------------------------------------------------------------------- |
-| U4  | Zen/Split 렌더링 패리티            | `wysiwyg/`, `markdownConfig.ts` | CM6 데코레이션 vs markdown-it 파싱 차이. 회귀 픽스처 세트 필요.               |
-| U5  | Spellcheck underline (macOS Tauri) | `MarkdownEditor.tsx`            | WKWebView에서 실시간 밑줄 불안정. OS 메뉴 통합 또는 Hunspell 파이프라인 고려. |
-
----
-
-## Priority Roadmap
-
-### Next — Performance & UX
-
-1. **P5** Preview 증분 파싱 고려
-2. **U4** Zen/Split 렌더링 패리티
-3. **U5** Spellcheck underline 개선
-
-### Housekeeping
-
-(모든 항목 완료)
+| ID  | Issue                              | Location                        | 사유                                                                                                           |
+| --- | ---------------------------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| P5  | Preview 매번 전체 재파싱           | `MarkdownPreview.tsx`           | markdown-it 자체가 증분 파싱 미지원. tree-sitter/mdast 등 아키텍처 전환 필요. 대용량 문서에서만 체감.          |
+| U4  | Zen/Split 렌더링 패리티            | `wysiwyg/`, `markdownConfig.ts` | CM6 데코레이션 vs markdown-it 파싱 엔진 차이. 완전한 패리티는 구조적으로 불가능. 회귀 픽스처 세트로 관리 필요. |
+| U5  | Spellcheck underline (macOS Tauri) | `MarkdownEditor.tsx`            | macOS WKWebView 레벨 이슈. Tauri/앱 코드로 제어 불가. OS 업데이트 또는 Hunspell 자체 통합 필요.                |
 
 ---
 
@@ -96,7 +63,7 @@
 - **Q6** ✅ loadSettings 책임 분리 (module-level helpers)
 - **Q11** ✅ ImageWidget DI 리팩토링 (constructor injection)
 
-### Wave 8 — Fact-Check & Fix (d464ff2)
+### Wave 8 — Fact-Check & Fix (d464ff2, 30b9f0e)
 
 - **U3** ✅ Tree data flash 수정 (원자적 `set({rootPath, treeData})`)
 - **S9** ✅ loadRecentFiles 런타임 타입 검증 (type guard + `Array.filter`)
