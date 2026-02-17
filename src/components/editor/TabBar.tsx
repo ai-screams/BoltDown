@@ -8,6 +8,7 @@ import { FILE_DEFAULTS } from '@/constants/file'
 import { useEditorStore } from '@/stores/editorStore'
 import { useSidebarStore } from '@/stores/sidebarStore'
 import { useTabStore } from '@/stores/tabStore'
+import { getDirectoryPath, joinPath } from '@/utils/imagePath'
 
 export default memo(function TabBar() {
   const { tabs, activeTabId } = useTabStore(
@@ -56,8 +57,7 @@ export default memo(function TabBar() {
 
       if (tab.filePath) {
         try {
-          const dir = tab.filePath.substring(0, tab.filePath.lastIndexOf('/') + 1)
-          const newPath = dir + newFileName
+          const newPath = joinPath(getDirectoryPath(tab.filePath), newFileName)
           const { invoke } = await import('@tauri-apps/api/core')
           await invoke('rename_file', { oldPath: tab.filePath, newPath })
           renameTab(tabId, newFileName, newPath)
