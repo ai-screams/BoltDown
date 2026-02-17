@@ -33,6 +33,14 @@ export class ImageWidget extends WidgetType {
       syncLayout()
     }
 
+    // Position cursor at widget start on click to trigger reveal correctly
+    wrapper.addEventListener('mousedown', e => {
+      e.preventDefault()
+      const pos = view.posAtDOM(wrapper)
+      view.dispatch({ selection: { anchor: pos }, scrollIntoView: true })
+      view.focus()
+    })
+
     wrapper.appendChild(img)
     return wrapper
   }
@@ -43,7 +51,7 @@ export class ImageWidget extends WidgetType {
       this.markdownFilePath === other.markdownFilePath
     )
   }
-  ignoreEvent() {
-    return false
+  ignoreEvent(event: Event) {
+    return event instanceof MouseEvent
   }
 }
