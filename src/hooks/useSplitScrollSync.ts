@@ -17,6 +17,7 @@ type SyncDriver = 'editor' | 'preview'
 
 const DRIVER_LOCK_MS = 160
 const SCROLL_EPSILON_PX = 1
+const OFFSET_DECAY_TAU = 150 // exponential decay time constant in ms
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
@@ -218,6 +219,87 @@ function findClosestSourceLineElement(
 }
 
 /**
+ * Map editor scrollTop to preview scrollTop via direct DOM element lookup.
+ * More accurate than anchor interpolation around height-asymmetric elements
+ * (images, diagrams, math blocks) because it maps through line numbers
+ * and uses actual element heights for sub-line positioning.
+ *
+ * Returns null when no suitable elements are found (caller should fall back
+ * to anchor-based interpolation).
+ */
+function mapEditorToPreviewViaDOM(
+  view: EditorView,
+  previewScrollEl: HTMLDivElement,
+  editorScrollTop: number
+): number | null {
+  const previewScrollable = getScrollableHeight(previewScrollEl)
+  if (previewScrollable <= 0) return null
+
+  // Find the editor line block at the viewport top
+  const topBlock = view.lineBlockAtHeight(editorScrollTop)
+  const topLineNum = view.state.doc.lineAt(topBlock.from).number
+
+  // Sub-line fraction: how far through this line block the scroll position is
+  const subFraction =
+    topBlock.height > 0 ? clamp((editorScrollTop - topBlock.top) / topBlock.height, 0, 1) : 0
+
+  const previewRect = previewScrollEl.getBoundingClientRect()
+
+  // Fast path: exact element for the top visible line
+  const exact = previewScrollEl.querySelector<HTMLElement>(`[data-source-line="${topLineNum}"]`)
+  if (exact) {
+    const rect = exact.getBoundingClientRect()
+    const contentY = rect.top - previewRect.top + previewScrollEl.scrollTop
+    return clamp(contentY + subFraction * rect.height, 0, previewScrollable)
+  }
+
+  // No exact match — find bracketing elements (before ≤ topLine < after)
+  const nodes = previewScrollEl.querySelectorAll<HTMLElement>('[data-source-line]')
+  if (nodes.length === 0) return null
+
+  let before: { el: HTMLElement; line: number } | null = null
+  let after: { el: HTMLElement; line: number } | null = null
+
+  for (const node of nodes) {
+    const raw = node.dataset['sourceLine']
+    if (!raw) continue
+    const num = Number.parseInt(raw, 10)
+    if (!Number.isFinite(num)) continue
+
+    if (num <= topLineNum) {
+      before = { el: node, line: num }
+    } else {
+      after = { el: node, line: num }
+      break // DOM order is ascending, first match after topLine is closest
+    }
+  }
+
+  if (before && after) {
+    const bRect = before.el.getBoundingClientRect()
+    const aRect = after.el.getBoundingClientRect()
+    const bContentY = bRect.top - previewRect.top + previewScrollEl.scrollTop
+    const aContentY = aRect.top - previewRect.top + previewScrollEl.scrollTop
+
+    const bEditorTop = view.lineBlockAt(view.state.doc.line(before.line).from).top
+    const aEditorTop = view.lineBlockAt(view.state.doc.line(after.line).from).top
+
+    const editorRange = aEditorTop - bEditorTop
+    if (editorRange > 0) {
+      const ratio = clamp((editorScrollTop - bEditorTop) / editorRange, 0, 1)
+      return clamp(bContentY + ratio * (aContentY - bContentY), 0, previewScrollable)
+    }
+  }
+
+  // Single bracket: use element position directly
+  if (before) {
+    const rect = before.el.getBoundingClientRect()
+    return clamp(rect.top - previewRect.top + previewScrollEl.scrollTop, 0, previewScrollable)
+  }
+
+  return null
+}
+
+/**
  * Track image loads in the preview pane and call onImageLoaded when any image finishes loading.
  * Returns a cleanup function to abort listeners.
  */
@@ -305,6 +387,9 @@ export function useSplitScrollSync({ enabled, previewScrollRef }: UseSplitScroll
   const lastProgrammaticPreviewTopRef = useRef(-1)
   const lastProgrammaticEditorTopRef = useRef(-1)
 
+  const scrollOffsetRef = useRef(0)
+  const scrollOffsetTimeRef = useRef(0)
+
   const clearLockTimer = useEffectEvent(() => {
     if (lockTimerRef.current === null) return
     window.clearTimeout(lockTimerRef.current)
@@ -343,16 +428,32 @@ export function useSplitScrollSync({ enabled, previewScrollRef }: UseSplitScroll
     const previewScrollEl = previewScrollRef.current
     if (!view || !previewScrollEl) return
 
-    ensureAnchors()
-
-    const editorScrollable = getScrollableHeight(view.scrollDOM)
     const previewScrollable = getScrollableHeight(previewScrollEl)
-    const targetTop = mapEditorToPreview(
-      view.scrollDOM.scrollTop,
-      anchorsRef.current,
-      editorScrollable,
-      previewScrollable
-    )
+
+    // DOM-based mapping: accurate around height-asymmetric elements (images, diagrams)
+    let targetTop = mapEditorToPreviewViaDOM(view, previewScrollEl, view.scrollDOM.scrollTop)
+    if (targetTop === null) {
+      ensureAnchors()
+      const editorScrollable = getScrollableHeight(view.scrollDOM)
+      targetTop = mapEditorToPreview(
+        view.scrollDOM.scrollTop,
+        anchorsRef.current,
+        editorScrollable,
+        previewScrollable
+      )
+    }
+
+    if (scrollOffsetRef.current !== 0) {
+      const elapsed = window.performance.now() - scrollOffsetTimeRef.current
+      const decay = Math.exp(-elapsed / OFFSET_DECAY_TAU)
+      if (decay < 0.01) {
+        scrollOffsetRef.current = 0
+      } else {
+        targetTop += scrollOffsetRef.current * decay
+        targetTop = clamp(targetTop, 0, previewScrollable)
+      }
+    }
+
     if (Math.abs(previewScrollEl.scrollTop - targetTop) <= SCROLL_EPSILON_PX) return
 
     lockDriver('editor')
@@ -421,6 +522,21 @@ export function useSplitScrollSync({ enabled, previewScrollRef }: UseSplitScroll
 
     if (Math.abs(previewScrollEl.scrollTop - targetScrollTop) <= SCROLL_EPSILON_PX) return
 
+    // Compute and store offset between click target and scroll-sync target
+    let scrollSyncTarget = mapEditorToPreviewViaDOM(view, previewScrollEl, view.scrollDOM.scrollTop)
+    if (scrollSyncTarget === null) {
+      ensureAnchors()
+      const editorScrollable = getScrollableHeight(view.scrollDOM)
+      scrollSyncTarget = mapEditorToPreview(
+        view.scrollDOM.scrollTop,
+        anchorsRef.current,
+        editorScrollable,
+        previewScrollable
+      )
+    }
+    scrollOffsetRef.current = targetScrollTop - scrollSyncTarget
+    scrollOffsetTimeRef.current = window.performance.now()
+
     lockDriver('editor')
     previewSmootherRef.current?.scrollTo(targetScrollTop)
   })
@@ -458,6 +574,7 @@ export function useSplitScrollSync({ enabled, previewScrollRef }: UseSplitScroll
       anchorsRef.current = []
       anchorsDirtyRef.current = true
       driverLockRef.current = null
+      scrollOffsetRef.current = 0
       cancelScheduledFrames()
       clearLockTimer()
       return
@@ -517,6 +634,7 @@ export function useSplitScrollSync({ enabled, previewScrollRef }: UseSplitScroll
         }
         // Cancel smooth scroll animation when user manually scrolls
         previewSmootherRef.current?.cancel()
+        scrollOffsetRef.current = 0
         schedulePreviewSync()
       }
 
