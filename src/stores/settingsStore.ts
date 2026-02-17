@@ -71,6 +71,30 @@ function mergeWithDefaults(stored: Partial<AppSettings>, defaults: AppSettings):
   }
 }
 
+function initThemeListener(get: () => SettingsState): void {
+  if (!themeListenerRegistered) {
+    themeListenerRegistered = true
+    const mediaQuery = window.matchMedia(MEDIA_QUERIES.prefersDark)
+    mediaQuery.addEventListener('change', () => {
+      const { settings } = get()
+      if (settings.theme.mode === 'system') {
+        applyTheme(settings.theme)
+      }
+    })
+  }
+}
+
+function migrateLegacyTheme(get: () => SettingsState, stored: Partial<AppSettings> | null): void {
+  const oldTheme = localStorage.getItem(STORAGE_KEYS.legacyTheme)
+  if (oldTheme && !stored?.theme) {
+    const mode = oldTheme as ThemeMode
+    if (THEME_MODES.includes(mode)) {
+      get().updateTheme({ mode })
+    }
+    localStorage.removeItem(STORAGE_KEYS.legacyTheme)
+  }
+}
+
 // --- Store ---
 
 interface SettingsState {
@@ -146,26 +170,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
         set({ isLoaded: true })
         applyTheme(DEFAULT_SETTINGS.theme)
       }
-
-      if (!themeListenerRegistered) {
-        themeListenerRegistered = true
-        const mediaQuery = window.matchMedia(MEDIA_QUERIES.prefersDark)
-        mediaQuery.addEventListener('change', () => {
-          const { settings } = get()
-          if (settings.theme.mode === 'system') {
-            applyTheme(settings.theme)
-          }
-        })
-      }
-
-      const oldTheme = localStorage.getItem(STORAGE_KEYS.legacyTheme)
-      if (oldTheme && !stored?.theme) {
-        const mode = oldTheme as ThemeMode
-        if (THEME_MODES.includes(mode)) {
-          get().updateTheme({ mode })
-        }
-        localStorage.removeItem(STORAGE_KEYS.legacyTheme)
-      }
+      initThemeListener(get)
+      migrateLegacyTheme(get, stored ?? null)
     },
   }
 })
