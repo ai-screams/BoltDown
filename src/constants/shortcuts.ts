@@ -39,6 +39,6 @@ export const SHORTCUT_GROUPS: ShortcutGroup[] = [
   },
   {
     title: 'Help',
-    shortcuts: [{ keys: `${MOD}+/`, label: 'Keyboard shortcuts' }],
+    shortcuts: [{ keys: `${MOD}+?`, label: 'Keyboard shortcuts' }],
   },
 ]

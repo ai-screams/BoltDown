@@ -123,7 +123,7 @@ export function useKeyboardShortcuts({
         return
       }
 
-      if (mod && e.key === '/') {
+      if (mod && e.shiftKey && e.code === 'Slash') {
         e.preventDefault()
         setShortcutsOpen(prev => !prev)
         return
