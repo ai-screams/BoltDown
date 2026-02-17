@@ -126,7 +126,8 @@ export const md: MarkdownIt = new MarkdownIt({
     }
 
     if (lang && Prism.languages[lang]) {
-      return `<pre class="language-${lang}"><code class="language-${lang}">${Prism.highlight(str, Prism.languages[lang], lang)}</code></pre>`
+      const badge = `<span class="preview-lang-badge">${escapeHtml(lang)}</span>`
+      return `<pre class="language-${lang}">${badge}<code class="language-${lang}">${Prism.highlight(str, Prism.languages[lang], lang)}</code></pre>`
     }
     return `<pre><code>${escapeHtml(str)}</code></pre>`
   },
