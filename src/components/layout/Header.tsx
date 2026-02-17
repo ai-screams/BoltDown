@@ -57,6 +57,7 @@ export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
   const ThemeIcon = themeIcon[themeMode]
   const [exportOpen, setExportOpen] = useState(false)
   const exportRef = useRef<HTMLDivElement>(null)
+  const menuItemRefs = useRef<(HTMLButtonElement | null)[]>([])
 
   const exportActions = useMemo(
     () => [
@@ -98,6 +99,50 @@ export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
     return () => document.removeEventListener('mousedown', handler)
   }, [exportOpen])
 
+  // Focus first menu item when menu opens
+  useEffect(() => {
+    if (exportOpen && menuItemRefs.current[0]) {
+      menuItemRefs.current[0]?.focus()
+    }
+  }, [exportOpen])
+
+  const handleMenuKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      const focusedIndex = menuItemRefs.current.findIndex(ref => ref === document.activeElement)
+      if (focusedIndex === -1) return
+
+      let nextIndex = focusedIndex
+
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault()
+          nextIndex = (focusedIndex + 1) % exportActions.length
+          break
+        case 'ArrowUp':
+          e.preventDefault()
+          nextIndex = (focusedIndex - 1 + exportActions.length) % exportActions.length
+          break
+        case 'Home':
+          e.preventDefault()
+          nextIndex = 0
+          break
+        case 'End':
+          e.preventDefault()
+          nextIndex = exportActions.length - 1
+          break
+        case 'Escape':
+          e.preventDefault()
+          setExportOpen(false)
+          return
+        default:
+          return
+      }
+
+      menuItemRefs.current[nextIndex]?.focus()
+    },
+    [exportActions.length]
+  )
+
   return (
     <header className="flex h-12 flex-none items-center justify-between border-b border-line bg-surface px-4">
       <div className="flex items-center gap-2">
@@ -125,15 +170,19 @@ export default memo(function Header({ onOpenFile, onSaveFile }: HeaderProps) {
                 id={EXPORT_MENU_ID}
                 role="menu"
                 className="animate-dropdown absolute left-0 top-full z-50 mt-1 w-40 rounded-lg border border-line bg-surface py-1 shadow-lg"
+                onKeyDown={handleMenuKeyDown}
               >
-                {exportActions.map(action => {
+                {exportActions.map((action, index) => {
                   const ActionIcon = action.icon
                   return (
                     <button
                       key={action.key}
+                      ref={el => {
+                        menuItemRefs.current[index] = el
+                      }}
                       role="menuitem"
                       type="button"
-                      className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-fg-secondary transition-colors hover:bg-surface-muted"
+                      className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-fg-secondary transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50"
                       onClick={() => {
                         action.run()
                         setExportOpen(false)

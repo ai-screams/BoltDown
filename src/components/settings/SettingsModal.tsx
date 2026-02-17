@@ -63,11 +63,20 @@ function SettingRow({
   )
 }
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+function Toggle({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean
+  onChange: (v: boolean) => void
+  label?: string
+}) {
   return (
     <button
       role="switch"
       aria-checked={checked}
+      aria-label={label}
       className={clsx(
         'relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50',
         checked ? 'bg-electric-yellow' : 'bg-surface-muted'
@@ -88,13 +97,16 @@ function Select<T extends string>({
   value,
   options,
   onChange,
+  label,
 }: {
   value: T
   options: { value: T; label: string }[]
   onChange: (v: T) => void
+  label?: string
 }) {
   return (
     <select
+      aria-label={label}
       className="rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg-secondary focus-visible:border-electric-yellow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-electric-yellow/50"
       value={value}
       onChange={e => onChange(e.target.value as T)}
@@ -114,12 +126,14 @@ function NumberInput({
   max,
   step,
   onChange,
+  label,
 }: {
   value: number
   min: number
   max: number
   step?: number
   onChange: (v: number) => void
+  label?: string
 }) {
   const [draft, setDraft] = useState(String(value))
   const [focused, setFocused] = useState(false)
@@ -141,6 +155,7 @@ function NumberInput({
   return (
     <input
       type="number"
+      aria-label={label}
       className="w-20 rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg-secondary focus-visible:border-electric-yellow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-electric-yellow/50"
       max={max}
       min={min}
@@ -197,7 +212,7 @@ const ThemeModeControl = memo(function ThemeModeControl() {
             )}
             onClick={() => updateTheme({ mode: value })}
           >
-            <Icon className="h-3.5 w-3.5" />
+            <Icon aria-hidden="true" className="h-3.5 w-3.5" />
             {label}
           </button>
         )
@@ -231,7 +246,9 @@ const ThemePresetControl = memo(function ThemePresetControl() {
           >
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-semibold text-fg">{preset.label}</span>
-              {isActive && <Check className="h-3.5 w-3.5 text-electric-yellow" />}
+              {isActive && (
+                <Check aria-hidden="true" className="h-3.5 w-3.5 text-electric-yellow" />
+              )}
             </div>
             <p className="mt-1 text-[11px] leading-snug text-fg-secondary">{preset.description}</p>
             <div className="mt-2 flex flex-col gap-1">
@@ -513,6 +530,7 @@ function EditorPanel() {
     <div className="divide-y divide-line">
       <SettingRow description="Editor font" label="Font Family">
         <Select
+          label="Font Family"
           options={fontFamilyOptions}
           value={editor.fontFamily}
           onChange={v => updateEditor({ fontFamily: v })}
@@ -523,6 +541,7 @@ function EditorPanel() {
         label="Font Size"
       >
         <NumberInput
+          label="Font Size"
           max={EDITOR_SETTING_LIMITS.fontSize.max}
           min={EDITOR_SETTING_LIMITS.fontSize.min}
           value={editor.fontSize}
@@ -534,6 +553,7 @@ function EditorPanel() {
         label="Line Height"
       >
         <NumberInput
+          label="Line Height"
           max={EDITOR_SETTING_LIMITS.lineHeight.max}
           min={EDITOR_SETTING_LIMITS.lineHeight.min}
           step={EDITOR_SETTING_LIMITS.lineHeight.step}
@@ -543,22 +563,39 @@ function EditorPanel() {
       </SettingRow>
       <SettingRow label="Tab Size">
         <Select
+          label="Tab Size"
           options={tabSizeOptions}
           value={String(editor.tabSize)}
           onChange={v => updateEditor({ tabSize: parseInt(v, 10) })}
         />
       </SettingRow>
       <SettingRow description="Wrap long lines in the editor" label="Word Wrap">
-        <Toggle checked={editor.wordWrap} onChange={v => updateEditor({ wordWrap: v })} />
+        <Toggle
+          checked={editor.wordWrap}
+          label="Word Wrap"
+          onChange={v => updateEditor({ wordWrap: v })}
+        />
       </SettingRow>
       <SettingRow description="Underline misspelled words while typing" label="Spellcheck">
-        <Toggle checked={editor.spellcheck} onChange={v => updateEditor({ spellcheck: v })} />
+        <Toggle
+          checked={editor.spellcheck}
+          label="Spellcheck"
+          onChange={v => updateEditor({ spellcheck: v })}
+        />
       </SettingRow>
       <SettingRow description="Show line numbers" label="Line Numbers">
-        <Toggle checked={editor.lineNumbers} onChange={v => updateEditor({ lineNumbers: v })} />
+        <Toggle
+          checked={editor.lineNumbers}
+          label="Line Numbers"
+          onChange={v => updateEditor({ lineNumbers: v })}
+        />
       </SettingRow>
       <SettingRow description="Dim lines except cursor line" label="Focus Mode">
-        <Toggle checked={editor.focusMode} onChange={v => updateEditor({ focusMode: v })} />
+        <Toggle
+          checked={editor.focusMode}
+          label="Focus Mode"
+          onChange={v => updateEditor({ focusMode: v })}
+        />
       </SettingRow>
       {editor.focusMode && (
         <SettingRow
@@ -566,6 +603,7 @@ function EditorPanel() {
           label="Focus Context Lines"
         >
           <NumberInput
+            label="Focus Context Lines"
             max={EDITOR_SETTING_LIMITS.focusContextLines.max}
             min={EDITOR_SETTING_LIMITS.focusContextLines.min}
             value={editor.focusContextLines}
@@ -576,6 +614,7 @@ function EditorPanel() {
       <SettingRow description="Keep cursor line vertically centered" label="Typewriter Mode">
         <Toggle
           checked={editor.typewriterMode}
+          label="Typewriter Mode"
           onChange={v => updateEditor({ typewriterMode: v })}
         />
       </SettingRow>
@@ -594,6 +633,7 @@ function PreviewPanel() {
         label="Font Size"
       >
         <NumberInput
+          label="Font Size"
           max={PREVIEW_SETTING_LIMITS.fontSize.max}
           min={PREVIEW_SETTING_LIMITS.fontSize.min}
           value={preview.fontSize}
@@ -605,6 +645,7 @@ function PreviewPanel() {
         label="Line Height"
       >
         <NumberInput
+          label="Line Height"
           max={PREVIEW_SETTING_LIMITS.lineHeight.max}
           min={PREVIEW_SETTING_LIMITS.lineHeight.min}
           step={PREVIEW_SETTING_LIMITS.lineHeight.step}
@@ -617,6 +658,7 @@ function PreviewPanel() {
         label="Code Block Font Size"
       >
         <NumberInput
+          label="Code Block Font Size"
           max={PREVIEW_SETTING_LIMITS.codeBlockFontSize.max}
           min={PREVIEW_SETTING_LIMITS.codeBlockFontSize.min}
           value={preview.codeBlockFontSize}
@@ -628,6 +670,7 @@ function PreviewPanel() {
         label="Max Width"
       >
         <NumberInput
+          label="Max Width"
           max={PREVIEW_SETTING_LIMITS.maxWidth.max}
           min={PREVIEW_SETTING_LIMITS.maxWidth.min}
           step={PREVIEW_SETTING_LIMITS.maxWidth.step}
@@ -640,6 +683,7 @@ function PreviewPanel() {
         label="Mermaid Security"
       >
         <Select
+          label="Mermaid Security"
           options={mermaidSecurityOptions}
           value={preview.mermaidSecurityLevel}
           onChange={v => updatePreview({ mermaidSecurityLevel: v })}
@@ -656,13 +700,18 @@ function GeneralPanel() {
   return (
     <div className="divide-y divide-line">
       <SettingRow description="Automatically save changes" label="Auto Save">
-        <Toggle checked={general.autoSave} onChange={v => updateGeneral({ autoSave: v })} />
+        <Toggle
+          checked={general.autoSave}
+          label="Auto Save"
+          onChange={v => updateGeneral({ autoSave: v })}
+        />
       </SettingRow>
       <SettingRow
         description={`${GENERAL_SETTING_LIMITS.autoSaveDelay.min} - ${GENERAL_SETTING_LIMITS.autoSaveDelay.max}ms`}
         label="Auto Save Delay"
       >
         <NumberInput
+          label="Auto Save Delay"
           max={GENERAL_SETTING_LIMITS.autoSaveDelay.max}
           min={GENERAL_SETTING_LIMITS.autoSaveDelay.min}
           step={GENERAL_SETTING_LIMITS.autoSaveDelay.step}
@@ -673,6 +722,7 @@ function GeneralPanel() {
       <SettingRow description="Reopen last file on launch" label="Restore Last File">
         <Toggle
           checked={general.restoreLastFile}
+          label="Restore Last File"
           onChange={v => updateGeneral({ restoreLastFile: v })}
         />
       </SettingRow>
@@ -733,6 +783,7 @@ export default memo(function SettingsModal({ isOpen, onClose }: SettingsModalPro
     >
       <div
         role="dialog"
+        aria-labelledby="settings-dialog-title"
         aria-modal="true"
         className="animate-dropdown flex h-[480px] w-[640px] flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-2xl"
       >
@@ -740,7 +791,9 @@ export default memo(function SettingsModal({ isOpen, onClose }: SettingsModalPro
         <div className="flex h-12 flex-none items-center justify-between border-b border-line px-4">
           <div className="flex items-center gap-2">
             <Settings aria-hidden="true" className="h-4 w-4 text-fg-muted" />
-            <span className="text-sm font-semibold text-fg">Settings</span>
+            <span id="settings-dialog-title" className="text-sm font-semibold text-fg">
+              Settings
+            </span>
           </div>
           <button
             aria-label="Close settings"
@@ -758,6 +811,7 @@ export default memo(function SettingsModal({ isOpen, onClose }: SettingsModalPro
               {categories.map(({ key, label, icon: Icon }) => (
                 <button
                   key={key}
+                  type="button"
                   className={clsx(
                     'flex w-full items-center gap-2 px-4 py-2 text-xs font-medium transition-colors',
                     key === activeCategory
@@ -775,6 +829,7 @@ export default memo(function SettingsModal({ isOpen, onClose }: SettingsModalPro
             {/* Reset buttons */}
             <div className="border-t border-line p-2">
               <button
+                type="button"
                 className="flex w-full items-center gap-1.5 rounded px-2 py-1.5 text-[10px] text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg-secondary"
                 onClick={() => resetCategory(activeCategory)}
               >
@@ -782,6 +837,7 @@ export default memo(function SettingsModal({ isOpen, onClose }: SettingsModalPro
                 Reset {categories.find(c => c.key === activeCategory)?.label}
               </button>
               <button
+                type="button"
                 className="flex w-full items-center gap-1.5 rounded px-2 py-1.5 text-[10px] text-fg-muted transition-colors hover:bg-danger/10 hover:text-danger"
                 onClick={resetAll}
               >

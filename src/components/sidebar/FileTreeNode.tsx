@@ -1,6 +1,6 @@
 import { FileIcon, FolderIcon } from '@react-symbols/icons/utils'
 import { ChevronDown, ChevronRight, Copy, Trash2 } from 'lucide-react'
-import { memo, useCallback, useEffect, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import type { NodeRendererProps } from 'react-arborist'
 
 import type { FileTreeNode } from '@/types/sidebar'
@@ -17,6 +17,7 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
   const { isDir, name, path } = node.data
   const [isHovered, setIsHovered] = useState(false)
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   const handleContextMenu = useCallback(
     (e: React.MouseEvent) => {
@@ -66,6 +67,13 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
     [handleNodeClick]
   )
 
+  // Auto-focus first menu item when menu opens
+  useEffect(() => {
+    if (!menuPos || !menuRef.current) return
+    const firstButton = menuRef.current.querySelector<HTMLButtonElement>('button[role="menuitem"]')
+    firstButton?.focus()
+  }, [menuPos])
+
   // Close menu on click outside or Escape
   useEffect(() => {
     if (!menuPos) return
@@ -80,6 +88,28 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
       window.removeEventListener('keydown', handleEscape)
     }
   }, [menuPos])
+
+  const handleMenuKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!menuRef.current) return
+
+    const menuItems = Array.from(
+      menuRef.current.querySelectorAll<HTMLButtonElement>('button[role="menuitem"]')
+    )
+    const currentIndex = menuItems.findIndex(item => item === document.activeElement)
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      const nextIndex = (currentIndex + 1) % menuItems.length
+      menuItems[nextIndex]?.focus()
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      const prevIndex = (currentIndex - 1 + menuItems.length) % menuItems.length
+      menuItems[prevIndex]?.focus()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      setMenuPos(null)
+    }
+  }, [])
 
   return (
     <>
@@ -151,15 +181,18 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
       {/* Context menu */}
       {menuPos && (
         <div
+          ref={menuRef}
           role="menu"
           className="fixed z-50 min-w-[140px] rounded-md border border-line bg-surface py-1 shadow-lg"
           style={{ left: menuPos.x, top: menuPos.y }}
           onClick={e => e.stopPropagation()}
+          onKeyDown={handleMenuKeyDown}
         >
           <button
             role="menuitem"
             type="button"
             className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-fg-secondary hover:bg-surface-muted"
+            tabIndex={0}
             onClick={e => {
               handleDuplicate(e)
               setMenuPos(null)
@@ -172,6 +205,7 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
             role="menuitem"
             type="button"
             className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-danger hover:bg-surface-muted"
+            tabIndex={0}
             onClick={e => {
               handleDelete(e)
               setMenuPos(null)

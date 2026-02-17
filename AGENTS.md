@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) + **React 19** (TypeScript frontend) + **CodeMirror 6** (editor engine). Phase 1 MVP complete. Phase 2 (89%): Settings System (4-category modal, Tauri persistence, theme presets, custom CSS editor), Find & Replace (Cmd+F/H, ReDoS protection, keyboard navigation), Tauri 2.0 ACL capabilities, file save fixes, layout fixes, sidebar improvements (file/outline tabs, auto-sync, file tree icons), WYSIWYG Zen mode (StateField decorations with two-tier reveal, in-place code editing, KaTeX/Mermaid/Prism.js/tables), Focus Mode, Typewriter Mode, Auto-save, Tab Rename, Image Drag & Drop (Tauri native drag events, path resolution), Spellcheck (CM6 contentAttributes). Split view scroll sync (feat/scroll-sync branch): DOM-based mapping + anchor fallback, SmoothScroller, click-to-sync, offset correction.
+Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) + **React 19** (TypeScript frontend) + **CodeMirror 6** (editor engine). Phase 1 MVP complete. Phase 2 (89%): Settings System (4-category modal, Tauri persistence, theme presets, custom CSS editor), Find & Replace (Cmd+F/H, ReDoS protection, keyboard navigation), Tauri 2.0 modular architecture with clean separation of concerns, file save fixes, layout fixes, sidebar improvements (file/outline tabs, auto-sync, file tree icons), WYSIWYG Zen mode (StateField decorations with two-tier reveal, in-place code editing, KaTeX/Mermaid/Prism.js/tables), Focus Mode, Typewriter Mode, Auto-save, Tab Rename, Image Drag & Drop (Tauri native drag events, path resolution), Spellcheck (CM6 contentAttributes). Split view scroll sync (feat/scroll-sync branch): DOM-based mapping + anchor fallback, SmoothScroller, click-to-sync, offset correction. **WIG Compliance**: 18 accessibility fixes across 9 files (TabBar WAI-ARIA tabs, Header export menu keyboard nav, FileTreeNode context menu keyboard nav, SettingsModal form accessibility, FindReplaceModal ARIA, Footer live region, Sidebar decorative icons, App beforeunload guard, index.html preconnect).
 
 ## Architecture Overview
 
@@ -18,8 +18,10 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 │  │        Zustand Stores (5 stores)          │  │
 │  └───────────────────────────────────────────┘  │
 │              Rust IPC Commands                  │
-│  (read_file, write_file, list_directory,        │
-│   read_settings, write_settings)                │
+│  (file ops, directory, settings)                │
+│  Modular: commands/{file,directory,settings}    │
+│  Error: unified AppError with thiserror         │
+│  Utils: path validation with security           │
 └─────────────────────────────────────────────────┘
 ```
 
@@ -28,7 +30,7 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 | Directory    | Purpose                                                    |
 | ------------ | ---------------------------------------------------------- |
 | `src/`       | React frontend — components, stores, hooks, types, utils   |
-| `src-tauri/` | Rust backend — Tauri commands, app config, icons           |
+| `src-tauri/` | Rust backend — modular commands, error handling, utils     |
 | `.docs/`     | Documentation — ADR, PRD, brand guidelines, wiki, planning |
 | `tests/`     | E2E tests (Playwright, placeholder)                        |
 
@@ -50,20 +52,34 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 ### Stores (Zustand)
 
 - `editorStore.ts` — Editor mode (split/source/zen), status messages, flash notifications
-- `tabStore.ts` — Tab management (open/close/switch), content, filePath, dirty state tracking
+- `tabStore.ts` — Tab management (open/close/switch), content, filePath, dirty state tracking (`content !== savedContent`)
 - `sidebarStore.ts` — Sidebar state (open/width/resizing), active tab (files/outline/recent), file tree data, recent files. **Action**: `loadParentDirectory(filePath, openSidebar?)` loads directory entries and optionally opens sidebar
 - `settingsStore.ts` — User preferences (theme, font, autosave, preview, editor settings), Tauri persistence
 - `findReplaceStore.ts` — Find & replace state (query, replace text, case/regex/whole word, current match)
 
 ### Components
 
-- `Sidebar.tsx` — Three tabs: Files (file tree), Outline (heading navigator), Recent (recent files list)
-- `FileTree.tsx` — react-arborist tree with lazy directory loading. `containerHeight` starts at 0, measures via ResizeObserver, Tree only renders when height > 0 (prevents render errors)
-- `FileTreeNode.tsx` — File/folder icons via `@react-symbols/icons/utils`: `FileIcon` with `autoAssign` prop, `FolderIcon` with `folderName` prop. Context menu for delete/duplicate
-- `OutlinePanel.tsx` — Uses `flex-1 + min-h-0 + overflow-y-auto` for proper flex layout. Extracts headings from active tab via `useOutline` hook, click scrolls editor to line
-- `App.tsx` — Watches `activeTabId` (useEffect), syncs sidebar via `sidebarStore.loadParentDirectory(tab.filePath)` when tab changes. Calls `useCustomCss()` hook to inject custom CSS from settings
-- `MarkdownEditor.tsx` — CM6 editor with per-tab EditorState cache and compartment reconfiguration (theme/wysiwyg/gutter/focus/typewriter). Includes ordered-list `Tab` behavior that nests current item as `1.` (4-space indent) and renumbers following siblings
-- `SettingsModal.tsx` — 4-category settings with theme presets (6 built-in: bolt/sepia/nord/contrast/meadow/vivid), CustomCssEditor (collapsible, 10240 char limit, real-time preview), and CssReference panel (variables, selectors, recipes)
+- `App.tsx` — Root component with stable slot pattern (tabBar, toolbar, editor, preview hoisted outside render). Watches `activeTabId` via `useEffect`, syncs sidebar via `sidebarStore.loadParentDirectory(tab.filePath)`. Calls `useCustomCss()` hook to inject custom CSS from settings. **WIG**: `beforeunload` event handler warns about unsaved changes when closing window. Lazy-loads SettingsModal and FindReplaceModal with `lazy()` + `Suspense`.
+
+- `Sidebar.tsx` — Three tabs: Files (file tree), Outline (heading navigator), Recent (recent files list). Decorative icon marked with `aria-hidden="true"`.
+
+- `FileTree.tsx` — react-arborist tree with lazy directory loading. `containerHeight` starts at 0, measures via ResizeObserver, Tree only renders when height > 0 (prevents render errors).
+
+- `FileTreeNode.tsx` — File/folder icons via `@react-symbols/icons/utils`: `FileIcon` with `autoAssign` prop, `FolderIcon` with `folderName` prop. Context menu for delete/duplicate with **keyboard navigation** (ArrowDown/Up/Escape), auto-focus first item, `role="menu"`, `role="menuitem"`, clear `aria-label` attributes.
+
+- `TabBar.tsx` — **WAI-ARIA tabs pattern**: `role="tablist"`, `role="tab"`, roving tabindex (active = 0, inactive = -1), keyboard navigation (ArrowLeft/Right/Home/End), programmatic focus on tab switch. F2 triggers rename. Icons marked with `aria-hidden="true"`.
+
+- `Header.tsx` — App header with export dropdown featuring **keyboard navigation** (ArrowDown/Up/Home/End/Escape), auto-focus first menu item on open.
+
+- `Footer.tsx` — Status bar with **`aria-live="polite"` + `aria-atomic="true"`** on status text for screen reader announcements. Word/line/char count on right.
+
+- `SettingsModal.tsx` — 4-category settings. **Form accessibility**: all Toggle components have `role="switch"`, `aria-checked`, `aria-label`; all Select/NumberInput have `aria-label`; dialog has `aria-labelledby` and `aria-modal="true"`; decorative icons marked with `aria-hidden="true"`. 6 theme presets, CustomCssEditor with 10240 char limit, CssReference panel.
+
+- `FindReplaceModal.tsx` — Custom Find & Replace UI. **Full accessibility**: dialog with `aria-labelledby` and `aria-modal="true"`, toggle buttons with `aria-pressed` and `aria-label`, match counter with `role="status"`, `aria-live="polite"`, `aria-atomic="true"`, input fields with `aria-label`, all icons with `aria-hidden="true"`. ReDoS protection, debounced search, lazy line info, memoized rows.
+
+- `MarkdownEditor.tsx` — CM6 editor with per-tab EditorState cache and compartment reconfiguration. Ordered-list Tab behavior, searchKeymap removed (replaced by FindReplaceModal).
+
+- `ResizeHandle.tsx` — Draggable divider with **`role="separator"`, `aria-orientation="vertical"`, `aria-valuenow/min/max`** for current/min/max width.
 
 ### Utilities
 
@@ -76,6 +92,37 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 - `constants/theme.ts` — THEME_PRESETS array (6 built-in themes with name/label/description/swatches/info/danger), THEME_MODES, DEFAULT_THEME_NAME, isBuiltInThemeName() validator
 - `constants/settingsLimits.ts` — EDITOR_SETTING_LIMITS, PREVIEW_SETTING_LIMITS, GENERAL_SETTING_LIMITS, CUSTOM_CSS_LIMITS (maxLength: 10240, warningThreshold: 8192, debounceMs: 150), SETTINGS_DEFAULTS, SETTINGS_POLICY
 
+## Tauri Backend (Modular Architecture)
+
+### Structure
+
+```
+src-tauri/src/
+├── lib.rs              — Entry point, plugin registration, command registration
+├── commands/
+│   ├── mod.rs          — Command module exports
+│   ├── file.rs         — 6 file operations (read, write, rename, delete, copy, write_binary)
+│   ├── directory.rs    — Directory listing with FileEntry struct
+│   └── settings.rs     — Settings persistence via AppHandle.path().app_data_dir()
+├── error.rs            — Unified AppError enum with thiserror
+└── utils/
+    ├── mod.rs          — Utility module exports
+    └── path.rs         — Path validation, traversal protection, MAX_FILE_SIZE
+```
+
+### Commands
+
+- **File Operations**: `read_file` (50MB limit), `write_file` (atomic .tmp), `rename_file`, `delete_file`, `copy_file`, `write_binary_file`
+- **Directory**: `list_directory` (filters hidden/system dirs, returns FileEntry[])
+- **Settings**: `read_settings`, `write_settings` (atomic .tmp, AppHandle pattern)
+
+### Security
+
+- All file operations use `validate_path()` to prevent directory traversal
+- Paths are canonicalized to resolve symlinks and relative components
+- New files validated by checking parent directory existence
+- 50MB max file size for read operations
+
 ## For AI Agents
 
 - **Code style**: `semi: false`, `singleQuote: true`, `arrowParens: 'avoid'`, `printWidth: 100`
@@ -87,7 +134,7 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 - **Derived state**: `isDirty = content !== savedContent` (not stored)
 - **Sidebar sync**: `loadParentDirectory(filePath, openSidebar?)` consolidates directory loading logic
 - **File tree icons**: Use `@react-symbols/icons/utils` — `FileIcon` auto-assigns by extension, `FolderIcon` by folder name
-- **Accessibility**: ARIA attributes on interactive elements, prefers-reduced-motion support in CSS
+- **Accessibility**: ARIA attributes on interactive elements, prefers-reduced-motion support in CSS, decorative icons with `aria-hidden="true"`
 - **Error boundaries**: Use ErrorBoundary component to wrap potentially error-throwing components
 - **Type checking**: `npx tsc --noEmit` before committing
 - **Linting**: `npx eslint src/` before committing
@@ -96,20 +143,36 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 
 ## Tech Stack
 
-| Layer         | Technology                                                      |
-| ------------- | --------------------------------------------------------------- |
-| Desktop Shell | Tauri 2.0 (Rust)                                                |
-| UI Framework  | React 19 + TypeScript (strict)                                  |
-| Editor        | CodeMirror 6 (direct API)                                       |
-| Markdown      | markdown-it + KaTeX + Mermaid + Prism.js + tocPlugin            |
-| State         | Zustand (5 stores: editor, tab, sidebar, settings, findReplace) |
-| Styling       | Tailwind CSS (dark mode: class-based)                           |
-| Icons         | lucide-react + @react-symbols/icons (file/folder icons)         |
-| File Tree     | react-arborist                                                  |
-| Build         | Vite 7 + esbuild                                                |
+| Layer          | Technology                                                      |
+| -------------- | --------------------------------------------------------------- |
+| Desktop Shell  | Tauri 2.0 (Rust, modular architecture)                          |
+| UI Framework   | React 19 + TypeScript (strict)                                  |
+| Editor         | CodeMirror 6 (direct API)                                       |
+| Markdown       | markdown-it + KaTeX + Mermaid + Prism.js + tocPlugin            |
+| State          | Zustand (5 stores: editor, tab, sidebar, settings, findReplace) |
+| Styling        | Tailwind CSS (dark mode: class-based)                           |
+| Icons          | lucide-react + @react-symbols/icons (file/folder icons)         |
+| File Tree      | react-arborist                                                  |
+| Build          | Vite 7 + esbuild                                                |
+| Error Handling | thiserror (Rust backend)                                        |
 
 ## Git
 
 - Branch strategy: feature branches → PR → main
 - Commit style: Conventional Commits (`feat(editor):`, `fix(preview):`, etc.)
 - Pre-commit: Husky + lint-staged + commitlint
+- Current branch: `refactor/tauri-backend` (modular Rust architecture)
+
+## WIG Compliance Summary
+
+✅ **18 Accessibility Fixes Across 9 Files**:
+
+1. **TabBar**: WAI-ARIA tabs pattern with roving tabindex, keyboard nav (ArrowLeft/Right/Home/End)
+2. **Header**: Export menu keyboard nav (ArrowDown/Up/Home/End/Escape), auto-focus first item
+3. **FileTreeNode**: Context menu keyboard nav (ArrowDown/Up/Escape), auto-focus first item
+4. **SettingsModal**: Form accessibility (aria-label on Toggle/Select/NumberInput), aria-labelledby on dialog, aria-hidden on decorative icons
+5. **FindReplaceModal**: aria-labelledby on dialog, toggle buttons with aria-pressed, live region for match counter
+6. **Footer**: aria-live="polite" + aria-atomic="true" on status text
+7. **Sidebar**: aria-hidden on decorative icon
+8. **App.tsx**: beforeunload guard for unsaved changes
+9. **index.html**: preconnect for KaTeX CDN

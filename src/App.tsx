@@ -68,6 +68,18 @@ function App() {
     void loadSettings()
   }, [loadSettings])
 
+  // Warn before closing with unsaved changes
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      const hasDirty = useTabStore.getState().tabs.some(t => t.content !== t.savedContent)
+      if (hasDirty) {
+        e.preventDefault()
+      }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [])
+
   // Sync sidebar file tree when active tab changes
   const activeTabId = useTabStore(s => s.activeTabId)
   useEffect(() => {

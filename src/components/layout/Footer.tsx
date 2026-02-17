@@ -20,7 +20,9 @@ export default memo(function Footer({ className }: { className?: string }) {
         className
       )}
     >
-      <span className="text-xs text-thunder-gray">{statusText || 'Ready'}</span>
+      <span aria-atomic="true" aria-live="polite" className="text-xs text-thunder-gray">
+        {statusText || 'Ready'}
+      </span>
       <span className="text-xs tabular-nums text-thunder-gray">
         {stats.words.toLocaleString()} words · {readingTime} min read ·{' '}
         {stats.lines.toLocaleString()} lines · {stats.chars.toLocaleString()} chars

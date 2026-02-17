@@ -118,7 +118,7 @@ export default memo(function Sidebar({ onFileOpen }: SidebarProps) {
           className="flex h-9 flex-none items-center justify-center gap-1.5 border-t border-line text-xs text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg-secondary"
           onClick={handleOpenFolder}
         >
-          <FolderOpen className="h-3.5 w-3.5" />
+          <FolderOpen aria-hidden="true" className="h-3.5 w-3.5" />
           Open Folder
         </button>
       )}

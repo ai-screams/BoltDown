@@ -4,17 +4,51 @@
 
 ## Purpose
 
-Core editing experience: CodeMirror 6 editor, tab management, formatting toolbar, and CM6 extensions.
+Core editing experience: CodeMirror 6 editor, tab management with keyboard navigation, formatting toolbar, and CM6 extensions.
 
 ## Key Files
 
 - `MarkdownEditor.tsx` — Direct CM6 EditorView management (not @uiw/react-codemirror wrapper). Creates EditorView once on mount, caches EditorState per tab in `Map<tabId, EditorState>` (preserves undo history, cursor, scroll). Uses `useRef(new Compartment())` for theme/wysiwyg/gutter/focus/typewriter compartments. Includes ordered-list `Tab` behavior that nests current item as `1.` (4-space indent) and renumbers following siblings. Uses `useSettingsStore` for isDark theme derivation and focus/typewriter settings. **Phase 2**: Removed built-in searchKeymap (replaced by custom FindReplaceModal UI). Exports EditorView via EditorViewContext for toolbar/find access.
-- `TabBar.tsx` — Horizontal tab bar: sidebar toggle button (leftmost fixed), scrollable tabs (`w-[160px] shrink-0`), new tab button (after last tab). Derives isDirty as `content !== savedContent`.
+
+- `TabBar.tsx` — Horizontal tab bar with WAI-ARIA tabs pattern: sidebar toggle button (leftmost fixed), scrollable tabs (`w-[160px] shrink-0`), new tab button (after last tab). Keyboard navigation with ArrowLeft/Right/Home/End, roving tabindex (active tab = 0, others = -1). F2 triggers rename. Double-click to rename tab. Derives isDirty as `content !== savedContent`. Icons marked with `aria-hidden="true"`. Memoized with `memo()`.
+
 - `EditorToolbar.tsx` — 14-button formatting toolbar. Three helper functions (`toggleWrap`, `insertAtLineStart`, `insertBlock`) manipulate CM6 EditorView state directly for bold, italic, headings, links, code, lists, etc.
 
 ## Subdirectories
 
 - `extensions/` — CodeMirror 6 extension modules (see extensions/AGENTS.md)
+
+## Accessibility Features
+
+### TabBar
+
+- **WAI-ARIA Tabs Pattern**: `role="tablist"` on container, `role="tab"` on buttons
+- **Roving Tabindex**: Active tab has `tabIndex={0}`, inactive tabs have `tabIndex={-1}`
+- **Keyboard Navigation**:
+  - ArrowRight: Next tab (wrap to first)
+  - ArrowLeft: Previous tab (wrap to last)
+  - Home: First tab
+  - End: Last tab
+- **Focus Management**: Programmatic focus on tab activation via `tabButton?.focus()`
+- **ARIA Labels**: `aria-label="Toggle sidebar"`, `aria-label="New tab"`, `aria-label="Close tab"`
+- **Decorative Icons**: All icons marked with `aria-hidden="true"`
+
+```tsx
+// Keyboard navigation handler
+handleTabListKeyDown(e: React.KeyboardEvent) {
+  const currentIndex = tabs.findIndex(t => t.id === activeTabId)
+
+  switch (e.key) {
+    case 'ArrowRight': nextIndex = (currentIndex + 1) % tabs.length; break
+    case 'ArrowLeft': nextIndex = (currentIndex - 1 + tabs.length) % tabs.length; break
+    case 'Home': nextIndex = 0; break
+    case 'End': nextIndex = tabs.length - 1; break
+  }
+
+  setActiveTab(nextTab.id)
+  document.querySelector(`button[role="tab"][data-tab-id="${nextTab.id}"]`)?.focus()
+}
+```
 
 ## For AI Agents
 
@@ -44,3 +78,24 @@ EditorView (created once in useEffect[])
 [Sidebar Toggle] [Tab1] [Tab2] [Tab3...] [+ New Tab]
  ← fixed →       ← scrollable (overflow-x-auto) →
 ```
+
+### TabBar Rename Flow
+
+1. Double-click tab → enters rename mode (input replaces label)
+2. F2 key on active tab → enters rename mode
+3. Input auto-focused and selected
+4. Enter → commits rename (strips extension, re-adds .md if needed)
+5. Escape → cancels rename
+6. Blur → commits rename
+7. If file has `filePath`, invokes Tauri `rename_file` command
+
+## WIG Compliance
+
+### TabBar
+
+- ✅ WAI-ARIA tabs pattern (`role="tablist"`, `role="tab"`)
+- ✅ Roving tabindex (active = 0, inactive = -1)
+- ✅ Keyboard navigation (ArrowLeft/Right/Home/End)
+- ✅ Focus management on tab switch
+- ✅ ARIA labels on interactive buttons
+- ✅ Decorative icons hidden from screen readers
