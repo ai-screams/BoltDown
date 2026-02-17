@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 
 import { EditorViewProvider } from '@/contexts/EditorViewContext'
@@ -15,14 +15,16 @@ import { ErrorBoundary } from '@components/common/ErrorBoundary'
 import EditorToolbar from '@components/editor/EditorToolbar'
 import MarkdownEditor from '@components/editor/MarkdownEditor'
 import TabBar from '@components/editor/TabBar'
-import FindReplaceModal from '@components/findreplace/FindReplaceModal'
 import Footer from '@components/layout/Footer'
 import Header from '@components/layout/Header'
 import MainLayout from '@components/layout/MainLayout'
 import MarkdownPreview from '@components/preview/MarkdownPreview'
-import SettingsModal from '@components/settings/SettingsModal'
 import ResizeHandle from '@components/sidebar/ResizeHandle'
 import Sidebar from '@components/sidebar/Sidebar'
+
+// Lazy-load modals (only loaded when opened)
+const SettingsModal = lazy(() => import('@components/settings/SettingsModal'))
+const FindReplaceModal = lazy(() => import('@components/findreplace/FindReplaceModal'))
 
 // Stable slot elements — never recreated on App re-render
 const tabBar = <TabBar />
@@ -114,8 +116,12 @@ function App() {
         <Footer className={mode === 'zen' ? 'zen-footer-dim' : ''} />
       </div>
       {sidebarResizing && <div className="fixed inset-0 z-40 cursor-col-resize" />}
-      <SettingsModal isOpen={settingsOpen} onClose={handleSettingsClose} />
-      <FindReplaceModal />
+      <Suspense fallback={null}>
+        <SettingsModal isOpen={settingsOpen} onClose={handleSettingsClose} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <FindReplaceModal />
+      </Suspense>
     </EditorViewProvider>
   )
 }

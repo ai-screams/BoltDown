@@ -129,40 +129,34 @@ const MatchRow = memo(function MatchRow({ match, isActive, onClick }: MatchRowPr
 
 // --- Main component ---
 export default memo(function FindReplaceModal() {
-  // H4: Single shallow selector for Zustand
-  const {
-    isOpen,
-    showReplace,
-    searchText,
-    replaceText,
-    caseSensitive,
-    useRegex,
-    wholeWord,
-    close,
-    setSearchText,
-    setReplaceText,
-    toggleCaseSensitive,
-    toggleRegex,
-    toggleReplace,
-    toggleWholeWord,
-  } = useFindReplaceStore(
+  // H2: Split selectors by concern for better performance
+  // 1. UI state (changes on open/close, show/hide replace)
+  const { isOpen, showReplace } = useFindReplaceStore(
     useShallow(s => ({
       isOpen: s.isOpen,
       showReplace: s.showReplace,
+    }))
+  )
+
+  // 2. Search state (changes on user input)
+  const { searchText, replaceText, caseSensitive, useRegex, wholeWord } = useFindReplaceStore(
+    useShallow(s => ({
       searchText: s.searchText,
       replaceText: s.replaceText,
       caseSensitive: s.caseSensitive,
       useRegex: s.useRegex,
       wholeWord: s.wholeWord,
-      close: s.close,
-      setSearchText: s.setSearchText,
-      setReplaceText: s.setReplaceText,
-      toggleCaseSensitive: s.toggleCaseSensitive,
-      toggleRegex: s.toggleRegex,
-      toggleReplace: s.toggleReplace,
-      toggleWholeWord: s.toggleWholeWord,
     }))
   )
+
+  // 3. Actions (referentially stable, no useShallow needed)
+  const close = useFindReplaceStore(s => s.close)
+  const setSearchText = useFindReplaceStore(s => s.setSearchText)
+  const setReplaceText = useFindReplaceStore(s => s.setReplaceText)
+  const toggleCaseSensitive = useFindReplaceStore(s => s.toggleCaseSensitive)
+  const toggleRegex = useFindReplaceStore(s => s.toggleRegex)
+  const toggleReplace = useFindReplaceStore(s => s.toggleReplace)
+  const toggleWholeWord = useFindReplaceStore(s => s.toggleWholeWord)
 
   const editorViewRef = useEditorView()
   const searchInputRef = useRef<HTMLInputElement>(null)

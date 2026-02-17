@@ -6,6 +6,6 @@ export const STATUS_TIMEOUT_MS = {
 } as const
 
 export const DOCUMENT_STATS_POLICY = {
-  debounceMs: 150,
+  debounceMs: 500,
   readingWordsPerMinute: 225,
 } as const
