@@ -528,6 +528,7 @@ export default memo(function FindReplaceModal() {
     >
       <div
         role="dialog"
+        aria-labelledby="find-replace-dialog-title"
         aria-modal="true"
         className="animate-dropdown flex w-[calc(100vw-2rem)] max-w-[560px] flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-2xl"
         onKeyDown={handleKeyDown}
@@ -551,7 +552,7 @@ export default memo(function FindReplaceModal() {
               />
             </button>
             <Search aria-hidden="true" className="h-4 w-4 text-fg-muted" />
-            <span className="text-sm font-semibold text-fg">
+            <span id="find-replace-dialog-title" className="text-sm font-semibold text-fg">
               Find {showReplace ? '& Replace' : ''}
             </span>
           </div>
@@ -680,6 +681,7 @@ export default memo(function FindReplaceModal() {
             />
             <button
               type="button"
+              aria-label="Replace current match"
               className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium text-fg-secondary transition-colors hover:bg-surface-muted hover:text-fg disabled:opacity-30"
               disabled={!hasMatches}
               title="Replace"

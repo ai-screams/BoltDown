@@ -84,6 +84,47 @@ export default memo(function TabBar() {
     [startRename]
   )
 
+  const handleTabListKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      const currentIndex = tabs.findIndex(t => t.id === activeTabId)
+      if (currentIndex === -1) return
+
+      let nextIndex = currentIndex
+
+      switch (e.key) {
+        case 'ArrowRight':
+          e.preventDefault()
+          nextIndex = (currentIndex + 1) % tabs.length
+          break
+        case 'ArrowLeft':
+          e.preventDefault()
+          nextIndex = (currentIndex - 1 + tabs.length) % tabs.length
+          break
+        case 'Home':
+          e.preventDefault()
+          nextIndex = 0
+          break
+        case 'End':
+          e.preventDefault()
+          nextIndex = tabs.length - 1
+          break
+        default:
+          return
+      }
+
+      const nextTab = tabs[nextIndex]
+      if (nextTab) {
+        setActiveTab(nextTab.id)
+        // Focus will be managed by tabIndex pattern
+        const tabButton = document.querySelector(
+          `button[role="tab"][data-tab-id="${nextTab.id}"]`
+        ) as HTMLButtonElement
+        tabButton?.focus()
+      }
+    },
+    [tabs, activeTabId, setActiveTab]
+  )
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'F2' && !renamingTabId) {
@@ -121,21 +162,28 @@ export default memo(function TabBar() {
       >
         <PanelLeft aria-hidden="true" className="h-3.5 w-3.5" />
       </button>
-      <div className="flex flex-1 items-center overflow-x-auto">
+      <div
+        role="tablist"
+        className="flex flex-1 items-center overflow-x-auto"
+        onKeyDown={handleTabListKeyDown}
+      >
         {tabs.map(tab => {
           const isRenaming = tab.id === renamingTabId
           return (
-            <div
+            <button
               key={tab.id}
               role="tab"
+              type="button"
               className={clsx(
-                'group flex h-8 w-[160px] shrink-0 cursor-pointer items-center gap-1.5 border-r px-3 text-xs transition-colors duration-150',
+                'group flex h-8 w-[160px] shrink-0 cursor-pointer items-center gap-1.5 border-r px-3 text-xs transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50',
                 isRenaming
                   ? 'border-electric-yellow bg-electric-yellow/10 dark:border-electric-yellow dark:bg-electric-yellow/10'
                   : tab.id === activeTabId
                     ? 'border-line bg-surface text-fg'
                     : 'border-line text-fg-muted hover:bg-surface hover:text-fg-secondary'
               )}
+              data-tab-id={tab.id}
+              tabIndex={tab.id === activeTabId ? 0 : -1}
               onClick={() => !isRenaming && setActiveTab(tab.id)}
               onDoubleClick={e => !isRenaming && handleDoubleClick(e, tab.id, tab.fileName)}
             >
@@ -177,7 +225,7 @@ export default memo(function TabBar() {
                   <X aria-hidden="true" className="h-3 w-3" />
                 </button>
               )}
-            </div>
+            </button>
           )
         })}
         <button
