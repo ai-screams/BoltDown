@@ -11,6 +11,7 @@ import { useEditorView } from '@/contexts/EditorViewContext'
 import { useEditorStore } from '@/stores/editorStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useTabStore } from '@/stores/tabStore'
+import type { MermaidSecurityLevel } from '@/types/settings'
 import { isTauri } from '@/utils/tauri'
 
 import {
@@ -28,7 +29,9 @@ import { focusExtension } from './extensions/focus'
 import { markdownExtension } from './extensions/markdown'
 import { boltdownDarkTheme, boltdownTheme } from './extensions/theme'
 import { typewriterExtension } from './extensions/typewriter'
-import { wysiwygExtension } from './extensions/wysiwyg'
+
+// Module-level cache for lazy-loaded wysiwyg extension
+let cachedWysiwygFn: ((level: MermaidSecurityLevel) => Extension) | null = null
 
 export default memo(function MarkdownEditor() {
   const mode = useEditorStore(s => s.mode)
@@ -64,6 +67,20 @@ export default memo(function MarkdownEditor() {
 
   activeTabIdRef.current = activeTabId
 
+  // Lazy-load wysiwyg extension when Zen mode is first activated
+  useEffect(() => {
+    if (mode !== 'zen' || cachedWysiwygFn) return
+    void import('./extensions/wysiwyg').then(mod => {
+      cachedWysiwygFn = mod.wysiwygExtension
+      const view = viewRef.current
+      if (view) {
+        view.dispatch({
+          effects: wysiwygCompRef.current.reconfigure(mod.wysiwygExtension(mermaidSecurityLevel)),
+        })
+      }
+    })
+  }, [mode, mermaidSecurityLevel])
+
   useEffect(() => {
     const media = window.matchMedia(MEDIA_QUERIES.prefersDark)
     const handleChange = (event: MediaQueryListEvent) => {
@@ -77,7 +94,7 @@ export default memo(function MarkdownEditor() {
     () => [
       themeCompRef.current.reconfigure(isDark ? boltdownDarkTheme : boltdownTheme),
       wysiwygCompRef.current.reconfigure(
-        mode === 'zen' ? wysiwygExtension(mermaidSecurityLevel) : []
+        mode === 'zen' && cachedWysiwygFn ? cachedWysiwygFn(mermaidSecurityLevel) : []
       ),
       gutterCompRef.current.reconfigure(buildGutterExts(mode !== 'zen')),
       focusCompRef.current.reconfigure(focusMode ? focusExtension(focusContextLines) : []),
@@ -93,7 +110,9 @@ export default memo(function MarkdownEditor() {
   const buildExtensions = (): Extension[] => [
     markdownExtension(),
     themeCompRef.current.of(isDark ? boltdownDarkTheme : boltdownTheme),
-    wysiwygCompRef.current.of(mode === 'zen' ? wysiwygExtension(mermaidSecurityLevel) : []),
+    wysiwygCompRef.current.of(
+      mode === 'zen' && cachedWysiwygFn ? cachedWysiwygFn(mermaidSecurityLevel) : []
+    ),
     gutterCompRef.current.of(buildGutterExts(mode !== 'zen')),
     focusCompRef.current.of(focusMode ? focusExtension(focusContextLines) : []),
     spellcheckCompRef.current.of(

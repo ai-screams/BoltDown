@@ -61,7 +61,7 @@ export default memo(function ResizeHandle() {
       role="separator"
       aria-label="Resize sidebar"
       aria-orientation="vertical"
-      className={`group relative flex-none cursor-col-resize transition-all duration-150 ${
+      className={`group relative flex-none cursor-col-resize transition-[width,background-color,box-shadow] duration-150 ${
         isDragging
           ? 'w-1.5 bg-electric-yellow'
           : 'bg-border w-1 hover:w-1.5 hover:bg-electric-yellow/50'

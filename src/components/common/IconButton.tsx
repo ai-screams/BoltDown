@@ -24,7 +24,7 @@ export default memo(function IconButton({
       type="button"
       aria-label={label}
       className={clsx(
-        'rounded p-1.5 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50',
+        'rounded p-1.5 transition-[color,background-color,opacity,transform] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50',
         active
           ? 'bg-electric-yellow/20 text-electric-dark'
           : 'text-fg-muted hover:bg-surface-muted hover:text-fg-secondary',

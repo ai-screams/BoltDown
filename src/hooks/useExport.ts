@@ -1,11 +1,17 @@
+import type MarkdownIt from 'markdown-it'
 import { useCallback } from 'react'
 
 import { STATUS_TIMEOUT_MS } from '@/constants/feedback'
 import { useEditorStore } from '@/stores/editorStore'
 import { getActiveTabSnapshot } from '@/stores/tabStore'
-import { md } from '@/utils/markdownConfig'
 import { escapeHtml } from '@/utils/markdownText'
 import { invokeTauri, isTauri } from '@/utils/tauri'
+
+// Lazy-load markdown parser
+async function getMd(): Promise<MarkdownIt> {
+  const { md } = await import('@/utils/markdownConfig')
+  return md
+}
 
 interface ExportThemeTokens {
   fontSans: string
@@ -116,6 +122,7 @@ export function useExport() {
     const tab = getActiveTab()
     if (!tab) return
 
+    const md = await getMd()
     const html = md.render(tab.content)
     const title = tab.fileName.replace(/\.[^.]+$/, '')
     const fullHtml = buildStandaloneHtml(html, title, getExportThemeTokens())
@@ -155,6 +162,7 @@ export function useExport() {
     const tab = getActiveTab()
     if (!tab) return false
 
+    const md = await getMd()
     const html = md.render(tab.content)
     try {
       await navigator.clipboard.write([

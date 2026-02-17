@@ -37,7 +37,7 @@ export default memo(function RecentFiles({ onFileOpen }: RecentFilesProps) {
           data-path={file.path}
           onClick={handleClick}
         >
-          <FileText className="h-3.5 w-3.5 flex-none text-info" />
+          <FileText aria-hidden="true" className="h-3.5 w-3.5 flex-none text-info" />
           <div className="min-w-0 flex-1">
             <div className="truncate text-fg-secondary">{file.name}</div>
             <div className="truncate text-fg-muted" style={{ fontSize: 10 }}>

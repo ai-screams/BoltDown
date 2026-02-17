@@ -99,9 +99,9 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
         {isDir ? (
           <>
             {node.isOpen ? (
-              <ChevronDown className="h-3.5 w-3.5 flex-none text-fg-muted" />
+              <ChevronDown aria-hidden="true" className="h-3.5 w-3.5 flex-none text-fg-muted" />
             ) : (
-              <ChevronRight className="h-3.5 w-3.5 flex-none text-fg-muted" />
+              <ChevronRight aria-hidden="true" className="h-3.5 w-3.5 flex-none text-fg-muted" />
             )}
             <span className="flex-none" style={{ width: 16, height: 16 }}>
               <FolderIcon folderName={name} />
@@ -133,7 +133,7 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
               title="Duplicate file"
               onClick={handleDuplicate}
             >
-              <Copy className="h-3 w-3 text-fg-muted" />
+              <Copy aria-hidden="true" className="h-3 w-3 text-fg-muted" />
             </button>
             <button
               type="button"
@@ -142,7 +142,7 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
               title="Delete file"
               onClick={handleDelete}
             >
-              <Trash2 className="h-3 w-3 text-fg-muted" />
+              <Trash2 aria-hidden="true" className="h-3 w-3 text-fg-muted" />
             </button>
           </div>
         )}
@@ -151,11 +151,13 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
       {/* Context menu */}
       {menuPos && (
         <div
+          role="menu"
           className="fixed z-50 min-w-[140px] rounded-md border border-line bg-surface py-1 shadow-lg"
           style={{ left: menuPos.x, top: menuPos.y }}
           onClick={e => e.stopPropagation()}
         >
           <button
+            role="menuitem"
             type="button"
             className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-fg-secondary hover:bg-surface-muted"
             onClick={e => {
@@ -163,10 +165,11 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
               setMenuPos(null)
             }}
           >
-            <Copy className="h-3.5 w-3.5" />
+            <Copy aria-hidden="true" className="h-3.5 w-3.5" />
             Duplicate
           </button>
           <button
+            role="menuitem"
             type="button"
             className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-danger hover:bg-surface-muted"
             onClick={e => {
@@ -174,7 +177,7 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
               setMenuPos(null)
             }}
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <Trash2 aria-hidden="true" className="h-3.5 w-3.5" />
             Delete
           </button>
         </div>

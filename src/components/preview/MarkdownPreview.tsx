@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useRef } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react'
 
 import { useMarkdownParser } from '@/hooks/useMarkdownParser'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -157,15 +157,20 @@ export default memo(function MarkdownPreview() {
     )
   }, [preview.codeBlockFontSize])
 
+  const previewStyle = useMemo(
+    () => ({
+      fontSize: `${preview.fontSize}px`,
+      lineHeight: preview.lineHeight,
+      maxWidth: `${preview.maxWidth}px`,
+    }),
+    [preview.fontSize, preview.lineHeight, preview.maxWidth]
+  )
+
   return (
     <div
       ref={containerRef}
       className="prose dark:prose-invert mx-auto p-6"
-      style={{
-        fontSize: `${preview.fontSize}px`,
-        lineHeight: preview.lineHeight,
-        maxWidth: `${preview.maxWidth}px`,
-      }}
+      style={previewStyle}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   )

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) + **React 19** (TypeScript frontend) + **CodeMirror 6** (editor engine). Phase 1 MVP complete. Phase 2 complete: Settings System (4-category modal, Tauri persistence, theme presets, custom CSS editor), Find & Replace (Cmd+F/H, ReDoS protection, keyboard navigation), Tauri 2.0 ACL capabilities, file save fixes, layout fixes, sidebar improvements (file/outline tabs, auto-sync, file tree icons), WYSIWYG Zen mode (StateField decorations with two-tier reveal, in-place code editing, KaTeX/Mermaid/Prism.js/tables), Focus Mode, Typewriter Mode, Auto-save, Tab Rename, Image Drag & Drop (Tauri native drag events, path resolution, spellcheck settings).
+Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) + **React 19** (TypeScript frontend) + **CodeMirror 6** (editor engine). Phase 1 MVP complete. Phase 2 (89%): Settings System (4-category modal, Tauri persistence, theme presets, custom CSS editor), Find & Replace (Cmd+F/H, ReDoS protection, keyboard navigation), Tauri 2.0 ACL capabilities, file save fixes, layout fixes, sidebar improvements (file/outline tabs, auto-sync, file tree icons), WYSIWYG Zen mode (StateField decorations with two-tier reveal, in-place code editing, KaTeX/Mermaid/Prism.js/tables), Focus Mode, Typewriter Mode, Auto-save, Tab Rename, Image Drag & Drop (Tauri native drag events, path resolution), Spellcheck (CM6 contentAttributes). Split view scroll sync (feat/scroll-sync branch): DOM-based mapping + anchor fallback, SmoothScroller, click-to-sync, offset correction.
 
 ## Architecture Overview
 

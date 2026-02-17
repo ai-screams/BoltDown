@@ -95,7 +95,7 @@ function Select<T extends string>({
 }) {
   return (
     <select
-      className="rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg-secondary focus:border-electric-yellow focus:outline-none focus:ring-1 focus:ring-electric-yellow/50"
+      className="rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg-secondary focus-visible:border-electric-yellow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-electric-yellow/50"
       value={value}
       onChange={e => onChange(e.target.value as T)}
     >
@@ -141,7 +141,7 @@ function NumberInput({
   return (
     <input
       type="number"
-      className="w-20 rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg-secondary focus:border-electric-yellow focus:outline-none focus:ring-1 focus:ring-electric-yellow/50"
+      className="w-20 rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg-secondary focus-visible:border-electric-yellow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-electric-yellow/50"
       max={max}
       min={min}
       step={step ?? 1}
@@ -190,7 +190,7 @@ const ThemeModeControl = memo(function ThemeModeControl() {
             type="button"
             aria-pressed={value === mode}
             className={clsx(
-              'flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95',
+              'flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-[color,background-color,opacity,transform] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95',
               value === mode
                 ? 'bg-electric-yellow text-deep-blue shadow-sm'
                 : 'text-fg-muted hover:text-fg-secondary'
@@ -222,7 +222,7 @@ const ThemePresetControl = memo(function ThemePresetControl() {
             aria-label={`${preset.label} theme`}
             aria-pressed={isActive}
             className={clsx(
-              'rounded-lg border px-2.5 py-2 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50',
+              'rounded-lg border px-2.5 py-2 text-left transition-[color,background-color,opacity,transform] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50',
               isActive
                 ? 'border-electric-yellow bg-electric-yellow/10'
                 : 'border-line bg-surface hover:border-electric-yellow/60'
@@ -294,8 +294,8 @@ const CustomCssEditor = memo(function CustomCssEditor() {
         className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm font-medium text-fg transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50"
         onClick={() => setIsOpen(v => !v)}
       >
-        <ChevronIcon className="h-4 w-4 text-fg-muted" />
-        <Code2 className="h-4 w-4 text-fg-muted" />
+        <ChevronIcon aria-hidden="true" className="h-4 w-4 text-fg-muted" />
+        <Code2 aria-hidden="true" className="h-4 w-4 text-fg-muted" />
         <span>Custom CSS</span>
         {customCss.length > 0 && (
           <span className="ml-auto rounded bg-surface-muted px-1.5 py-0.5 text-xs text-fg-muted">
@@ -309,7 +309,7 @@ const CustomCssEditor = memo(function CustomCssEditor() {
             Add custom CSS to override theme styles. Changes apply in real-time.
           </p>
           <textarea
-            className="w-full resize-y rounded border border-line bg-surface px-2 py-1.5 font-mono text-xs text-fg focus:border-electric-yellow focus:outline-none focus:ring-1 focus:ring-electric-yellow/50"
+            className="w-full resize-y rounded border border-line bg-surface px-2 py-1.5 font-mono text-xs text-fg focus-visible:border-electric-yellow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-electric-yellow/50"
             rows={8}
             spellCheck={false}
             value={customCss}
@@ -328,7 +328,7 @@ const CustomCssEditor = memo(function CustomCssEditor() {
                 className="flex items-center gap-1 rounded px-2 py-1 text-xs text-fg-muted transition-colors hover:bg-surface hover:text-fg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50"
                 onClick={handleReset}
               >
-                <RotateCcw className="h-3 w-3" />
+                <RotateCcw aria-hidden="true" className="h-3 w-3" />
                 Reset
               </button>
             )}
@@ -410,8 +410,8 @@ const CssReference = memo(function CssReference() {
         className="flex w-full items-center gap-1.5 text-left text-xs font-medium text-fg-muted transition-colors hover:text-fg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50"
         onClick={() => setIsOpen(v => !v)}
       >
-        <RefChevron className="h-3 w-3" />
-        <BookOpen className="h-3 w-3" />
+        <RefChevron aria-hidden="true" className="h-3 w-3" />
+        <BookOpen aria-hidden="true" className="h-3 w-3" />
         <span>CSS Reference</span>
       </button>
       {isOpen && (
@@ -728,21 +728,26 @@ export default memo(function SettingsModal({ isOpen, onClose }: SettingsModalPro
   return (
     <div
       ref={backdropRef}
-      className="z-60 fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      className="z-60 fixed inset-0 flex items-center justify-center overscroll-contain bg-black/40 backdrop-blur-sm"
       onClick={handleBackdropClick}
     >
-      <div className="animate-dropdown flex h-[480px] w-[640px] flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-2xl">
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="animate-dropdown flex h-[480px] w-[640px] flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-2xl"
+      >
         {/* Header */}
         <div className="flex h-12 flex-none items-center justify-between border-b border-line px-4">
           <div className="flex items-center gap-2">
-            <Settings className="h-4 w-4 text-fg-muted" />
+            <Settings aria-hidden="true" className="h-4 w-4 text-fg-muted" />
             <span className="text-sm font-semibold text-fg">Settings</span>
           </div>
           <button
-            className="rounded p-1.5 text-fg-muted transition-all duration-150 hover:scale-110 hover:bg-surface-muted hover:text-fg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95"
+            aria-label="Close settings"
+            className="rounded p-1.5 text-fg-muted transition-[color,background-color,opacity,transform] duration-150 hover:scale-110 hover:bg-surface-muted hover:text-fg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95"
             onClick={onClose}
           >
-            <X className="h-4 w-4" />
+            <X aria-hidden="true" className="h-4 w-4" />
           </button>
         </div>
 
@@ -761,7 +766,7 @@ export default memo(function SettingsModal({ isOpen, onClose }: SettingsModalPro
                   )}
                   onClick={() => setActiveCategory(key)}
                 >
-                  <Icon className="h-3.5 w-3.5" />
+                  <Icon aria-hidden="true" className="h-3.5 w-3.5" />
                   {label}
                 </button>
               ))}
@@ -773,14 +778,14 @@ export default memo(function SettingsModal({ isOpen, onClose }: SettingsModalPro
                 className="flex w-full items-center gap-1.5 rounded px-2 py-1.5 text-[10px] text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg-secondary"
                 onClick={() => resetCategory(activeCategory)}
               >
-                <RotateCcw className="h-3 w-3" />
+                <RotateCcw aria-hidden="true" className="h-3 w-3" />
                 Reset {categories.find(c => c.key === activeCategory)?.label}
               </button>
               <button
                 className="flex w-full items-center gap-1.5 rounded px-2 py-1.5 text-[10px] text-fg-muted transition-colors hover:bg-danger/10 hover:text-danger"
                 onClick={resetAll}
               >
-                <RotateCcw className="h-3 w-3" />
+                <RotateCcw aria-hidden="true" className="h-3 w-3" />
                 Reset All
               </button>
             </div>
