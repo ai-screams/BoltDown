@@ -2,7 +2,7 @@
 
 > 단일 백로그. Phase 구분 없이 우선순위(Priority)로 관리.
 > SSoT: 이 파일이 모든 미완료 작업의 유일한 출처.
-> 최종 갱신: 2026-02-17 (Waves 1-7 완료 후 정리)
+> 최종 갱신: 2026-02-17 (Waves 1-8 완료 후 정리)
 
 ---
 
@@ -14,7 +14,6 @@
 
 | ID  | Issue                    | Location                                     | Description                                                       |
 | --- | ------------------------ | -------------------------------------------- | ----------------------------------------------------------------- |
-| S8  | ReDoS 보호 제한적        | `FindReplaceModal.tsx`                       | 기본 휴리스틱만 적용. 현재 수준 적절하나 Web Worker 격리 고려.    |
 | S9  | JSON.parse 스키마 미검증 | `settingsStorage.ts:7`, `sidebarStore.ts:12` | Settings JSON 런타임 스키마 검증 없음. zod 등으로 검증 추가 고려. |
 
 ---
@@ -29,48 +28,32 @@
 
 ---
 
-## Quality
-
-### Q-MEDIUM
-
-| ID  | Issue                  | Location         | Description                                    |
-| --- | ---------------------- | ---------------- | ---------------------------------------------- |
-| Q5  | Auto-save 전체 탭 반복 | `useAutoSave.ts` | 1개 탭 편집 시 전체 검사. dirty Set 추적 필요. |
-
----
-
 ## UX Polish
 
 > 출처: polish-backlog.md (2026-02-15). Wave 6 완료 후 남은 항목.
 
-| ID  | Issue                               | Location                        | Description                                                                   |
-| --- | ----------------------------------- | ------------------------------- | ----------------------------------------------------------------------------- |
-| U3  | Tree data flash on directory switch | `sidebarStore.ts`               | `setRootPath` → `setTreeData` 순서 문제. 원자적 업데이트 필요.                |
-| U4  | Zen/Split 렌더링 패리티             | `wysiwyg/`, `markdownConfig.ts` | CM6 데코레이션 vs markdown-it 파싱 차이. 회귀 픽스처 세트 필요.               |
-| U5  | Spellcheck underline (macOS Tauri)  | `MarkdownEditor.tsx`            | WKWebView에서 실시간 밑줄 불안정. OS 메뉴 통합 또는 Hunspell 파이프라인 고려. |
+| ID  | Issue                              | Location                        | Description                                                                   |
+| --- | ---------------------------------- | ------------------------------- | ----------------------------------------------------------------------------- |
+| U4  | Zen/Split 렌더링 패리티            | `wysiwyg/`, `markdownConfig.ts` | CM6 데코레이션 vs markdown-it 파싱 차이. 회귀 픽스처 세트 필요.               |
+| U5  | Spellcheck underline (macOS Tauri) | `MarkdownEditor.tsx`            | WKWebView에서 실시간 밑줄 불안정. OS 메뉴 통합 또는 Hunspell 파이프라인 고려. |
 
 ---
 
 ## Priority Roadmap
 
-### Next Sprint — Quality Improvements
-
-1. **Q5** Auto-save dirty Set 추적
-
-### After — Performance & UX
+### Next — Performance & UX
 
 1. **P5** Preview 증분 파싱 고려
-2. **U3** Tree data 원자적 업데이트
-3. **U4** Zen/Split 렌더링 패리티
-4. **U5** Spellcheck underline 개선
+2. **U4** Zen/Split 렌더링 패리티
+3. **U5** Spellcheck underline 개선
 
 ### Housekeeping
 
-- **S8-S9**: 보안 강화 (ReDoS Worker 격리, JSON 스키마 검증)
+- **S9**: JSON 스키마 검증 (settings는 이미 `mergeWithDefaults`로 보호됨, 우선순위 낮음)
 
 ---
 
-## Completed (Waves 1-7)
+## Completed (Waves 1-8)
 
 ### Wave 1 — Phase 2 Completion (ba748dd)
 
@@ -115,6 +98,10 @@
 - **Q6** ✅ loadSettings 책임 분리 (module-level helpers)
 - **Q11** ✅ ImageWidget DI 리팩토링 (constructor injection)
 
+### Wave 8 — Fact-Check & Fix (TBD)
+
+- **U3** ✅ Tree data flash 수정 (원자적 `set({rootPath, treeData})`)
+
 ### Non-Issues (팩트체크 후 제거)
 
 - **P1** WYSIWYG 전체 데코레이션 재빌드 — KaTeX/Mermaid 캐싱으로 실질적 해결
@@ -124,6 +111,8 @@
 - **Q14** 불필요한 ref 간접 참조 — React 권장 패턴 (stale closure 방지)
 - **P6** Prism.js 전체 번들 — YAGNI (각 언어 1-5KB, 동적 import 복잡도 불필요)
 - **P7** TableWidget DOM 재생성 — CM6 `eq()` 메커니즘으로 불필요한 toDOM() 방지
+- **Q5** Auto-save 전체 탭 반복 — debounce + early continue로 실질적 비용 무시 가능
+- **S8** ReDoS 보호 제한적 — 4중 보호 (길이+그룹+패턴+타임아웃) 이미 충분
 
 ---
 

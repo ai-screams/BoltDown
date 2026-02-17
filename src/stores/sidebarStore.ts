@@ -114,10 +114,9 @@ export const useSidebarStore = create<SidebarState>((set, get) => ({
     if (!dir) return
     const { rootPath } = get()
     if (rootPath !== dir) {
-      set({ rootPath: dir })
       try {
         const entries = await loadDirectoryEntries(dir)
-        set({ treeData: entries })
+        set({ rootPath: dir, treeData: entries })
       } catch (error) {
         console.error('Failed to load parent directory:', dir, error)
       }
