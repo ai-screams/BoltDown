@@ -77,7 +77,7 @@ export function applyPrismTokens(
 }
 
 /** Languages available for autocomplete (sorted, common ones first). */
-const KNOWN_LANGUAGES = [
+export const KNOWN_LANGUAGES = [
   'bash',
   'c',
   'cmake',

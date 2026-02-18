@@ -128,4 +128,31 @@
     background: rgb(var(--c-code-block-badge) / 0.1);
     color: rgb(var(--c-code-block-badge) / 1);
   }
+
+  /* Autocomplete dropdown for fence language */
+  .cm-editor .cm-tooltip-autocomplete {
+    background: rgb(var(--c-code-block-bg) / 1) !important;
+    border: 1px solid rgb(var(--c-code-block-badge) / 0.3) !important;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgb(0 0 0 / 0.18);
+    overflow: hidden;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 0.8em;
+  }
+  .cm-editor .cm-tooltip-autocomplete ul {
+    max-height: 180px;
+  }
+  .cm-editor .cm-tooltip-autocomplete ul li {
+    padding: 3px 10px !important;
+    color: rgb(var(--c-code-block-badge) / 0.8);
+  }
+  .cm-editor .cm-tooltip-autocomplete ul li[aria-selected] {
+    background: rgb(var(--c-code-block-badge) / 0.12) !important;
+    color: rgb(var(--c-code-block-badge) / 1);
+  }
+  .cm-editor .cm-completionMatchedText {
+    color: rgb(var(--c-code-block-badge) / 1);
+    font-weight: 600;
+    text-decoration: none;
+  }
 }

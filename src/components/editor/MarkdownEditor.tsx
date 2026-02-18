@@ -25,6 +25,7 @@ import {
   isImageFile,
   supportedImageExtensions,
 } from './editorUtils'
+import { fenceLanguageCompletion } from './extensions/fenceLanguageCompletion'
 import { focusExtension } from './extensions/focus'
 import { markdownExtension } from './extensions/markdown'
 import { boltdownDarkTheme, boltdownTheme } from './extensions/theme'
@@ -119,6 +120,7 @@ export default memo(function MarkdownEditor() {
       EditorView.contentAttributes.of(getSpellingContentAttributes(spellcheck))
     ),
     typewriterCompRef.current.of(typewriterMode ? typewriterExtension() : []),
+    fenceLanguageCompletion(),
     history(),
     search(),
     bracketMatching(),
