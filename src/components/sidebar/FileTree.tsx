@@ -2,13 +2,12 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { Tree, type TreeApi } from 'react-arborist'
 
 import { STATUS_TIMEOUT_MS } from '@/constants/feedback'
-import { FILE_POLICY } from '@/constants/file'
 import { useEditorStore } from '@/stores/editorStore'
 import { useSidebarStore } from '@/stores/sidebarStore'
 import { useTabStore } from '@/stores/tabStore'
 import type { FileTreeNode } from '@/types/sidebar'
 import { loadDirectoryEntries } from '@/utils/directoryLoader'
-import { getDirectoryPath, joinPath } from '@/utils/imagePath'
+import { findAvailableCopyPath } from '@/utils/fileCopy'
 import { invokeTauri, isTauri } from '@/utils/tauri'
 
 import FileTreeNodeComponent from './FileTreeNode'
@@ -114,37 +113,17 @@ export default memo(function FileTree({ onFileOpen }: FileTreeProps) {
     async (path: string) => {
       if (!isTauri()) return
       try {
-        // Generate copy name: "file.md" → "file (copy).md"
-        const dir = getDirectoryPath(path)
-        const fullName = getFileName(path)
-        const dotIdx = fullName.lastIndexOf('.')
-        const name = dotIdx > 0 ? fullName.slice(0, dotIdx) : fullName
-        const ext = dotIdx > 0 ? fullName.slice(dotIdx) : ''
+        // Find available copy path
+        const result = await findAvailableCopyPath(path)
 
-        // Find available name
-        let copyName = `${name} (copy)${ext}`
-        let copyPath = joinPath(dir, copyName)
-        let nextCopyIndex = 2
-        let available = false
-        for (let attempt = 0; attempt < FILE_POLICY.maxCopyAttempts; attempt++) {
-          try {
-            await invokeTauri<string>('read_file', { path: copyPath })
-            // File exists, try next
-            copyName = `${name} (copy ${nextCopyIndex})${ext}`
-            copyPath = joinPath(dir, copyName)
-            nextCopyIndex += 1
-          } catch {
-            available = true
-            break // File doesn't exist, use this name
-          }
-        }
-
-        if (!available) {
+        if (!result) {
           useEditorStore
             .getState()
             .flashStatus('Duplicate failed: too many copies', STATUS_TIMEOUT_MS.warning)
           return
         }
+
+        const { copyName, copyPath } = result
 
         await invokeTauri('copy_file', { srcPath: path, destPath: copyPath })
 

@@ -1,11 +1,11 @@
 import { useCallback } from 'react'
 
 import { STATUS_TIMEOUT_MS } from '@/constants/feedback'
-import { FILE_DEFAULTS, FILE_POLICY, MARKDOWN_FILE_TYPES } from '@/constants/file'
+import { FILE_DEFAULTS, MARKDOWN_FILE_TYPES } from '@/constants/file'
 import { useEditorStore } from '@/stores/editorStore'
 import { useSidebarStore } from '@/stores/sidebarStore'
 import { getActiveTabSnapshot, useTabStore } from '@/stores/tabStore'
-import { getDirectoryPath, joinPath } from '@/utils/imagePath'
+import { findAvailableCopyPath } from '@/utils/fileCopy'
 import { invokeTauri, isTauri } from '@/utils/tauri'
 
 function getFileName(path: string, fallback: string): string {
@@ -47,7 +47,8 @@ export function useFileSystem() {
       addRecentFile(path, name)
 
       // Auto-load parent directory into sidebar file tree
-      await useSidebarStore.getState().loadParentDirectory(path, true)
+      const sidebarState = useSidebarStore.getState()
+      await sidebarState.loadParentDirectory(path, sidebarState.isOpen)
     } catch (e) {
       console.error('Open file failed:', e)
       useEditorStore.getState().flashStatus('Open failed', STATUS_TIMEOUT_MS.error)
@@ -102,7 +103,8 @@ export function useFileSystem() {
       const name = getFileName(path, tab.fileName)
       renameTab(activeTabId, name, path)
       addRecentFile(path, name)
-      await useSidebarStore.getState().loadParentDirectory(path, true)
+      const sidebarState = useSidebarStore.getState()
+      await sidebarState.loadParentDirectory(path, sidebarState.isOpen)
       markClean(activeTabId, tab.content)
       useEditorStore.getState().flashStatus('Saved')
     } catch (e) {
@@ -140,37 +142,17 @@ export function useFileSystem() {
   const duplicateFile = useCallback(async (filePath: string) => {
     if (!isTauri()) return null
     try {
-      // Generate copy name: "file.md" → "file (copy).md"
-      const dir = getDirectoryPath(filePath)
-      const fullName = getFileName(filePath, filePath)
-      const dotIdx = fullName.lastIndexOf('.')
-      const name = dotIdx > 0 ? fullName.slice(0, dotIdx) : fullName
-      const ext = dotIdx > 0 ? fullName.slice(dotIdx) : ''
+      // Find available copy path
+      const result = await findAvailableCopyPath(filePath)
 
-      // Find available name
-      let copyName = `${name} (copy)${ext}`
-      let copyPath = joinPath(dir, copyName)
-      let nextCopyIndex = 2
-      let available = false
-      for (let attempt = 0; attempt < FILE_POLICY.maxCopyAttempts; attempt++) {
-        try {
-          await invokeTauri<string>('read_file', { path: copyPath })
-          // File exists, try next
-          copyName = `${name} (copy ${nextCopyIndex})${ext}`
-          copyPath = joinPath(dir, copyName)
-          nextCopyIndex += 1
-        } catch {
-          available = true
-          break // File doesn't exist, use this name
-        }
-      }
-
-      if (!available) {
+      if (!result) {
         useEditorStore
           .getState()
           .flashStatus('Duplicate failed: too many copies', STATUS_TIMEOUT_MS.warning)
         return null
       }
+
+      const { copyName, copyPath } = result
 
       await invokeTauri('copy_file', { srcPath: filePath, destPath: copyPath })
 

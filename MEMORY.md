@@ -34,3 +34,25 @@
 
 - Spellcheck setting now toggles `spellcheck` + `writingsuggestions` on the CodeMirror content DOM, but inline misspelling underlines remain inconsistent on macOS Tauri WebView.
 - Manual spell-check action can still run, so this is tracked as a follow-up for native menu + WebView behavior validation (and optional internal dictionary pipeline if needed).
+
+## 2026-02-18 — Docs & Memory Fact-Check Sync
+
+### What changed
+
+- Root and scoped `AGENTS.md` files were fact-checked against the current codebase and corrected where drift existed (Phase 2 status wording, current branch, ResizeHandle ARIA docs, hook references, Tauri ACL wording).
+- Planning docs were aligned so active status stays in the unified backlog and archived plans are explicitly marked as historical snapshots.
+- Serena memory entries were refreshed to reflect current branch/state and to remove stale Phase 2 tracking assumptions.
+
+### Evidence anchors
+
+- `AGENTS.md`
+- `.docs/project/planning/backlog.md`
+- `.docs/project/planning/archive/phase2-plan.md`
+- `src/components/sidebar/ResizeHandle.tsx`
+- `src/hooks/useSplitScrollSync.ts`
+
+### Quick verification checklist
+
+- `git branch --show-current` returns `feat/phase2-completion`.
+- `ResizeHandle.tsx` exposes `role="separator"`, `aria-orientation="vertical"`, and `aria-label` (no `aria-valuenow/min/max`).
+- Split scroll sync is implemented and wired (`src/hooks/useSplitScrollSync.ts`, `src/components/layout/MainLayout.tsx`).

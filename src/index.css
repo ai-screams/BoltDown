@@ -1,4 +1,5 @@
 @import './styles/tokens.css';
+@import './styles/codeblock.css';
 
 @tailwind base;
 @tailwind components;
@@ -90,6 +91,20 @@
   .prose pre code {
     @apply bg-transparent p-0;
     font-size: var(--preview-code-font-size, 14px);
+  }
+
+  /* Language badge in preview code blocks */
+  .prose .preview-lang-badge {
+    position: absolute;
+    bottom: 6px;
+    right: 10px;
+    font-size: 0.75em;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+    color: rgb(var(--c-code-block-badge) / 0.7);
+    text-transform: lowercase;
+    letter-spacing: 0.03em;
+    pointer-events: none;
+    user-select: none;
   }
 
   /* Token colors (Tomorrow Night inspired) */
@@ -354,5 +369,17 @@
   .prose {
     max-width: 100% !important;
     padding: 0 !important;
+  }
+}
+
+/* Mermaid async render placeholder */
+@layer components {
+  /* Hide raw mermaid source text during async render.
+     Cache hits apply SVG synchronously — no visible blank gap.
+     Cache misses show a placeholder skeleton until render completes. */
+  pre.mermaid-block:not(.mermaid-rendered) {
+    visibility: hidden;
+    /* Reserve space to prevent layout shift — approximate single-diagram height */
+    min-height: 80px;
   }
 }

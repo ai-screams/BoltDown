@@ -47,6 +47,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.20.0",
     "@codemirror/commands": "^6.6.0",
     "@codemirror/lang-markdown": "^6.3.0",
     "@codemirror/search": "^6.5.0",
@@ -56,6 +57,7 @@
     "@tauri-apps/plugin-dialog": "^2.6.0",
     "@uiw/react-codemirror": "^4.23.0",
     "clsx": "^2.1.1",
+    "dompurify": "^3.3.1",
     "katex": "^0.16.25",
     "lucide-react": "^0.564.0",
     "markdown-it": "^14.1.1",
@@ -78,6 +80,7 @@
     "@tauri-apps/cli": "^2.10.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
+    "@types/dompurify": "^3.0.5",
     "@types/markdown-it": "^14.1.2",
     "@types/prismjs": "^1.26.6",
     "@types/react": "^19.2.14",

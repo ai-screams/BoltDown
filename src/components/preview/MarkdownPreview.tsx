@@ -4,48 +4,116 @@ import { useMarkdownParser } from '@/hooks/useMarkdownParser'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useTabStore } from '@/stores/tabStore'
 import type { MermaidSecurityLevel } from '@/types/settings'
+import { LruCache } from '@/utils/cache'
 import { resolveImageSrcForDisplay } from '@/utils/imagePath'
+import { sanitizeSvgHtml } from '@/utils/sanitize'
 import { getMermaidThemeFromDom } from '@/utils/themeRuntime'
+
+let mermaidDebounceTimer: ReturnType<typeof setTimeout> | null = null
+const mermaidPreviewCache = new LruCache<string>(50)
+
+/** Apply rendered SVG to a mermaid block and mark it as rendered. */
+function commitMermaidBlock(block: HTMLPreElement, svg: string, configKey: string): void {
+  block.innerHTML = svg
+  block.dataset['renderedConfig'] = configKey
+  block.classList.add('mermaid-rendered')
+}
+
+/** Synchronously apply cached Mermaid SVGs — no debounce, no flash. Returns true if ALL blocks were cache hits. */
+function applyCachedMermaidBlocks(
+  container: HTMLElement,
+  securityLevel: MermaidSecurityLevel
+): boolean {
+  const theme: string = getMermaidThemeFromDom()
+  const configKey: string = `${theme}:${securityLevel}`
+  const blocks: NodeListOf<HTMLPreElement> = container.querySelectorAll('pre.mermaid-block')
+  let allCached: boolean = true
+
+  for (const block of blocks) {
+    if (
+      block.classList.contains('mermaid-rendered') &&
+      block.dataset['renderedConfig'] === configKey
+    ) {
+      continue
+    }
+
+    const code: string | undefined = block.querySelector('code')?.textContent ?? undefined
+    if (!code) continue
+
+    const cacheKey: string = `${code}:${configKey}`
+    const cached: string | undefined = mermaidPreviewCache.get(cacheKey)
+    if (cached === undefined) {
+      allCached = false
+      continue
+    }
+
+    commitMermaidBlock(block, cached, configKey)
+  }
+
+  return allCached
+}
 
 async function renderMermaidBlocks(
   container: HTMLElement,
   securityLevel: MermaidSecurityLevel,
   tokenRef: { current: number }
 ) {
-  const blocks = container.querySelectorAll<HTMLPreElement>('pre.mermaid-block')
-  if (blocks.length === 0) return
+  if (mermaidDebounceTimer) {
+    clearTimeout(mermaidDebounceTimer)
+  }
 
-  const token = `${++tokenRef.current}`
-  container.dataset['mermaidToken'] = token
-  const theme = getMermaidThemeFromDom()
-  const configKey = `${theme}:${securityLevel}`
-
-  const mermaid = (await import('mermaid')).default
-  mermaid.initialize({
-    startOnLoad: false,
-    theme,
-    securityLevel,
-  })
-
-  await Promise.all(
-    Array.from(blocks).map(async block => {
-      const code = block.querySelector('code')?.textContent
-      if (!code || block.dataset['renderedConfig'] === configKey) return
-
-      try {
-        const id = `mermaid-${Math.random().toString(36).slice(2, 9)}`
-        const { svg } = await mermaid.render(id, code)
-
-        if (!container.isConnected || container.dataset['mermaidToken'] !== token) return
-
-        block.innerHTML = svg
-        block.dataset['renderedConfig'] = configKey
-        block.classList.add('mermaid-rendered')
-      } catch {
-        // Leave as code block on error
+  return new Promise<void>(resolve => {
+    mermaidDebounceTimer = setTimeout(async () => {
+      const blocks = container.querySelectorAll<HTMLPreElement>('pre.mermaid-block')
+      if (blocks.length === 0) {
+        resolve()
+        return
       }
-    })
-  )
+
+      const token = `${++tokenRef.current}`
+      container.dataset['mermaidToken'] = token
+      const theme = getMermaidThemeFromDom()
+      const configKey = `${theme}:${securityLevel}`
+
+      const mermaid = (await import('mermaid')).default
+      mermaid.initialize({
+        startOnLoad: false,
+        theme,
+        securityLevel,
+      })
+
+      await Promise.all(
+        Array.from(blocks).map(async block => {
+          const code = block.querySelector('code')?.textContent
+          if (!code || block.dataset['renderedConfig'] === configKey) return
+
+          const cacheKey = `${code}:${configKey}`
+          const cached = mermaidPreviewCache.get(cacheKey)
+
+          if (cached !== undefined) {
+            if (!container.isConnected || container.dataset['mermaidToken'] !== token) return
+            commitMermaidBlock(block, cached, configKey)
+            return
+          }
+
+          try {
+            const id = `mermaid-${Math.random().toString(36).slice(2, 9)}`
+            const { svg } = await mermaid.render(id, code)
+
+            if (!container.isConnected || container.dataset['mermaidToken'] !== token) return
+
+            const sanitizedSvg = sanitizeSvgHtml(svg)
+            mermaidPreviewCache.set(cacheKey, sanitizedSvg)
+            commitMermaidBlock(block, sanitizedSvg, configKey)
+          } catch {
+            // Leave as code block on error
+          }
+        })
+      )
+
+      resolve()
+    }, 150)
+  })
 }
 
 function addCopyButtons(container: HTMLElement) {
@@ -124,13 +192,34 @@ export default memo(function MarkdownPreview() {
   const enhancePreview = useCallback(() => {
     if (!containerRef.current) return
     resolveImageSources(containerRef.current, markdownFilePath)
-    void renderMermaidBlocks(containerRef.current, preview.mermaidSecurityLevel, renderTokenRef)
+
+    // Synchronous cache-hit path: apply cached SVGs immediately (no flash)
+    const allCached: boolean = applyCachedMermaidBlocks(
+      containerRef.current,
+      preview.mermaidSecurityLevel
+    )
+
+    // Only enter debounced async path for cache misses
+    if (!allCached) {
+      void renderMermaidBlocks(containerRef.current, preview.mermaidSecurityLevel, renderTokenRef)
+    }
+
     addCopyButtons(containerRef.current)
   }, [markdownFilePath, preview.mermaidSecurityLevel])
 
   useEffect(() => {
     enhancePreview()
   }, [html, enhancePreview])
+
+  // Clean up debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (mermaidDebounceTimer) {
+        clearTimeout(mermaidDebounceTimer)
+        mermaidDebounceTimer = null
+      }
+    }
+  }, [])
 
   useEffect(() => {
     const root = document.documentElement

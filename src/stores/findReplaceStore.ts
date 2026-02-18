@@ -12,6 +12,8 @@ interface FindReplaceState {
   caseSensitive: boolean
   useRegex: boolean
   wholeWord: boolean
+  searchTruncated: boolean
+  replaceTruncated: boolean
   open: (showReplace?: boolean) => void
   close: () => void
   toggleReplace: () => void
@@ -32,23 +34,25 @@ export const useFindReplaceStore = create<FindReplaceState>()(
       caseSensitive: false,
       useRegex: false,
       wholeWord: false,
+      searchTruncated: false,
+      replaceTruncated: false,
       open: (showReplace = false) => set({ isOpen: true, showReplace }),
-      close: () => set({ isOpen: false }),
+      close: () => set({ isOpen: false, searchTruncated: false, replaceTruncated: false }),
       toggleReplace: () => set(s => ({ showReplace: !s.showReplace })),
-      setSearchText: (text: string) =>
+      setSearchText: (text: string) => {
+        const truncated = text.length > FIND_REPLACE_INPUT_LIMITS.searchMaxChars
         set({
-          searchText:
-            text.length > FIND_REPLACE_INPUT_LIMITS.searchMaxChars
-              ? text.slice(0, FIND_REPLACE_INPUT_LIMITS.searchMaxChars)
-              : text,
-        }),
-      setReplaceText: (text: string) =>
+          searchText: truncated ? text.slice(0, FIND_REPLACE_INPUT_LIMITS.searchMaxChars) : text,
+          searchTruncated: truncated,
+        })
+      },
+      setReplaceText: (text: string) => {
+        const truncated = text.length > FIND_REPLACE_INPUT_LIMITS.replaceMaxChars
         set({
-          replaceText:
-            text.length > FIND_REPLACE_INPUT_LIMITS.replaceMaxChars
-              ? text.slice(0, FIND_REPLACE_INPUT_LIMITS.replaceMaxChars)
-              : text,
-        }),
+          replaceText: truncated ? text.slice(0, FIND_REPLACE_INPUT_LIMITS.replaceMaxChars) : text,
+          replaceTruncated: truncated,
+        })
+      },
       toggleCaseSensitive: () => set(s => ({ caseSensitive: !s.caseSensitive })),
       toggleRegex: () => set(s => ({ useRegex: !s.useRegex })),
       toggleWholeWord: () => set(s => ({ wholeWord: !s.wholeWord })),

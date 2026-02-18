@@ -1,0 +1,175 @@
+/* WYSIWYG Code Block Styles (zen mode) */
+
+@layer components {
+  /* Individual code line */
+  .cm-editor .codeblock-line {
+    display: block;
+    padding-left: 3.5em !important;
+    position: relative;
+    white-space: pre;
+    line-height: 1.6;
+    background: rgb(var(--c-code-block-bg) / 1) !important;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 0.875em;
+  }
+
+  /* Line number pseudo-element */
+  .cm-editor .codeblock-line::before {
+    content: attr(data-line-number);
+    position: absolute;
+    left: 0;
+    width: 2.5em;
+    text-align: right;
+    color: rgb(var(--c-code-block-badge) / 0.5);
+    font-size: 0.85em;
+    line-height: inherit;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* Language badge pill */
+  .cm-editor .codeblock-badge {
+    display: block;
+    text-align: right;
+    padding: 6px 12px 0;
+    font-size: 0.75em;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+    color: rgb(var(--c-code-block-badge) / 1);
+    background: rgb(var(--c-code-block-bg) / 1) !important;
+    border-radius: 6px 6px 0 0;
+    text-transform: lowercase;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    user-select: none;
+    border: none;
+    font: inherit;
+  }
+
+  .cm-editor .codeblock-badge:focus-visible {
+    outline: 1.5px solid rgb(var(--c-code-block-badge) / 0.6);
+    outline-offset: -1.5px;
+    border-radius: 3px;
+  }
+
+  /* First line: top border radius */
+  .cm-editor .codeblock-line[data-codeblock-first] {
+    border-radius: 6px 6px 0 0;
+    padding-top: 8px;
+  }
+
+  /* Last line: bottom border radius */
+  .cm-editor .codeblock-line[data-codeblock-last] {
+    border-radius: 0 0 6px 6px;
+    padding-bottom: 12px;
+  }
+
+  /* Single-line block */
+  .cm-editor .codeblock-line[data-codeblock-first][data-codeblock-last] {
+    border-radius: 6px;
+  }
+
+  /* Badge → language has badge, no language → no badge, so adjust first-line radius */
+  .cm-editor .cm-widgetBuffer + .codeblock-line[data-codeblock-first] {
+    border-radius: 0;
+    padding-top: 4px;
+  }
+
+  /* Floating language popover container */
+  .cm-editor .codeblock-lang-popover {
+    position: absolute;
+    z-index: 10;
+    width: 16ch;
+    font-size: 0.75em;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+    background: rgb(var(--c-code-block-bg) / 1);
+    border: 1.5px solid rgb(var(--c-code-block-badge) / 0.4);
+    border-radius: 5px;
+    box-shadow: 0 4px 16px rgb(0 0 0 / 0.18);
+    overflow: hidden;
+  }
+
+  /* Popover text input */
+  .cm-editor .codeblock-lang-input {
+    display: block;
+    width: 100%;
+    padding: 4px 8px;
+    border: none;
+    /* outline: none removed — handled by :focus/:focus-visible split below */
+    background: transparent;
+    color: rgb(var(--c-code-block-badge) / 1);
+    font: inherit;
+    text-align: right;
+    text-transform: lowercase;
+    letter-spacing: 0.03em;
+    line-height: 1.5;
+    box-sizing: border-box;
+  }
+  .cm-editor .codeblock-lang-input::placeholder {
+    color: rgb(var(--c-code-block-badge) / 0.35);
+  }
+
+  .cm-editor .codeblock-lang-input:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  .cm-editor .codeblock-lang-input:focus-visible {
+    outline: 1.5px solid rgb(var(--c-code-block-badge) / 0.6);
+    outline-offset: -1.5px;
+  }
+
+  /* Autocomplete dropdown list */
+  .cm-editor .codeblock-lang-list {
+    list-style: none;
+    margin: 0;
+    padding: 2px 0;
+    max-height: 160px;
+    overflow-y: auto;
+    border-top: 1px solid rgb(var(--c-code-block-badge) / 0.15);
+  }
+
+  /* Individual option */
+  .cm-editor .codeblock-lang-option {
+    padding: 3px 8px;
+    cursor: pointer;
+    color: rgb(var(--c-code-block-badge) / 0.75);
+    text-align: right;
+    letter-spacing: 0.02em;
+    line-height: 1.5;
+  }
+  .cm-editor .codeblock-lang-option strong {
+    color: rgb(var(--c-code-block-badge) / 1);
+    font-weight: 600;
+  }
+  .cm-editor .codeblock-lang-option:hover,
+  .cm-editor .codeblock-lang-option.active {
+    background: rgb(var(--c-code-block-badge) / 0.1);
+    color: rgb(var(--c-code-block-badge) / 1);
+  }
+
+  /* Autocomplete dropdown for fence language */
+  .cm-editor .cm-tooltip-autocomplete {
+    background: rgb(var(--c-code-block-bg) / 1) !important;
+    border: 1px solid rgb(var(--c-code-block-badge) / 0.3) !important;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgb(0 0 0 / 0.18);
+    overflow: hidden;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 0.8em;
+  }
+  .cm-editor .cm-tooltip-autocomplete ul {
+    max-height: 180px;
+  }
+  .cm-editor .cm-tooltip-autocomplete ul li {
+    padding: 3px 10px !important;
+    color: rgb(var(--c-code-block-badge) / 0.8);
+  }
+  .cm-editor .cm-tooltip-autocomplete ul li[aria-selected] {
+    background: rgb(var(--c-code-block-badge) / 0.12) !important;
+    color: rgb(var(--c-code-block-badge) / 1);
+  }
+  .cm-editor .cm-completionMatchedText {
+    color: rgb(var(--c-code-block-badge) / 1);
+    font-weight: 600;
+    text-decoration: none;
+  }
+}

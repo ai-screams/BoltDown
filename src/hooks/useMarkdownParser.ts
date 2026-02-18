@@ -1,6 +1,8 @@
 import type MarkdownIt from 'markdown-it'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+import { sanitizePreviewHtml } from '@/utils/sanitize'
+
 // Module-level cache for the md instance
 let cachedMd: MarkdownIt | null = null
 let loadPromise: Promise<MarkdownIt> | null = null
@@ -30,6 +32,6 @@ export function useMarkdownParser(content: string): string {
 
   return useMemo(() => {
     if (!md) return ''
-    return md.render(content)
+    return sanitizePreviewHtml(md.render(content))
   }, [md, content])
 }

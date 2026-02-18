@@ -679,7 +679,7 @@ function PreviewPanel() {
         />
       </SettingRow>
       <SettingRow
-        description="Strict is safer. Loose allows broader diagram HTML behavior"
+        description="Strict sanitizes diagram output via DOMPurify. Loose disables sanitization and may execute untrusted HTML"
         label="Mermaid Security"
       >
         <Select
@@ -688,6 +688,11 @@ function PreviewPanel() {
           value={preview.mermaidSecurityLevel}
           onChange={v => updatePreview({ mermaidSecurityLevel: v })}
         />
+        {preview.mermaidSecurityLevel === 'loose' && (
+          <p role="alert" className="mt-1.5 text-xs text-warning">
+            Loose mode may execute untrusted HTML in Mermaid diagrams.
+          </p>
+        )}
       </SettingRow>
     </div>
   )

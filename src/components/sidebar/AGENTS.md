@@ -10,7 +10,7 @@ File management sidebar with directory tree browsing, recent files list, and res
 
 - `Sidebar.tsx` — Container with three tabs (FILES / OUTLINE / RECENT). Opens folders via Tauri dialog. Renders FileTree, OutlinePanel, or RecentFiles based on active sidebar tab. Uses `loadDirectoryEntries()` from `utils/directoryLoader.ts`. Decorative icon in tab header marked with `aria-hidden="true"`.
 
-- `FileTree.tsx` — Virtualized directory tree using `react-arborist`. Lazy-loads child directories on expand. Handles node toggle (folders) and file activation (opens in editor tab). Uses shared `loadDirectoryEntries()`.
+- `FileTree.tsx` — Virtualized directory tree using `react-arborist`. Lazy-loads child directories on expand. Handles node toggle (folders) and file activation (opens in editor tab). Uses shared `loadDirectoryEntries()` and `findAvailableCopyPath()` from `@/utils/fileCopy` for duplicate operations.
 
 - `FileTreeNode.tsx` — Custom tree node renderer with color-coded icons by file extension (blue for folders, green for .md, orange for .ts/.tsx, etc.). Handles click-to-toggle (dirs) and click-to-activate (files). Context menu for delete/duplicate with keyboard navigation (ArrowDown/Up/Escape), auto-focus first item on open. Menu items have `role="menuitem"`, clear `aria-label` attributes ("Duplicate", "Delete"). Icons marked with `aria-hidden="true"`.
 
@@ -18,7 +18,7 @@ File management sidebar with directory tree browsing, recent files list, and res
 
 - `RecentFiles.tsx` — Scrollable list of recently opened files (max 20, persisted in localStorage). Uses `data-*` attribute click pattern instead of curried callbacks (O(1) closures).
 
-- `ResizeHandle.tsx` — 1px draggable divider bar with active glow effect. Constrains sidebar width 180–480px (default 240px). Uses `requestAnimationFrame` for smooth 60fps resize. Window blur safety (cleanup on window blur). Double-click resets to 240px. Width persisted to localStorage via debounced store setter. Coordinates with Sidebar.tsx via `setResizing(boolean)` to disable CSS transitions during drag. ARIA: `role="separator"`, `aria-orientation="vertical"`, `aria-valuenow`, `aria-valuemin`, `aria-valuemax`.
+- `ResizeHandle.tsx` — 1px draggable divider bar with active glow effect. Constrains sidebar width 180–480px (default 240px). Uses `requestAnimationFrame` for smooth 60fps resize. Window blur safety (cleanup on window blur). Double-click resets to 240px. Width persisted to localStorage via debounced store setter. Coordinates with Sidebar.tsx via `setResizing(boolean)` to disable CSS transitions during drag. ARIA: `role="separator"`, `aria-orientation="vertical"`, `aria-label="Resize sidebar"`.
 
 ## Accessibility Features
 
@@ -63,7 +63,6 @@ handleMenuKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
 
 - **ARIA Separator**: `role="separator"` indicates resizable divider
 - **Orientation**: `aria-orientation="vertical"` for screen readers
-- **Value Attributes**: `aria-valuenow={width}`, `aria-valuemin={MIN_WIDTH}`, `aria-valuemax={MAX_WIDTH}`
 - **Label**: `aria-label="Resize sidebar"` provides context
 
 ### Sidebar
@@ -102,7 +101,6 @@ handleMenuKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
 ### ResizeHandle
 
 - ✅ `role="separator"` with `aria-orientation="vertical"`
-- ✅ `aria-valuenow`, `aria-valuemin`, `aria-valuemax` for current/min/max width
 - ✅ `aria-label="Resize sidebar"` for context
 
 ### Sidebar

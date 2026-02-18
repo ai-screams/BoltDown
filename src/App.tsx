@@ -25,6 +25,9 @@ import Sidebar from '@components/sidebar/Sidebar'
 // Lazy-load modals (only loaded when opened)
 const SettingsModal = lazy(() => import('@components/settings/SettingsModal'))
 const FindReplaceModal = lazy(() => import('@components/findreplace/FindReplaceModal'))
+const ShortcutsModal = lazy(() => import('@components/shortcuts/ShortcutsModal'))
+const ChangelogModal = lazy(() => import('@components/about/ChangelogModal'))
+const AboutModal = lazy(() => import('@components/about/AboutModal'))
 
 // Stable slot elements — never recreated on App re-render
 const tabBar = <TabBar />
@@ -50,6 +53,9 @@ function App() {
   const addRecentFile = useSidebarStore(s => s.addRecentFile)
   const openTab = useTabStore(s => s.openTab)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [changelogOpen, setChangelogOpen] = useState(false)
+  const [aboutOpen, setAboutOpen] = useState(false)
   const settingsOpenRef = useRef(settingsOpen)
   const loadSettings = useSettingsStore(s => s.loadSettings)
 
@@ -57,10 +63,35 @@ function App() {
   settingsOpenRef.current = settingsOpen
 
   // Keyboard shortcuts
-  useKeyboardShortcuts({ openFile, saveFile, saveFileAs, settingsOpenRef, setSettingsOpen })
+  useKeyboardShortcuts({
+    openFile,
+    saveFile,
+    saveFileAs,
+    settingsOpenRef,
+    setSettingsOpen,
+    setShortcutsOpen,
+  })
 
   const handleSettingsClose = useCallback(() => {
     setSettingsOpen(false)
+  }, [])
+  const handleShortcutsClose = useCallback(() => {
+    setShortcutsOpen(false)
+  }, [])
+  const handleChangelogClose = useCallback(() => {
+    setChangelogOpen(false)
+  }, [])
+  const handleAboutClose = useCallback(() => {
+    setAboutOpen(false)
+  }, [])
+  const handleOpenShortcuts = useCallback(() => {
+    setShortcutsOpen(true)
+  }, [])
+  const handleOpenChangelog = useCallback(() => {
+    setChangelogOpen(true)
+  }, [])
+  const handleOpenAbout = useCallback(() => {
+    setAboutOpen(true)
   }, [])
 
   // Load persisted settings on mount
@@ -111,7 +142,13 @@ function App() {
     <EditorViewProvider>
       <div className="flex h-screen flex-col overflow-hidden bg-gray-50 dark:bg-gray-900">
         <div className={mode === 'zen' ? 'zen-slide-up' : 'zen-slide-down'}>
-          <Header onOpenFile={() => void openFile()} onSaveFile={() => void saveFile()} />
+          <Header
+            onOpenAbout={handleOpenAbout}
+            onOpenChangelog={handleOpenChangelog}
+            onOpenFile={() => void openFile()}
+            onOpenShortcuts={handleOpenShortcuts}
+            onSaveFile={() => void saveFile()}
+          />
         </div>
         <div className="flex min-h-0 flex-1 overflow-hidden">
           {mode !== 'zen' && (
@@ -133,6 +170,19 @@ function App() {
       </Suspense>
       <Suspense fallback={null}>
         <FindReplaceModal />
+      </Suspense>
+      <Suspense fallback={null}>
+        <ShortcutsModal isOpen={shortcutsOpen} onClose={handleShortcutsClose} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <ChangelogModal isOpen={changelogOpen} onClose={handleChangelogClose} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <AboutModal
+          isOpen={aboutOpen}
+          onClose={handleAboutClose}
+          onOpenChangelog={handleOpenChangelog}
+        />
       </Suspense>
     </EditorViewProvider>
   )

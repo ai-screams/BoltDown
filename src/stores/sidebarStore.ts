@@ -6,10 +6,19 @@ import type { FileTreeNode, RecentFile, SidebarTab } from '@/types/sidebar'
 import { loadDirectoryEntries } from '@/utils/directoryLoader'
 import { getDirectoryPath } from '@/utils/imagePath'
 
+const isRecentFile = (v: unknown): v is RecentFile =>
+  typeof v === 'object' &&
+  v !== null &&
+  typeof (v as RecentFile).path === 'string' &&
+  typeof (v as RecentFile).name === 'string'
+
 const loadRecentFiles = (): RecentFile[] => {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.recentFiles)
-    return raw ? (JSON.parse(raw) as RecentFile[]) : []
+    if (!raw) return []
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter(isRecentFile)
   } catch {
     return []
   }
@@ -114,12 +123,11 @@ export const useSidebarStore = create<SidebarState>((set, get) => ({
     if (!dir) return
     const { rootPath } = get()
     if (rootPath !== dir) {
-      set({ rootPath: dir })
       try {
         const entries = await loadDirectoryEntries(dir)
-        set({ treeData: entries })
-      } catch {
-        // Directory listing failed — file is already open, silently ignore
+        set({ rootPath: dir, treeData: entries })
+      } catch (error) {
+        console.error('Failed to load parent directory:', dir, error)
       }
     }
     if (openSidebar) set({ isOpen: true })

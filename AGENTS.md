@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) + **React 19** (TypeScript frontend) + **CodeMirror 6** (editor engine). Phase 1 MVP complete. Phase 2 (89%): Settings System (4-category modal, Tauri persistence, theme presets, custom CSS editor), Find & Replace (Cmd+F/H, ReDoS protection, keyboard navigation), Tauri 2.0 modular architecture with clean separation of concerns, file save fixes, layout fixes, sidebar improvements (file/outline tabs, auto-sync, file tree icons), WYSIWYG Zen mode (StateField decorations with two-tier reveal, in-place code editing, KaTeX/Mermaid/Prism.js/tables), Focus Mode, Typewriter Mode, Auto-save, Tab Rename, Image Drag & Drop (Tauri native drag events, path resolution), Spellcheck (CM6 contentAttributes). Split view scroll sync (feat/scroll-sync branch): DOM-based mapping + anchor fallback, SmoothScroller, click-to-sync, offset correction. **WIG Compliance**: 18 accessibility fixes across 9 files (TabBar WAI-ARIA tabs, Header export menu keyboard nav, FileTreeNode context menu keyboard nav, SettingsModal form accessibility, FindReplaceModal ARIA, Footer live region, Sidebar decorative icons, App beforeunload guard, index.html preconnect).
+Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) + **React 19** (TypeScript frontend) + **CodeMirror 6** (editor engine). Phase 1 MVP complete. Phase 2 complete (Waves 1-8): Settings System (4-category modal, Tauri persistence, theme presets, custom CSS editor), Find & Replace (Cmd+F/H, ReDoS protection, keyboard navigation), Shortcuts/Changelog/About modals, Tauri 2.0 modular architecture with clean separation of concerns, file save fixes, layout fixes, sidebar improvements (file/outline tabs, auto-sync, file tree icons), WYSIWYG Zen mode (StateField decorations with two-tier reveal, in-place code editing, KaTeX/Mermaid/Prism.js/tables), Focus Mode, Typewriter Mode, Auto-save, Tab Rename, Image Drag & Drop (Tauri native drag events, path resolution), Spellcheck (CM6 contentAttributes). Split view scroll sync (implemented): DOM-based mapping + anchor fallback, SmoothScroller, click-to-sync, offset correction. **WIG Compliance**: 18 accessibility fixes across 9 files (TabBar WAI-ARIA tabs, Header export menu keyboard nav, FileTreeNode context menu keyboard nav, SettingsModal form accessibility, FindReplaceModal ARIA, Footer live region, Sidebar decorative icons, App beforeunload guard, index.html preconnect).
 
 ## Architecture Overview
 
@@ -45,7 +45,7 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 | `eslint.config.js`     | ESLint v9 flat config, TS/React/a11y/import-order, perfectionist sort-jsx-props |
 | `.prettierrc`          | No semi, single quote, 100 width, Tailwind class sort                           |
 | `commitlint.config.js` | Conventional Commits enforcement                                                |
-| `knip.config.js`       | Dead code detection configuration                                               |
+| `package-lock.json`    | npm dependency lockfile                                                         |
 
 ## Key Components & Stores
 
@@ -59,7 +59,7 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 
 ### Components
 
-- `App.tsx` — Root component with stable slot pattern (tabBar, toolbar, editor, preview hoisted outside render). Watches `activeTabId` via `useEffect`, syncs sidebar via `sidebarStore.loadParentDirectory(tab.filePath)`. Calls `useCustomCss()` hook to inject custom CSS from settings. **WIG**: `beforeunload` event handler warns about unsaved changes when closing window. Lazy-loads SettingsModal and FindReplaceModal with `lazy()` + `Suspense`.
+- `App.tsx` — Root component with stable slot pattern (tabBar, toolbar, editor, preview hoisted outside render). Watches `activeTabId` via `useEffect`, syncs sidebar via `sidebarStore.loadParentDirectory(tab.filePath)`. Calls `useCustomCss()` hook to inject custom CSS from settings. **WIG**: `beforeunload` event handler warns about unsaved changes when closing window. Lazy-loads SettingsModal, FindReplaceModal, ShortcutsModal, ChangelogModal, and AboutModal with `lazy()` + `Suspense`.
 
 - `Sidebar.tsx` — Three tabs: Files (file tree), Outline (heading navigator), Recent (recent files list). Decorative icon marked with `aria-hidden="true"`.
 
@@ -79,13 +79,16 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 
 - `MarkdownEditor.tsx` — CM6 editor with per-tab EditorState cache and compartment reconfiguration. Ordered-list Tab behavior, searchKeymap removed (replaced by FindReplaceModal).
 
-- `ResizeHandle.tsx` — Draggable divider with **`role="separator"`, `aria-orientation="vertical"`, `aria-valuenow/min/max`** for current/min/max width.
+- `ResizeHandle.tsx` — Draggable divider with **`role="separator"`, `aria-orientation="vertical"`, `aria-label="Resize sidebar"`**.
 
 ### Utilities
 
 - `tocPlugin.ts` — Custom markdown-it plugin. Adds slug-based IDs to headings (h1-h6), implements `[TOC]` block rule, generates TOC HTML via core rule with heading collection
 - `directoryLoader.ts` — Wraps Tauri `list_directory` command, converts to `FileTreeNode[]` format
 - `markdownConfig.ts` — markdown-it config for preview rendering (KaTeX inline/block with `throwOnError: false` + `strict: 'ignore'`, Prism highlighting, TOC plugin)
+- `sanitize.ts` — DOMPurify sanitization with 5 profiles: `sanitizePreviewHtml` (preview + scroll sync data-\* attrs), `sanitizeKatexHtml` (WYSIWYG widgets), `sanitizeCodeHtml` (Prism.js), `sanitizeSvgHtml` (Mermaid), `sanitizeCustomCss` (blocks @import, external URLs, JS execution)
+- `cache.ts` — Generic `LruCache<V>` class (Map-based LRU eviction). Used by wysiwyg/ extension modules (KaTeX/Mermaid caching) and MarkdownPreview.tsx (Mermaid caching)
+- `fileCopy.ts` — `findAvailableCopyPath()` — single `list_directory` IPC call for duplicate file naming (generates "file (copy).md", "file (copy 2).md", etc.)
 
 ### Constants
 
@@ -161,7 +164,7 @@ src-tauri/src/
 - Branch strategy: feature branches → PR → main
 - Commit style: Conventional Commits (`feat(editor):`, `fix(preview):`, etc.)
 - Pre-commit: Husky + lint-staged + commitlint
-- Current branch: `refactor/tauri-backend` (modular Rust architecture)
+- Current branch: `feat/phase2-completion` (as of 2026-02-18; verify with `git branch --show-current`)
 
 ## WIG Compliance Summary
 
