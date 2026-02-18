@@ -15,6 +15,8 @@ import 'prismjs/components/prism-rust'
 import 'prismjs/components/prism-tsx'
 import 'prismjs/components/prism-typescript'
 
+let _popoverSeq: number = 0
+
 export function getCodeBlockPalette() {
   const isDark = document.documentElement.classList.contains('dark')
   return {
@@ -163,11 +165,20 @@ function showLanguagePopover(
   input.setAttribute('autocomplete', 'off')
   input.setAttribute('autocorrect', 'off')
   input.setAttribute('placeholder', 'language…')
+  const listboxId: string = `codeblock-lang-listbox-${++_popoverSeq}`
+  input.setAttribute('role', 'combobox')
+  input.setAttribute('aria-autocomplete', 'list')
+  input.setAttribute('aria-expanded', 'true')
+  input.setAttribute('aria-controls', listboxId)
+  input.setAttribute('aria-label', 'Code block language')
   container.appendChild(input)
 
   // --- Dropdown list ---
   const list = document.createElement('ul')
   list.className = 'codeblock-lang-list'
+  list.id = listboxId
+  list.setAttribute('role', 'listbox')
+  list.setAttribute('aria-label', 'Languages')
   container.appendChild(list)
 
   let activeIndex = -1
@@ -176,18 +187,26 @@ function showLanguagePopover(
     const query = input.value.trim().toLowerCase()
     list.innerHTML = ''
     activeIndex = -1
+    input.removeAttribute('aria-activedescendant')
 
     const matches = query ? KNOWN_LANGUAGES.filter(l => l.includes(query)) : KNOWN_LANGUAGES
 
     if (matches.length === 0 || (matches.length === 1 && matches[0] === query)) {
       list.style.display = 'none'
+      input.setAttribute('aria-expanded', 'false')
       return
     }
 
     list.style.display = ''
+    input.setAttribute('aria-expanded', 'true')
     for (const lang of matches.slice(0, 8)) {
       const li = document.createElement('li')
       li.className = 'codeblock-lang-option'
+      const optionId: string = `${listboxId}-opt-${lang}`
+      li.id = optionId
+      li.dataset['value'] = lang
+      li.setAttribute('role', 'option')
+      li.setAttribute('aria-selected', 'false')
       // Highlight the matching substring
       if (query) {
         const idx = lang.indexOf(query)
@@ -213,8 +232,17 @@ function showLanguagePopover(
     if (items.length === 0) return
     // Clamp
     activeIndex = Math.max(0, Math.min(index, items.length - 1))
-    items.forEach((el, i) => el.classList.toggle('active', i === activeIndex))
+    items.forEach((el, i) => {
+      el.classList.toggle('active', i === activeIndex)
+      el.setAttribute('aria-selected', String(i === activeIndex))
+    })
     items[activeIndex]?.scrollIntoView({ block: 'nearest' })
+    const activeEl: Element | undefined = items[activeIndex]
+    if (activeEl?.id) {
+      input.setAttribute('aria-activedescendant', activeEl.id)
+    } else {
+      input.removeAttribute('aria-activedescendant')
+    }
   }
 
   view.dom.appendChild(container)
@@ -225,22 +253,26 @@ function showLanguagePopover(
     filterList()
   })
 
-  let committed = false
-  const commit = () => {
-    if (committed) return
+  let committed: boolean = false
+
+  const closePopover = (): boolean => {
+    if (committed) return false
     committed = true
-    const newLang = input.value.trim().toLowerCase()
+    input.setAttribute('aria-expanded', 'false')
     container.remove()
-    if (newLang !== currentLang) {
+    view.focus()
+    return true
+  }
+
+  const commit = (): void => {
+    const newLang: string = input.value.trim().toLowerCase()
+    if (closePopover() && newLang !== currentLang) {
       view.dispatch({ changes: { from: codeInfoFrom, to: codeInfoTo, insert: newLang } })
     }
-    view.focus()
   }
-  const cancel = () => {
-    if (committed) return
-    committed = true
-    container.remove()
-    view.focus()
+
+  const cancel = (): void => {
+    closePopover()
   }
 
   input.addEventListener('input', filterList)
@@ -261,7 +293,7 @@ function showLanguagePopover(
     if (e.key === 'Enter') {
       e.preventDefault()
       if (activeIndex >= 0 && activeIndex < items.length) {
-        input.value = items[activeIndex]!.textContent ?? ''
+        input.value = (items[activeIndex] as HTMLElement).dataset['value'] ?? ''
       }
       commit()
       return
@@ -274,7 +306,7 @@ function showLanguagePopover(
     if (e.key === 'Tab') {
       e.preventDefault()
       if (activeIndex >= 0 && activeIndex < items.length) {
-        input.value = items[activeIndex]!.textContent ?? ''
+        input.value = (items[activeIndex] as HTMLElement).dataset['value'] ?? ''
         filterList()
       }
     }
@@ -297,9 +329,11 @@ export class LanguageBadgeWidget extends WidgetType {
     super()
   }
   toDOM(view: EditorView) {
-    const badge = document.createElement('span')
+    const badge: HTMLButtonElement = document.createElement('button')
+    badge.type = 'button'
     badge.className = 'codeblock-badge'
     badge.textContent = this.language
+    badge.setAttribute('aria-label', `Change language: ${this.language}`)
 
     badge.addEventListener('mousedown', e => {
       e.preventDefault()

@@ -41,6 +41,14 @@
     letter-spacing: 0.03em;
     cursor: pointer;
     user-select: none;
+    border: none;
+    font: inherit;
+  }
+
+  .cm-editor .codeblock-badge:focus-visible {
+    outline: 1.5px solid rgb(var(--c-code-block-badge) / 0.6);
+    outline-offset: -1.5px;
+    border-radius: 3px;
   }
 
   /* First line: top border radius */
@@ -86,7 +94,7 @@
     width: 100%;
     padding: 4px 8px;
     border: none;
-    outline: none;
+    /* outline: none removed — handled by :focus/:focus-visible split below */
     background: transparent;
     color: rgb(var(--c-code-block-badge) / 1);
     font: inherit;
@@ -98,6 +106,15 @@
   }
   .cm-editor .codeblock-lang-input::placeholder {
     color: rgb(var(--c-code-block-badge) / 0.35);
+  }
+
+  .cm-editor .codeblock-lang-input:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  .cm-editor .codeblock-lang-input:focus-visible {
+    outline: 1.5px solid rgb(var(--c-code-block-badge) / 0.6);
+    outline-offset: -1.5px;
   }
 
   /* Autocomplete dropdown list */
