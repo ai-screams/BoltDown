@@ -1,96 +1,23 @@
 import type { EditorView } from '@codemirror/view'
 import { WidgetType } from '@codemirror/view'
 
-type TableAlignment = 'left' | 'center' | 'right'
-
-interface TableModel {
-  headers: string[]
-  alignments: TableAlignment[]
-  rows: string[][]
-}
-
-interface TableCellCoords {
-  rowIndex: number
-  columnIndex: number
-}
-
-function parseCells(line: string): string[] {
-  return line
-    .replace(/^\|/, '')
-    .replace(/\|$/, '')
-    .split('|')
-    .map(cell => cell.trim())
-}
-
-function parseAlignmentToken(token: string): TableAlignment {
-  const trimmed = token.trim()
-  const hasLeadingColon = trimmed.startsWith(':')
-  const hasTrailingColon = trimmed.endsWith(':')
-
-  if (hasLeadingColon && hasTrailingColon) return 'center'
-  if (hasTrailingColon) return 'right'
-  return 'left'
-}
-
-function buildAlignmentToken(alignment: TableAlignment): string {
-  if (alignment === 'center') return ':---:'
-  if (alignment === 'right') return '---:'
-  return ':---'
-}
-
-function normalizeCellValue(value: string): string {
-  return value.replace(/\s+/g, ' ').trim()
-}
-
-function parseTableModel(tableText: string): TableModel | null {
-  const lines = tableText.split('\n').filter(line => line.trim())
-  if (lines.length < 2) return null
-
-  const headers = parseCells(lines[0]!)
-  const alignmentCells = parseCells(lines[1]!)
-  const bodyRows = lines.slice(2).map(parseCells)
-
-  const columnCount = Math.max(
-    headers.length,
-    alignmentCells.length,
-    ...bodyRows.map(row => row.length),
-    1
-  )
-
-  const normalizedHeaders = Array.from({ length: columnCount }, (_, index) => headers[index] ?? '')
-  const normalizedAlignments = Array.from({ length: columnCount }, (_, index) =>
-    parseAlignmentToken(alignmentCells[index] ?? '')
-  )
-  const normalizedRows = bodyRows.map(row =>
-    Array.from({ length: columnCount }, (_, index) => row[index] ?? '')
-  )
-
-  return {
-    headers: normalizedHeaders,
-    alignments: normalizedAlignments,
-    rows: normalizedRows,
-  }
-}
-
-function serializeTableModel(model: TableModel): string {
-  const alignmentTokens = model.alignments.map(buildAlignmentToken)
-  const columnWidths = model.headers.map((header, index) => {
-    const values = [header, alignmentTokens[index]!, ...model.rows.map(row => row[index] ?? '')]
-    return Math.max(...values.map(value => value.length), 1)
-  })
-
-  const formatRow = (cells: readonly string[]): string => {
-    const segments = cells.map((cell, index) => ` ${cell.padEnd(columnWidths[index]!)} `)
-    return `|${segments.join('|')}|`
-  }
-
-  const lines = [formatRow(model.headers), formatRow(alignmentTokens)]
-  for (const row of model.rows) {
-    lines.push(formatRow(row))
-  }
-
-  return lines.join('\n')
-}
+import {
+  addColumnLeft,
+  addColumnRight,
+  addRowAbove,
+  addRowBelow,
+  deleteColumn,
+  deleteRow,
+  normalizeCellValue,
+  parseTableModel,
+  resizeTable,
+  serializeTableModel,
+  setCellText,
+  setColumnAlignment,
+  type TableAlignment,
+  type TableCellCoords,
+  type TableModel,
+} from './tableModel'
 
 export class TableWidget extends WidgetType {
   constructor(
@@ -101,39 +28,30 @@ export class TableWidget extends WidgetType {
     super()
   }
 
-  private updateCell(view: EditorView, coords: TableCellCoords, nextValue: string): void {
-    const model = parseTableModel(this.tableText)
-    if (!model) return
-
-    const normalizedValue = normalizeCellValue(nextValue)
-
-    if (coords.rowIndex === 0) {
-      if (!model.headers[coords.columnIndex]) {
-        model.headers[coords.columnIndex] = ''
-      }
-      if (model.headers[coords.columnIndex] === normalizedValue) return
-      model.headers[coords.columnIndex] = normalizedValue
-    } else {
-      const bodyRowIndex = coords.rowIndex - 1
-      if (!model.rows[bodyRowIndex]) return
-      if (!model.rows[bodyRowIndex]![coords.columnIndex]) {
-        model.rows[bodyRowIndex]![coords.columnIndex] = ''
-      }
-      if (model.rows[bodyRowIndex]![coords.columnIndex] === normalizedValue) return
-      model.rows[bodyRowIndex]![coords.columnIndex] = normalizedValue
-    }
-
+  private dispatchModelUpdate(
+    view: EditorView,
+    updateModel: (model: TableModel) => TableModel,
+    tableElement?: HTMLTableElement
+  ): boolean {
     if (
       this.tableFrom < 0 ||
       this.tableTo > view.state.doc.length ||
       this.tableFrom >= this.tableTo
     ) {
-      return
+      return false
     }
 
-    const nextTableText = serializeTableModel(model)
     const currentTableText = view.state.sliceDoc(this.tableFrom, this.tableTo)
-    if (nextTableText === currentTableText) return
+    const parsedCurrentModel = parseTableModel(currentTableText)
+    if (!parsedCurrentModel) return false
+
+    const baseModel = tableElement
+      ? this.captureModelFromDom(tableElement, parsedCurrentModel)
+      : parsedCurrentModel
+
+    const nextModel = updateModel(baseModel)
+    const nextTableText = serializeTableModel(nextModel)
+    if (nextTableText === currentTableText) return false
 
     view.dispatch({
       changes: {
@@ -142,6 +60,37 @@ export class TableWidget extends WidgetType {
         insert: nextTableText,
       },
     })
+
+    return true
+  }
+
+  private captureModelFromDom(
+    tableElement: HTMLTableElement,
+    fallbackModel: TableModel
+  ): TableModel {
+    const nextModel: TableModel = {
+      headers: [...fallbackModel.headers],
+      alignments: [...fallbackModel.alignments],
+      rows: fallbackModel.rows.map(row => [...row]),
+    }
+
+    const headerCells = Array.from(tableElement.querySelectorAll('thead th[data-col-index]'))
+    if (headerCells.length === nextModel.headers.length) {
+      nextModel.headers = headerCells.map(cell => normalizeCellValue(cell.textContent ?? ''))
+    }
+
+    const bodyRows = Array.from(tableElement.querySelectorAll('tbody tr[data-row-index]'))
+    if (bodyRows.length === nextModel.rows.length) {
+      nextModel.rows = bodyRows.map(row => {
+        const bodyCells = Array.from(row.querySelectorAll('td[data-col-index]'))
+        if (bodyCells.length !== nextModel.headers.length) {
+          return new Array(nextModel.headers.length).fill('')
+        }
+        return bodyCells.map(cell => normalizeCellValue(cell.textContent ?? ''))
+      })
+    }
+
+    return nextModel
   }
 
   private createEditableCell(
@@ -149,35 +98,109 @@ export class TableWidget extends WidgetType {
     cellTag: 'th' | 'td',
     text: string,
     coords: TableCellCoords,
-    alignment: TableAlignment
+    alignment: TableAlignment,
+    onActivate: (coords: TableCellCoords) => void,
+    getTableElement: () => HTMLTableElement
   ): HTMLElement {
     const cell = document.createElement(cellTag)
     cell.textContent = text
     cell.contentEditable = 'true'
     cell.spellcheck = false
+    cell.dataset.rowIndex = String(coords.rowIndex)
+    cell.dataset.colIndex = String(coords.columnIndex)
     cell.style.cssText = `border: 1px solid rgb(var(--c-wys-table-border) / 1); padding: 6px 12px; text-align: ${alignment}; ${cellTag === 'th' ? 'font-weight: 600; background: var(--c-wys-table-head-bg);' : ''}`
+
+    let committedValue = normalizeCellValue(text)
 
     const commit = () => {
       const nextValue = cell.textContent ?? ''
-      this.updateCell(view, coords, nextValue)
+      const normalized = normalizeCellValue(nextValue)
+      if (normalized === committedValue) return
+
+      const didApplyUpdate = this.dispatchModelUpdate(
+        view,
+        model => setCellText(model, coords, normalized),
+        getTableElement()
+      )
+
+      if (didApplyUpdate) {
+        committedValue = normalized
+      }
     }
+
+    cell.addEventListener('focus', () => {
+      onActivate(coords)
+    })
+
+    cell.addEventListener('mousedown', event => {
+      event.stopPropagation()
+    })
+
+    cell.addEventListener('click', event => {
+      event.stopPropagation()
+      onActivate(coords)
+    })
 
     cell.addEventListener('keydown', event => {
       if (event.key === 'Enter') {
         event.preventDefault()
+        event.stopPropagation()
         commit()
         cell.blur()
       }
       if (event.key === 'Escape') {
         event.preventDefault()
-        cell.textContent = text
+        event.stopPropagation()
+        cell.textContent = committedValue
         cell.blur()
       }
     })
 
-    cell.addEventListener('blur', commit)
+    cell.addEventListener('blur', () => {
+      commit()
+    })
 
     return cell
+  }
+
+  private createControlButton(
+    label: string,
+    action: string,
+    onClick: () => void,
+    options: {
+      isActive?: boolean
+      variant?: 'default' | 'danger' | 'segment'
+      compact?: boolean
+    } = {}
+  ): HTMLButtonElement {
+    const { isActive = false, variant = 'default', compact = false } = options
+
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.textContent = label
+    button.dataset.action = action
+
+    const borderColor =
+      variant === 'danger' ? 'rgba(180, 35, 24, 0.45)' : 'rgb(var(--c-wys-table-border) / 1)'
+    const background = isActive ? 'var(--c-wys-table-head-bg)' : 'var(--c-wys-bg)'
+    const color = variant === 'danger' ? '#b42318' : 'var(--c-wys-text)'
+    const borderRadius = variant === 'segment' ? '0' : '8px'
+    const padding = compact ? '2px 8px' : '4px 10px'
+
+    button.style.cssText = `border: 1px solid ${borderColor}; border-radius: ${borderRadius}; padding: ${padding}; font-size: 12px; line-height: 1.4; background: ${background}; color: ${color}; cursor: pointer; white-space: nowrap;`
+
+    button.addEventListener('mousedown', event => {
+      event.preventDefault()
+      event.stopPropagation()
+    })
+
+    button.addEventListener('click', event => {
+      event.preventDefault()
+      event.stopPropagation()
+      onClick()
+    })
+
+    return button
   }
 
   toDOM(view: EditorView): HTMLElement {
@@ -191,8 +214,325 @@ export class TableWidget extends WidgetType {
       return wrapper
     }
 
+    let activeCoords: TableCellCoords = {
+      rowIndex: model.rows.length > 0 ? 1 : 0,
+      columnIndex: 0,
+    }
+
+    const controlsContainer = document.createElement('div')
+    controlsContainer.style.cssText =
+      'display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px;'
+
+    const actionBar = document.createElement('div')
+    actionBar.style.cssText = 'display: flex; flex-wrap: wrap; gap: 6px; align-items: center;'
+
+    const resizePanel = document.createElement('div')
+    resizePanel.dataset.role = 'resize-panel'
+    resizePanel.style.cssText =
+      'display: none; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px; border: 1px solid rgb(var(--c-wys-table-border) / 1); border-radius: 10px; background: var(--c-wys-table-head-bg);'
+
+    const rowMenuPanel = document.createElement('div')
+    rowMenuPanel.dataset.role = 'row-menu'
+    rowMenuPanel.style.cssText =
+      'display: none; align-items: center; flex-wrap: wrap; gap: 6px; padding: 8px; border: 1px solid rgb(var(--c-wys-table-border) / 1); border-radius: 10px; background: var(--c-wys-table-head-bg);'
+
+    const colMenuPanel = document.createElement('div')
+    colMenuPanel.dataset.role = 'col-menu'
+    colMenuPanel.style.cssText =
+      'display: none; align-items: center; flex-wrap: wrap; gap: 6px; padding: 8px; border: 1px solid rgb(var(--c-wys-table-border) / 1); border-radius: 10px; background: var(--c-wys-table-head-bg);'
+
+    const colsLabel = document.createElement('label')
+    colsLabel.textContent = 'Cols'
+    colsLabel.style.cssText = 'font-size: 12px; color: var(--c-wys-text);'
+
+    const colsInput = document.createElement('input')
+    colsInput.type = 'number'
+    colsInput.min = '1'
+    colsInput.max = '99'
+    colsInput.value = String(Math.max(model.headers.length, 1))
+    colsInput.dataset.field = 'resize-cols'
+    colsInput.style.cssText =
+      'width: 64px; border: 1px solid rgb(var(--c-wys-table-border) / 1); border-radius: 6px; padding: 2px 6px; background: var(--c-wys-bg); color: var(--c-wys-text);'
+
+    const rowsLabel = document.createElement('label')
+    rowsLabel.textContent = 'Rows'
+    rowsLabel.style.cssText = 'font-size: 12px; color: var(--c-wys-text);'
+
+    const rowsInput = document.createElement('input')
+    rowsInput.type = 'number'
+    rowsInput.min = '1'
+    rowsInput.max = '99'
+    rowsInput.value = String(Math.max(model.rows.length, 1))
+    rowsInput.dataset.field = 'resize-rows'
+    rowsInput.style.cssText =
+      'width: 64px; border: 1px solid rgb(var(--c-wys-table-border) / 1); border-radius: 6px; padding: 2px 6px; background: var(--c-wys-bg); color: var(--c-wys-text);'
+
     const table = document.createElement('table')
     table.style.cssText = 'border-collapse: collapse; width: 100%; font-size: 0.9em;'
+
+    type PanelKind = 'resize' | 'row' | 'col'
+    const panels: Record<PanelKind, HTMLDivElement> = {
+      resize: resizePanel,
+      row: rowMenuPanel,
+      col: colMenuPanel,
+    }
+
+    const isPanelOpen = (panel: PanelKind): boolean => panels[panel].style.display !== 'none'
+
+    const setPanelOpen = (panel: PanelKind, open: boolean): void => {
+      panels[panel].style.display = open ? 'flex' : 'none'
+    }
+
+    const closeAllPanels = (): void => {
+      setPanelOpen('resize', false)
+      setPanelOpen('row', false)
+      setPanelOpen('col', false)
+    }
+
+    const togglePanel = (panel: PanelKind): void => {
+      const shouldOpen = !isPanelOpen(panel)
+      closeAllPanels()
+      setPanelOpen(panel, shouldOpen)
+    }
+
+    const getActiveColumnIndex = (): number => {
+      if (model.headers.length <= 1) return 0
+      return Math.max(0, Math.min(activeCoords.columnIndex, model.headers.length - 1))
+    }
+
+    const getActiveBodyRowIndex = (): number => {
+      if (model.rows.length === 0) return 0
+      return Math.max(0, Math.min(activeCoords.rowIndex - 1, model.rows.length - 1))
+    }
+
+    const applyControlAction = (updater: (nextModel: TableModel) => TableModel): boolean => {
+      return this.dispatchModelUpdate(view, updater, table)
+    }
+
+    const applyResize = (): void => {
+      const nextCols = Number.parseInt(colsInput.value, 10)
+      const nextRows = Number.parseInt(rowsInput.value, 10)
+      if (!Number.isFinite(nextCols) || !Number.isFinite(nextRows)) return
+
+      applyControlAction(nextModel =>
+        resizeTable(nextModel, Math.max(1, nextRows), Math.max(1, nextCols))
+      )
+      closeAllPanels()
+    }
+
+    actionBar.appendChild(
+      this.createControlButton('Resize', 'toggle-resize-panel', () => {
+        colsInput.value = String(Math.max(model.headers.length, 1))
+        rowsInput.value = String(Math.max(model.rows.length, 1))
+        togglePanel('resize')
+      })
+    )
+
+    actionBar.appendChild(
+      this.createControlButton('Row', 'toggle-row-menu', () => {
+        togglePanel('row')
+      })
+    )
+
+    actionBar.appendChild(
+      this.createControlButton('Col', 'toggle-col-menu', () => {
+        togglePanel('col')
+      })
+    )
+
+    const alignGroup = document.createElement('div')
+    alignGroup.style.cssText =
+      'display: inline-flex; overflow: hidden; border: 1px solid rgb(var(--c-wys-table-border) / 1); border-radius: 8px;'
+
+    const alignLeftButton = this.createControlButton(
+      'L',
+      'align-left',
+      () => {
+        applyControlAction(nextModel =>
+          setColumnAlignment(nextModel, getActiveColumnIndex(), 'left')
+        )
+      },
+      {
+        isActive: false,
+        variant: 'segment',
+        compact: true,
+      }
+    )
+    const alignCenterButton = this.createControlButton(
+      'C',
+      'align-center',
+      () => {
+        applyControlAction(nextModel =>
+          setColumnAlignment(nextModel, getActiveColumnIndex(), 'center')
+        )
+      },
+      {
+        isActive: false,
+        variant: 'segment',
+        compact: true,
+      }
+    )
+    const alignRightButton = this.createControlButton(
+      'R',
+      'align-right',
+      () => {
+        applyControlAction(nextModel =>
+          setColumnAlignment(nextModel, getActiveColumnIndex(), 'right')
+        )
+      },
+      {
+        isActive: false,
+        variant: 'segment',
+        compact: true,
+      }
+    )
+
+    const setAlignmentButtonsActive = (alignment: TableAlignment): void => {
+      const applyState = (button: HTMLButtonElement, active: boolean): void => {
+        button.dataset.active = active ? 'true' : 'false'
+        button.style.background = active ? 'var(--c-wys-table-head-bg)' : 'var(--c-wys-bg)'
+      }
+
+      applyState(alignLeftButton, alignment === 'left')
+      applyState(alignCenterButton, alignment === 'center')
+      applyState(alignRightButton, alignment === 'right')
+    }
+
+    alignGroup.appendChild(alignLeftButton)
+    alignGroup.appendChild(alignCenterButton)
+    alignGroup.appendChild(alignRightButton)
+    setAlignmentButtonsActive(model.alignments[getActiveColumnIndex()] ?? 'left')
+
+    actionBar.appendChild(alignGroup)
+
+    rowMenuPanel.appendChild(
+      this.createControlButton(
+        '+ Above',
+        'add-row-above',
+        () => {
+          applyControlAction(nextModel => addRowAbove(nextModel, getActiveBodyRowIndex()))
+          closeAllPanels()
+        },
+        { compact: true }
+      )
+    )
+    rowMenuPanel.appendChild(
+      this.createControlButton(
+        '+ Below',
+        'add-row-below',
+        () => {
+          applyControlAction(nextModel => addRowBelow(nextModel, getActiveBodyRowIndex()))
+          closeAllPanels()
+        },
+        { compact: true }
+      )
+    )
+    rowMenuPanel.appendChild(
+      this.createControlButton(
+        'Delete row',
+        'delete-row',
+        () => {
+          applyControlAction(nextModel => deleteRow(nextModel, getActiveBodyRowIndex()))
+          closeAllPanels()
+        },
+        { variant: 'danger', compact: true }
+      )
+    )
+
+    colMenuPanel.appendChild(
+      this.createControlButton(
+        '+ Left',
+        'add-col-left',
+        () => {
+          applyControlAction(nextModel => addColumnLeft(nextModel, getActiveColumnIndex()))
+          closeAllPanels()
+        },
+        { compact: true }
+      )
+    )
+    colMenuPanel.appendChild(
+      this.createControlButton(
+        '+ Right',
+        'add-col-right',
+        () => {
+          applyControlAction(nextModel => addColumnRight(nextModel, getActiveColumnIndex()))
+          closeAllPanels()
+        },
+        { compact: true }
+      )
+    )
+    colMenuPanel.appendChild(
+      this.createControlButton(
+        'Delete col',
+        'delete-col',
+        () => {
+          applyControlAction(nextModel => deleteColumn(nextModel, getActiveColumnIndex()))
+          closeAllPanels()
+        },
+        { variant: 'danger', compact: true }
+      )
+    )
+
+    colsLabel.appendChild(colsInput)
+    rowsLabel.appendChild(rowsInput)
+    resizePanel.appendChild(colsLabel)
+    resizePanel.appendChild(rowsLabel)
+    resizePanel.appendChild(
+      this.createControlButton('Apply', 'apply-resize', applyResize, { compact: true })
+    )
+    actionBar.appendChild(
+      this.createControlButton(
+        'Close',
+        'close-panels',
+        () => {
+          closeAllPanels()
+        },
+        {
+          compact: true,
+        }
+      )
+    )
+    resizePanel.appendChild(
+      this.createControlButton('Cancel', 'cancel-resize', closeAllPanels, { compact: true })
+    )
+
+    colsInput.addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        event.preventDefault()
+        event.stopPropagation()
+        applyResize()
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        event.stopPropagation()
+        closeAllPanels()
+      }
+    })
+
+    rowsInput.addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        event.preventDefault()
+        event.stopPropagation()
+        applyResize()
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        event.stopPropagation()
+        closeAllPanels()
+      }
+    })
+
+    controlsContainer.appendChild(actionBar)
+    controlsContainer.appendChild(rowMenuPanel)
+    controlsContainer.appendChild(colMenuPanel)
+    controlsContainer.appendChild(resizePanel)
+    wrapper.appendChild(controlsContainer)
+
+    const setActiveCoords = (coords: TableCellCoords): void => {
+      activeCoords = coords
+      const activeAlignment = model.alignments[getActiveColumnIndex()] ?? 'left'
+      setAlignmentButtonsActive(activeAlignment)
+    }
 
     const thead = document.createElement('thead')
     const headerRow = document.createElement('tr')
@@ -203,7 +543,9 @@ export class TableWidget extends WidgetType {
         'th',
         header,
         { rowIndex: 0, columnIndex },
-        alignment
+        alignment,
+        setActiveCoords,
+        () => table
       )
       headerRow.appendChild(headerCell)
     })
@@ -213,6 +555,7 @@ export class TableWidget extends WidgetType {
     const tbody = document.createElement('tbody')
     model.rows.forEach((row, bodyIndex) => {
       const rowElement = document.createElement('tr')
+      rowElement.dataset.rowIndex = String(bodyIndex)
       if (bodyIndex % 2 === 0) {
         rowElement.style.background = 'var(--c-wys-table-row-alt-bg)'
       }
@@ -224,7 +567,9 @@ export class TableWidget extends WidgetType {
           'td',
           cellText,
           { rowIndex: bodyIndex + 1, columnIndex },
-          alignment
+          alignment,
+          setActiveCoords,
+          () => table
         )
         rowElement.appendChild(bodyCell)
       })
