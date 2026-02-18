@@ -1,3 +1,4 @@
+import { history } from '@codemirror/commands'
 import { EditorState, type TransactionSpec } from '@codemirror/state'
 import type { Decoration, DecorationSet, EditorView } from '@codemirror/view'
 import { describe, expect, it } from 'vitest'
@@ -10,6 +11,7 @@ import { TableWidget } from './TableWidget'
 
 interface MockEditorView {
   readonly state: EditorState
+  focus: () => void
   dispatch: (spec: TransactionSpec | { state: EditorState }) => void
 }
 
@@ -24,13 +26,21 @@ function isTransaction(value: unknown): value is { state: EditorState } {
   return maybeTransaction.state instanceof EditorState
 }
 
-function createMockView(doc: string): { view: EditorView; getDoc: () => string } {
-  let state = EditorState.create({ doc })
+function createMockView(doc: string): {
+  view: EditorView
+  getDoc: () => string
+  getSelectionAnchor: () => number
+} {
+  let state = EditorState.create({
+    doc,
+    extensions: [history()],
+  })
 
   const mockView: MockEditorView = {
     get state() {
       return state
     },
+    focus() {},
     dispatch(spec: TransactionSpec | { state: EditorState }) {
       if (isTransaction(spec)) {
         state = spec.state
@@ -44,6 +54,7 @@ function createMockView(doc: string): { view: EditorView; getDoc: () => string }
   return {
     view: mockView as unknown as EditorView,
     getDoc: () => state.doc.toString(),
+    getSelectionAnchor: () => state.selection.main.anchor,
   }
 }
 
@@ -164,6 +175,75 @@ describe('TableWidget editing', () => {
 
     const afterDelete = parseTableModel(getDoc())
     expect(afterDelete?.rows).toHaveLength(1)
+  })
+
+  it('supports immediate undo shortcut after table control action', () => {
+    const tableText = '| A | B |\n| :--- | :--- |\n| C | D |'
+    const { view, getDoc } = createMockView(tableText)
+    const widget = new TableWidget(tableText, 0, tableText.length)
+    const dom = widget.toDOM(view)
+
+    const firstBodyCell = dom.querySelector('tbody td[data-row-index="1"][data-col-index="0"]')
+    const toggleRowMenuButton = dom.querySelector('button[data-action="toggle-row-menu"]')
+    const addRowBelowButton = dom.querySelector('button[data-action="add-row-below"]')
+
+    if (!firstBodyCell || !toggleRowMenuButton || !addRowBelowButton) {
+      throw new Error('Expected row controls and first body cell to exist')
+    }
+
+    firstBodyCell.dispatchEvent(new Event('focus'))
+    toggleRowMenuButton.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+    addRowBelowButton.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+
+    const afterAdd = parseTableModel(getDoc())
+    expect(afterAdd?.rows).toHaveLength(2)
+
+    firstBodyCell.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'z',
+        metaKey: true,
+        bubbles: true,
+        cancelable: true,
+      })
+    )
+
+    const afterUndo = parseTableModel(getDoc())
+    expect(afterUndo?.rows).toHaveLength(1)
+  })
+
+  it('does not trigger editor undo when cell has uncommitted draft text', () => {
+    const tableText = '| A | B |\n| :--- | :--- |\n| C | D |'
+    const { view, getDoc } = createMockView(tableText)
+    const widget = new TableWidget(tableText, 0, tableText.length)
+    const dom = widget.toDOM(view)
+
+    const firstBodyCell = dom.querySelector('tbody td[data-row-index="1"][data-col-index="0"]')
+    const toggleRowMenuButton = dom.querySelector('button[data-action="toggle-row-menu"]')
+    const addRowBelowButton = dom.querySelector('button[data-action="add-row-below"]')
+
+    if (!firstBodyCell || !toggleRowMenuButton || !addRowBelowButton) {
+      throw new Error('Expected row controls and body cell to exist')
+    }
+
+    firstBodyCell.dispatchEvent(new Event('focus'))
+    toggleRowMenuButton.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+    addRowBelowButton.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+
+    const afterAdd = parseTableModel(getDoc())
+    expect(afterAdd?.rows).toHaveLength(2)
+
+    firstBodyCell.textContent = 'Draft change'
+    firstBodyCell.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'z',
+        metaKey: true,
+        bubbles: true,
+        cancelable: true,
+      })
+    )
+
+    const afterShortcut = parseTableModel(getDoc())
+    expect(afterShortcut?.rows).toHaveLength(2)
   })
 
   it('adds and deletes columns through table controls', () => {
@@ -320,6 +400,30 @@ describe('TableWidget editing', () => {
     const shrunken = parseTableModel(getDoc())
     expect(shrunken?.headers).toEqual(['A'])
     expect(shrunken?.rows).toEqual([['v1']])
+  })
+
+  it('anchors stale editor selection to table range before control updates', () => {
+    const tableText = '| A | B |\n| :--- | :--- |\n| C | D |'
+    const prefix = 'Intro\n\n'
+    const fullDoc = `${prefix}${tableText}`
+    const tableFrom = fullDoc.indexOf('| A |')
+    const tableTo = tableFrom + tableText.length
+
+    const { view, getSelectionAnchor } = createMockView(fullDoc)
+    const widget = new TableWidget(tableText, tableFrom, tableTo)
+    const dom = widget.toDOM(view)
+
+    const toggleRowMenuButton = dom.querySelector('button[data-action="toggle-row-menu"]')
+    const addRowBelowButton = dom.querySelector('button[data-action="add-row-below"]')
+
+    if (!toggleRowMenuButton || !addRowBelowButton) {
+      throw new Error('Expected row menu controls to exist')
+    }
+
+    toggleRowMenuButton.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+    addRowBelowButton.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+
+    expect(getSelectionAnchor()).toBe(tableFrom)
   })
 
   it('keeps committed value unchanged when update cannot be dispatched', () => {

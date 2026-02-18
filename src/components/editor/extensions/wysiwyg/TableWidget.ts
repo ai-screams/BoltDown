@@ -1,3 +1,5 @@
+import { redo, undo } from '@codemirror/commands'
+import { Transaction } from '@codemirror/state'
 import type { EditorView } from '@codemirror/view'
 import { WidgetType } from '@codemirror/view'
 
@@ -28,6 +30,60 @@ export class TableWidget extends WidgetType {
     super()
   }
 
+  private handleHistoryShortcut(view: EditorView, event: KeyboardEvent): boolean {
+    if (event.altKey) return false
+
+    const key = event.key.toLowerCase()
+    const hasModifier = event.metaKey || event.ctrlKey
+    if (!hasModifier) return false
+
+    if (key === 'z') {
+      event.preventDefault()
+      event.stopPropagation()
+
+      this.ensureSelectionNearTable(view)
+
+      if (event.shiftKey) {
+        redo(view)
+      } else {
+        undo(view)
+      }
+      return true
+    }
+
+    if (key === 'y' && !event.shiftKey) {
+      event.preventDefault()
+      event.stopPropagation()
+
+      this.ensureSelectionNearTable(view)
+      redo(view)
+      return true
+    }
+
+    return false
+  }
+
+  private isNestedUpdateError(error: unknown): boolean {
+    return error instanceof Error && error.message.includes('update is in progress')
+  }
+
+  private ensureSelectionNearTable(view: EditorView): void {
+    const docLength = view.state.doc.length
+    const tableStart = Math.max(0, Math.min(this.tableFrom, docLength))
+    const tableEnd = Math.max(tableStart, Math.min(this.tableTo, docLength))
+    const selection = view.state.selection.main
+
+    if (selection.from >= tableStart && selection.to <= tableEnd) {
+      return
+    }
+
+    view.dispatch({
+      selection: { anchor: tableStart },
+      scrollIntoView: false,
+      annotations: Transaction.addToHistory.of(false),
+    })
+  }
+
   private dispatchModelUpdate(
     view: EditorView,
     updateModel: (model: TableModel) => TableModel,
@@ -41,6 +97,8 @@ export class TableWidget extends WidgetType {
       return false
     }
 
+    this.ensureSelectionNearTable(view)
+
     const currentTableText = view.state.sliceDoc(this.tableFrom, this.tableTo)
     const parsedCurrentModel = parseTableModel(currentTableText)
     if (!parsedCurrentModel) return false
@@ -53,13 +111,26 @@ export class TableWidget extends WidgetType {
     const nextTableText = serializeTableModel(nextModel)
     if (nextTableText === currentTableText) return false
 
-    view.dispatch({
-      changes: {
-        from: this.tableFrom,
-        to: this.tableTo,
-        insert: nextTableText,
-      },
-    })
+    try {
+      view.dispatch({
+        changes: {
+          from: this.tableFrom,
+          to: this.tableTo,
+          insert: nextTableText,
+        },
+      })
+    } catch (error) {
+      if (!this.isNestedUpdateError(error)) {
+        throw error
+      }
+
+      requestAnimationFrame(() => {
+        if (!view.dom.isConnected) return
+        this.dispatchModelUpdate(view, updateModel)
+      })
+
+      return true
+    }
 
     return true
   }
@@ -130,6 +201,7 @@ export class TableWidget extends WidgetType {
 
     cell.addEventListener('focus', () => {
       onActivate(coords)
+      this.ensureSelectionNearTable(view)
     })
 
     cell.addEventListener('mousedown', event => {
@@ -142,6 +214,23 @@ export class TableWidget extends WidgetType {
     })
 
     cell.addEventListener('keydown', event => {
+      const isHistoryShortcut =
+        !event.altKey &&
+        (event.metaKey || event.ctrlKey) &&
+        (event.key.toLowerCase() === 'z' || event.key.toLowerCase() === 'y')
+
+      if (isHistoryShortcut) {
+        const hasDraftChanges = normalizeCellValue(cell.textContent ?? '') !== committedValue
+        if (hasDraftChanges) {
+          event.stopPropagation()
+          return
+        }
+      }
+
+      if (this.handleHistoryShortcut(view, event)) {
+        return
+      }
+
       if (event.key === 'Enter') {
         event.preventDefault()
         event.stopPropagation()
@@ -190,7 +279,6 @@ export class TableWidget extends WidgetType {
     button.style.cssText = `border: 1px solid ${borderColor}; border-radius: ${borderRadius}; padding: ${padding}; font-size: 12px; line-height: 1.4; background: ${background}; color: ${color}; cursor: pointer; white-space: nowrap;`
 
     button.addEventListener('mousedown', event => {
-      event.preventDefault()
       event.stopPropagation()
     })
 
@@ -497,6 +585,10 @@ export class TableWidget extends WidgetType {
     )
 
     colsInput.addEventListener('keydown', event => {
+      if (this.handleHistoryShortcut(view, event)) {
+        return
+      }
+
       if (event.key === 'Enter') {
         event.preventDefault()
         event.stopPropagation()
@@ -510,6 +602,10 @@ export class TableWidget extends WidgetType {
     })
 
     rowsInput.addEventListener('keydown', event => {
+      if (this.handleHistoryShortcut(view, event)) {
+        return
+      }
+
       if (event.key === 'Enter') {
         event.preventDefault()
         event.stopPropagation()
@@ -526,6 +622,11 @@ export class TableWidget extends WidgetType {
     controlsContainer.appendChild(rowMenuPanel)
     controlsContainer.appendChild(colMenuPanel)
     controlsContainer.appendChild(resizePanel)
+
+    wrapper.addEventListener('keydown', event => {
+      this.handleHistoryShortcut(view, event)
+    })
+
     wrapper.appendChild(controlsContainer)
 
     const setActiveCoords = (coords: TableCellCoords): void => {
