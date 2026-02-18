@@ -51,7 +51,7 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 
 ### Stores (Zustand)
 
-- `editorStore.ts` — Editor mode (split/source/zen), status messages, flash notifications
+- `editorStore.ts` — Editor mode (split/source/live/zen), status messages, flash notifications
 - `tabStore.ts` — Tab management (open/close/switch), content, filePath, dirty state tracking (`content !== savedContent`)
 - `sidebarStore.ts` — Sidebar state (open/width/resizing), active tab (files/outline/recent), file tree data, recent files. **Action**: `loadParentDirectory(filePath, openSidebar?)` loads directory entries and optionally opens sidebar
 - `settingsStore.ts` — User preferences (theme, font, autosave, preview, editor settings), Tauri persistence
@@ -130,7 +130,7 @@ src-tauri/src/
 
 - **Code style**: `semi: false`, `singleQuote: true`, `arrowParens: 'avoid'`, `printWidth: 100`
 - **JSX prop order**: eslint-plugin-perfectionist enforces: key → ref → identity props → aria-\* → className → unknown → multiline → shorthand → callbacks
-- **Keyboard shortcuts**: Cmd+O (open), Cmd+S (save), Cmd+N (new tab), Cmd+\\ (mode cycle split/source/zen), Cmd+, (settings), Cmd+F (find), Cmd+H (find & replace), Shift+Cmd+E (toggle sidebar)
+- **Keyboard shortcuts**: Cmd+O (open), Cmd+S (save), Cmd+Shift+S (save as), Cmd+N (new tab), Cmd+\\ (mode cycle split/source/live), Cmd+Shift+Z (toggle zen), Escape (zen -> live), Cmd+, (settings), Cmd+F (find), Cmd+H (find & replace), Shift+Cmd+E (toggle sidebar), Shift+Cmd+/ (shortcuts help)
 - **Path aliases**: `@/` → `src/`, `@components/` → `src/components/`, etc.
 - **Zustand pattern**: Always use primitive-returning selectors (not object destructuring)
 - **CM6 pattern**: Compartments in `useRef`, not module-level singletons
@@ -164,7 +164,7 @@ src-tauri/src/
 - Branch strategy: feature branches → PR → main
 - Commit style: Conventional Commits (`feat(editor):`, `fix(preview):`, etc.)
 - Pre-commit: Husky + lint-staged + commitlint
-- Current branch: `feat/phase2-completion` (as of 2026-02-18; verify with `git branch --show-current`)
+- Current branch is workspace-dependent; verify with `git branch --show-current`
 
 ## WIG Compliance Summary
 

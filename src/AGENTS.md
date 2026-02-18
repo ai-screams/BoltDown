@@ -8,11 +8,11 @@ React 19 + TypeScript frontend for BoltDown. Contains all UI components, state m
 
 ## Key Files
 
-- `App.tsx` — Root component with stable slot pattern (tabBar, toolbar, editor, preview hoisted outside render to prevent recreation). Keyboard shortcuts via `useKeyboardShortcuts` hook (Cmd+O/S/N/\\/,/F/H, Shift+Cmd+E). Watches `activeTabId` via `useEffect`, syncs sidebar file tree via `sidebarStore.loadParentDirectory(tab.filePath)` when tab changes. Calls `useCustomCss()` hook to inject custom CSS from settings. **WIG**: `beforeunload` event handler warns about unsaved changes when closing window. Lazy-loads SettingsModal, FindReplaceModal, ShortcutsModal, ChangelogModal, and AboutModal with `lazy()` + `Suspense`. Wraps Sidebar, MarkdownEditor, and MarkdownPreview with ErrorBoundary.
+- `App.tsx` — Root component with stable slot pattern (tabBar, toolbar, editor, preview hoisted outside render to prevent recreation). Keyboard shortcuts via `useKeyboardShortcuts` hook (Cmd+O/S/Shift+S/N/\\, Cmd+Shift+Z, Cmd+,, Cmd+F/H, Shift+Cmd+E, Shift+Cmd+/, Escape zen exit). Watches `activeTabId` via `useEffect`, syncs sidebar file tree via `sidebarStore.loadParentDirectory(tab.filePath)` when tab changes. Calls `useCustomCss()` hook to inject custom CSS from settings. **WIG**: `beforeunload` event handler warns about unsaved changes when closing window. Lazy-loads SettingsModal, FindReplaceModal, ShortcutsModal, ChangelogModal, and AboutModal with `lazy()` + `Suspense`. Wraps Sidebar, MarkdownEditor, and MarkdownPreview with ErrorBoundary.
 
 - `main.tsx` — React 19 entry point (StrictMode wrapper). Uses `createRoot()` from 'react-dom/client'.
 
-- `index.css` — Tailwind base + `.prose` preview styles + brand CSS variables + KaTeX CSS import + CSS custom properties for preview settings (--preview-font-size, --preview-line-height, etc.) + `.cm-searchMatch` / `.cm-searchMatch-selected` highlight styles (electric-yellow theme) + `prefers-reduced-motion: reduce` media query disables animations. HTML/body/root have `height: 100%` and `overflow: hidden` for proper layout containment.
+- `index.css` — Tailwind base/components/utilities + prose/preview styles + brand CSS variables + CSS custom properties for preview settings (`--preview-font-size`, `--preview-line-height`, etc.) + `.cm-searchMatch` / `.cm-searchMatch-selected` highlight styles (electric-yellow theme) + `prefers-reduced-motion: reduce` media query disables animations. HTML/body/root have `height: 100%` and `overflow: hidden` for proper layout containment. KaTeX CSS is imported in `src/utils/markdownConfig.ts`.
 
 - `vite-env.d.ts` — Vite type definitions
 

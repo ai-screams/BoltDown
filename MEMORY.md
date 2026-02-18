@@ -53,7 +53,7 @@
 
 ### Quick verification checklist
 
-- `git branch --show-current` returns `feat/phase2-completion`.
+- `git branch --show-current` returns the active workspace branch (historical check on 2026-02-18 was `feat/phase2-completion`).
 - `ResizeHandle.tsx` exposes `role="separator"`, `aria-orientation="vertical"`, and `aria-label` (no `aria-valuenow/min/max`).
 - Split scroll sync is implemented and wired (`src/hooks/useSplitScrollSync.ts`, `src/components/layout/MainLayout.tsx`).
 
@@ -116,3 +116,46 @@
 - All formatting shortcuts work when editor is focused.
 - All 22 toolbar buttons insert correct markdown.
 - Toolbar scrolls horizontally on narrow viewports.
+
+## 2026-02-19 — Live Parity + Table Editing Stabilization
+
+### What changed
+
+- Split sync was hardened with DOM-first mapping, anchor fallback, endpoint clamp, click-to-sync offset decay, and mode re-entry stabilization.
+- Live mode parity was expanded: `[toc]` rendering, task list rendering/toggling, and inline HTML (`<u>`, `<sup>`, `<sub>`) decorations now align with split preview expectations.
+- Ordered-list `Tab` / `Shift-Tab` behavior was normalized to be symmetric and tree-aware with deterministic renumbering.
+- Table editing moved from value-only to structured controls: row/column add-delete, column alignment, and resize (rows/cols input).
+- Table undo/focus/history paths were stabilized (selection anchoring near table, nested update retry guard, control-action immediate undo behavior).
+
+### Commits
+
+- `d5c58fc` — split sync hardening + live TOC render
+- `3cc1120` — live/split parity for inline HTML + task list
+- `17683a5` — inline math reveal consistency fix
+- `3d8f30f` — ordered list indent/outdent normalization
+- `e54398a` — live task checkbox click-to-toggle
+- `ea745e5` — live table in-place cell editing baseline
+- `ae1b2e4` — structured table controls + resize panel
+- `c19505c` — table undo/focus/history stabilization
+
+### Files touched (high level)
+
+- `src/hooks/useSplitScrollSync.ts`
+- `src/components/editor/editorUtils.ts`
+- `src/components/editor/MarkdownEditor.tsx`
+- `src/components/editor/extensions/wysiwyg/buildDecorations.ts`
+- `src/components/editor/extensions/wysiwyg/inlineHtmlDecorations.ts`
+- `src/components/editor/extensions/wysiwyg/TaskCheckboxWidget.ts`
+- `src/components/editor/extensions/wysiwyg/TocWidget.ts`
+- `src/components/editor/extensions/wysiwyg/TableWidget.ts`
+- `src/components/editor/extensions/wysiwyg/tableModel.ts`
+
+### Regression checklist
+
+- Split mode: editor/preview bottom reachability and mode-toggle re-entry sync still stable.
+- Live mode: `[toc]` renders; clicking TOC item moves editor cursor.
+- Live mode: task checkbox click toggles `[ ]`/`[x]` in source.
+- Live mode: `<u>/<sup>/<sub>` render unless cursor is inside target range.
+- Ordered list: `Tab` then `Shift-Tab` preserves indentation symmetry and numbering.
+- Table: row/col controls, resize, and column alignment operate without forcing raw markdown reveal.
+- Table: control action followed by `Cmd+Z` works without scroll jump to unrelated position.

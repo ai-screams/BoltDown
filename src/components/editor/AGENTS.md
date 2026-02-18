@@ -8,11 +8,11 @@ Core editing experience: CodeMirror 6 editor, tab management with keyboard navig
 
 ## Key Files
 
-- `MarkdownEditor.tsx` — Direct CM6 EditorView management (not @uiw/react-codemirror wrapper). Creates EditorView once on mount, caches EditorState per tab in `Map<tabId, EditorState>` (preserves undo history, cursor, scroll). Uses `useRef(new Compartment())` for theme/wysiwyg/gutter/focus/typewriter compartments. Includes ordered-list `Tab` behavior that nests current item as `1.` (4-space indent) and renumbers following siblings. Uses `useSettingsStore` for isDark theme derivation and focus/typewriter settings. **Phase 2**: Removed built-in searchKeymap (replaced by custom FindReplaceModal UI). Exports EditorView via EditorViewContext for toolbar/find access.
+- `MarkdownEditor.tsx` — Direct CM6 EditorView management (not @uiw/react-codemirror wrapper). Creates EditorView once on mount, caches EditorState per tab in `Map<tabId, EditorState>` (preserves undo history, cursor, scroll). Uses `useRef(new Compartment())` for theme/wysiwyg/gutter/focus/spellcheck/typewriter compartments. Live+Zen modes enable WYSIWYG decorations. Ordered-list `Tab` / `Shift-Tab` now run list-aware indent/outdent with tree renumber normalization after each operation. Uses `useSettingsStore` for isDark theme derivation and focus/typewriter/spellcheck settings. Removed built-in searchKeymap (replaced by custom FindReplaceModal UI). Exports EditorView via EditorViewContext for toolbar/find access.
 
 - `TabBar.tsx` — Horizontal tab bar with WAI-ARIA tabs pattern: sidebar toggle button (leftmost fixed), scrollable tabs (`w-[160px] shrink-0`), new tab button (after last tab). Keyboard navigation with ArrowLeft/Right/Home/End, roving tabindex (active tab = 0, others = -1). F2 triggers rename. Double-click to rename tab. Derives isDirty as `content !== savedContent`. Uses `joinPath()`/`getDirectoryPath()` from `@/utils/imagePath` for cross-platform file path manipulation during rename. Icons marked with `aria-hidden="true"`. Memoized with `memo()`.
 
-- `EditorToolbar.tsx` — 14-button formatting toolbar. Three helper functions (`toggleWrap`, `insertAtLineStart`, `insertBlock`) manipulate CM6 EditorView state directly for bold, italic, headings, links, code, lists, etc.
+- `EditorToolbar.tsx` — Expanded formatting toolbar with grouped controls (text, headings, links/media, code/math, lists, table, hr). Uses shared helpers from `formatCommands.ts` (`toggleWrap`, `toggleCode`, `insertAtLineStart`, `insertBlock`, `insertCodeBlock`, `insertMathBlock`, `insertTaskList`, `insertTable`).
 
 ## Subdirectories
 
@@ -61,6 +61,7 @@ EditorView (created once in useEffect[])
 │   ├── wysiwygComp → wysiwygPlugin | []
 │   ├── gutterComp → lineNumbers + foldGutter | []
 │   ├── focusComp → focusExtension(contextLines) | []
+│   ├── spellcheckComp → EditorView.contentAttributes.of(...) | []
 │   └── typewriterComp → typewriterExtension() | []
 ├── EditorState cache: Map<tabId, EditorState>
 │   └── Preserves: undo history, cursor position, scroll
@@ -70,7 +71,7 @@ EditorView (created once in useEffect[])
 - **Tab switching**: Save current state → restore cached (or create fresh) → re-apply compartment configs
 - **buildExtensions()**: Function (not frozen ref) that reads current React state to avoid stale closures
 - **EditorView ref**: Shared via EditorViewContext for toolbar access
-- **Ordered-list Tab behavior**: Custom keymap runs before `indentWithTab`; only applies to caret selection inside `OrderedList` (skips code blocks), nests with 4 spaces, rewrites current item to `1.`, and renumbers same-depth siblings.
+- **Ordered-list Tab behavior**: Custom keymap runs before `indentWithTab`; `Tab`/`Shift-Tab` only apply to caret selection inside ordered-list items (skip code blocks), move current item subtree, and renumber ordered-list trees after each change.
 
 ### TabBar Layout
 
