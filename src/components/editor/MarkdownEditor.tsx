@@ -23,6 +23,7 @@ import {
   insertDroppedImagePaths,
   insertDroppedImages,
   isImageFile,
+  outdentOrderedListItem,
   supportedImageExtensions,
 } from './editorUtils'
 import { fenceLanguageCompletion } from './extensions/fenceLanguageCompletion'
@@ -141,6 +142,7 @@ export default memo(function MarkdownEditor() {
     keymap.of([
       ...formattingKeymap,
       { key: 'Tab', run: indentOrderedListItem },
+      { key: 'Shift-Tab', run: outdentOrderedListItem },
       ...defaultKeymap,
       ...historyKeymap,
       indentWithTab,

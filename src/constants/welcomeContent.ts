@@ -26,6 +26,30 @@ Chemical formula: H<sub>2</sub>O, Einstein: E = mc<sup>2</sup>
 2. Another item
    1. Nested numbered
 
+### Numbered List Stress Test (Indent / Outdent)
+
+1. Phase One
+   1. Setup
+      1. Create project
+      2. Configure tooling
+   2. Build feature
+      1. Editor
+         1. Keymap
+         2. WYSIWYG
+      2. Preview
+   3. Validate
+2. Phase Two
+   1. Refactor
+      1. Split modules
+      2. Remove duplication
+   2. QA
+      1. Unit tests
+         1. Edge cases
+      2. Manual checks
+3. Phase Three
+   1. Release prep
+   2. Post-release notes
+
 ### Task List
 
 - [ ] Unchecked task
