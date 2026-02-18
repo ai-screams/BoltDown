@@ -10,8 +10,14 @@ import { appendMathDecorations } from './BlockMathWidget'
 import { BulletWidget } from './BulletWidget'
 import { LanguageBadgeWidget, applyPrismTokens, getCodeBlockPalette } from './CodeBlockWidget'
 import { ImageWidget } from './ImageWidget'
+import {
+  appendInlineHtmlTagDecorations,
+  parseInlineHtmlMarker,
+  type InlineHtmlMarker,
+} from './inlineHtmlDecorations'
 import { MermaidWidget } from './MermaidWidget'
 import { TableWidget } from './TableWidget'
+import { TaskCheckboxWidget } from './TaskCheckboxWidget'
 import { headingStyles, isCursorOnRangeLine, isSelectionInRange, type DocRange } from './utils'
 
 /** Shared logic for symmetric inline formatting (bold, italic, inline code, strikethrough) */
@@ -47,6 +53,7 @@ export function buildDecorations(
   const cursor = state.selection.main
   const cursorLine = state.doc.lineAt(cursor.head).number
   const codeRanges: DocRange[] = []
+  const inlineHtmlMarkers: InlineHtmlMarker[] = []
   const tree = ensureSyntaxTree(state, state.doc.length, 50) ?? syntaxTree(state)
   const codeBlockPalette = getCodeBlockPalette()
 
@@ -63,9 +70,17 @@ export function buildDecorations(
       const revealBlock = cursorInRange || cursorOnNodeLine
       const revealInline = cursorInRange
 
-      // Collect code ranges for math exclusion
-      if (node.name === 'FencedCode' || node.name === 'InlineCode') {
+      // Collect code ranges for math and inline HTML exclusion
+      if (node.name === 'FencedCode' || node.name === 'CodeBlock' || node.name === 'InlineCode') {
         codeRanges.push({ from, to })
+      }
+
+      if (node.name === 'HTMLTag') {
+        const rawTagText = state.sliceDoc(from, to)
+        const marker = parseInlineHtmlMarker(rawTagText, from, to)
+        if (marker) {
+          inlineHtmlMarkers.push(marker)
+        }
       }
 
       // Headings: style the line when cursor is outside
@@ -201,10 +216,22 @@ export function buildDecorations(
       if (node.name === 'ListItem' && node.node.parent?.type.name === 'BulletList') {
         const itemCursorInRange = isSelectionInRange(cursor, from, to)
         if (!itemCursorInRange && !cursorOnNodeLine) {
+          const taskNode = node.node.getChildren('Task')[0]
+          const taskMarker = taskNode?.getChildren('TaskMarker')[0]
           const listMark = node.node.getChildren('ListMark')
-          if (listMark.length > 0) {
+          if (taskMarker) {
+            const taskMarkerText = state.sliceDoc(taskMarker.from, taskMarker.to)
+            const isChecked = /\[[xX]\]/.test(taskMarkerText)
+            const replaceFrom = listMark.length > 0 ? listMark[0]!.from : taskMarker.from
+            const nextChar = state.sliceDoc(taskMarker.to, taskMarker.to + 1)
+            const replaceTo = nextChar === ' ' ? taskMarker.to + 1 : taskMarker.to
+            decorations.push(
+              Decoration.replace({
+                widget: new TaskCheckboxWidget(isChecked),
+              }).range(replaceFrom, replaceTo)
+            )
+          } else if (listMark.length > 0) {
             const mark = listMark[0]!
-            // Replace '- ' with bullet widget
             decorations.push(
               Decoration.replace({
                 widget: new BulletWidget(),
@@ -226,6 +253,8 @@ export function buildDecorations(
       if (node.name === 'ListItem' && node.node.parent?.type.name === 'OrderedList') {
         const itemCursorInRange = isSelectionInRange(cursor, from, to)
         if (!itemCursorInRange && !cursorOnNodeLine) {
+          const taskNode = node.node.getChildren('Task')[0]
+          const taskMarker = taskNode?.getChildren('TaskMarker')[0]
           const listMark = node.node.getChildren('ListMark')
           if (listMark.length > 0) {
             const mark = listMark[0]!
@@ -237,6 +266,19 @@ export function buildDecorations(
               }).range(mark.from, mark.to)
             )
           }
+
+          if (taskMarker) {
+            const taskMarkerText = state.sliceDoc(taskMarker.from, taskMarker.to)
+            const isChecked = /\[[xX]\]/.test(taskMarkerText)
+            const nextChar = state.sliceDoc(taskMarker.to, taskMarker.to + 1)
+            const replaceTo = nextChar === ' ' ? taskMarker.to + 1 : taskMarker.to
+            decorations.push(
+              Decoration.replace({
+                widget: new TaskCheckboxWidget(isChecked),
+              }).range(taskMarker.from, replaceTo)
+            )
+          }
+
           // Subtle left indent
           decorations.push(
             Decoration.line({
@@ -430,6 +472,7 @@ export function buildDecorations(
 
   // Math detection (separate pass after tree walk to avoid code ranges)
   codeRanges.sort((a, b) => a.from - b.from)
+  appendInlineHtmlTagDecorations(decorations, cursor, inlineHtmlMarkers, codeRanges)
   appendMathDecorations(state, decorations, cursor, cursorLine, codeRanges)
 
   return Decoration.set(decorations, true)

@@ -2,6 +2,7 @@ import katex from 'katex'
 import MarkdownIt from 'markdown-it'
 import type StateBlock from 'markdown-it/lib/rules_block/state_block.mjs'
 import type StateInline from 'markdown-it/lib/rules_inline/state_inline.mjs'
+import type Token from 'markdown-it/lib/token.mjs'
 import Prism from 'prismjs'
 
 import { LruCache } from '@/utils/cache'
@@ -115,6 +116,80 @@ function addBlockSourceLineAttributes(parser: MarkdownIt): void {
   })
 }
 
+function findParentListOpenToken(
+  tokens: readonly Token[],
+  fromIndex: number,
+  listItemLevel: number
+): Token | null {
+  for (let index = fromIndex; index >= 0; index -= 1) {
+    const token = tokens[index]!
+    const isListOpen = token.type === 'bullet_list_open' || token.type === 'ordered_list_open'
+    if (isListOpen && token.level === listItemLevel - 1) {
+      return token
+    }
+  }
+
+  return null
+}
+
+function addClassIfMissing(token: Token, className: string): void {
+  const classAttr = token.attrGet('class')
+  if (!classAttr) {
+    token.attrSet('class', className)
+    return
+  }
+
+  const existing = classAttr.split(/\s+/)
+  if (!existing.includes(className)) {
+    token.attrSet('class', `${classAttr} ${className}`)
+  }
+}
+
+function enableTaskListSyntax(parser: MarkdownIt): void {
+  parser.core.ruler.after('inline', 'task_list_checkbox', state => {
+    const tokens = state.tokens
+
+    for (let index = 2; index < tokens.length; index += 1) {
+      const inlineToken = tokens[index]!
+      const paragraphOpen = tokens[index - 1]
+      const listItemOpen = tokens[index - 2]
+
+      if (inlineToken.type !== 'inline') continue
+      if (paragraphOpen?.type !== 'paragraph_open' || listItemOpen?.type !== 'list_item_open')
+        continue
+
+      const children = inlineToken.children
+      if (!children || children.length === 0) continue
+
+      const firstTextToken = children[0]
+      if (!firstTextToken || firstTextToken.type !== 'text') continue
+
+      const markerMatch = /^\[([ xX])\]\s+/.exec(firstTextToken.content)
+      if (!markerMatch) continue
+
+      const isChecked = markerMatch[1]!.toLowerCase() === 'x'
+      const markerLength = markerMatch[0]!.length
+
+      firstTextToken.content = firstTextToken.content.slice(markerLength)
+      inlineToken.content = inlineToken.content.slice(markerLength)
+
+      if (firstTextToken.content.length === 0) {
+        children.shift()
+      }
+
+      const checkboxToken = new state.Token('html_inline', '', 0)
+      checkboxToken.content = `<input class="task-list-item-checkbox" type="checkbox"${isChecked ? ' checked' : ''} disabled>`
+      children.unshift(checkboxToken)
+
+      addClassIfMissing(listItemOpen, 'task-list-item')
+      const listOpen = findParentListOpenToken(tokens, index - 2, listItemOpen.level)
+      if (listOpen) {
+        addClassIfMissing(listOpen, 'contains-task-list')
+      }
+    }
+  })
+}
+
 export const md: MarkdownIt = new MarkdownIt({
   html: true,
   linkify: true,
@@ -139,6 +214,7 @@ md.block.ruler.before('fence', 'math_block', mathBlock, {
   alt: ['paragraph', 'reference', 'blockquote', 'list'],
 })
 addBlockSourceLineAttributes(md)
+enableTaskListSyntax(md)
 
 const defaultFenceRenderer = md.renderer.rules.fence
 md.renderer.rules.fence = (tokens, idx, options, env, self) => {
