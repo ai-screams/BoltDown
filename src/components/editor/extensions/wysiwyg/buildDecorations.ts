@@ -5,6 +5,7 @@ import Prism from 'prismjs'
 
 import { useTabStore } from '@/stores/tabStore'
 import type { MermaidSecurityLevel } from '@/types/settings'
+import { stripInlineMarkdown } from '@/utils/markdownText'
 
 import { appendMathDecorations } from './BlockMathWidget'
 import { BulletWidget } from './BulletWidget'
@@ -18,6 +19,7 @@ import {
 import { MermaidWidget } from './MermaidWidget'
 import { TableWidget } from './TableWidget'
 import { TaskCheckboxWidget } from './TaskCheckboxWidget'
+import { TocWidget, type TocHeadingItem } from './TocWidget'
 import { headingStyles, isCursorOnRangeLine, isSelectionInRange, type DocRange } from './utils'
 
 /** Shared logic for symmetric inline formatting (bold, italic, inline code, strikethrough) */
@@ -45,6 +47,51 @@ function applyInlineFormatting(
   }
 }
 
+function isTocMarkerParagraphText(text: string): boolean {
+  return /^\[toc\]$/i.test(text.trim())
+}
+
+function isRangeWithinAnyRange(range: DocRange, ranges: readonly DocRange[]): boolean {
+  return ranges.some(candidate => range.from >= candidate.from && range.to <= candidate.to)
+}
+
+function extractTocHeadingItem(
+  state: EditorState,
+  nodeName: string,
+  from: number,
+  to: number
+): TocHeadingItem | null {
+  let level: number | null = null
+  let rawText = ''
+
+  const atxMatch = /^ATXHeading([1-6])$/.exec(nodeName)
+  if (atxMatch) {
+    level = Number.parseInt(atxMatch[1]!, 10)
+    const lineText = state.sliceDoc(from, to)
+    rawText = lineText
+      .replace(/^#{1,6}\s+/, '')
+      .replace(/\s+#{1,6}\s*$/, '')
+      .trim()
+  }
+
+  if (nodeName === 'SetextHeading1' || nodeName === 'SetextHeading2') {
+    level = nodeName === 'SetextHeading1' ? 1 : 2
+    const headingText = state.sliceDoc(from, to).split('\n').slice(0, -1).join(' ').trim()
+    rawText = headingText
+  }
+
+  if (level === null) return null
+
+  const text = stripInlineMarkdown(rawText).trim()
+  if (!text) return null
+
+  return {
+    from,
+    level,
+    text,
+  }
+}
+
 export function buildDecorations(
   state: EditorState,
   mermaidSecurityLevel: MermaidSecurityLevel
@@ -53,6 +100,8 @@ export function buildDecorations(
   const cursor = state.selection.main
   const cursorLine = state.doc.lineAt(cursor.head).number
   const codeRanges: DocRange[] = []
+  const tocParagraphRanges: DocRange[] = []
+  const tocHeadings: TocHeadingItem[] = []
   const inlineHtmlMarkers: InlineHtmlMarker[] = []
   const tree = ensureSyntaxTree(state, state.doc.length, 50) ?? syntaxTree(state)
   const codeBlockPalette = getCodeBlockPalette()
@@ -80,6 +129,17 @@ export function buildDecorations(
         const marker = parseInlineHtmlMarker(rawTagText, from, to)
         if (marker) {
           inlineHtmlMarkers.push(marker)
+        }
+      }
+
+      const tocHeading = extractTocHeadingItem(state, node.name, from, to)
+      if (tocHeading) {
+        tocHeadings.push(tocHeading)
+      }
+
+      if (node.name === 'Paragraph' && isTocMarkerParagraphText(state.sliceDoc(from, to))) {
+        if (!revealBlock) {
+          tocParagraphRanges.push({ from, to })
         }
       }
 
@@ -172,6 +232,10 @@ export function buildDecorations(
 
       // Links: [text](url)
       if (node.name === 'Link') {
+        if (isRangeWithinAnyRange({ from, to }, tocParagraphRanges)) {
+          return
+        }
+
         const linkMarks = node.node.getChildren('LinkMark')
         const urlNode = node.node.getChildren('URL')
         // LinkMarks: [0]='[', [1]=']', [2]='(', [3]=')'
@@ -469,6 +533,15 @@ export function buildDecorations(
       }
     },
   })
+
+  for (const tocRange of tocParagraphRanges) {
+    decorations.push(
+      Decoration.replace({
+        widget: new TocWidget(tocHeadings),
+        block: true,
+      }).range(tocRange.from, tocRange.to)
+    )
+  }
 
   // Math detection (separate pass after tree walk to avoid code ranges)
   codeRanges.sort((a, b) => a.from - b.from)
