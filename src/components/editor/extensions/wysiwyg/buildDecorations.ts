@@ -382,12 +382,12 @@ export function buildDecorations(
         }
       }
 
-      // Tables: replace with rendered HTML table
-      if (node.name === 'Table' && !revealBlock) {
+      // Tables: always render as editable widget in live/zen mode
+      if (node.name === 'Table') {
         const tableText = state.sliceDoc(from, to)
         decorations.push(
           Decoration.replace({
-            widget: new TableWidget(tableText),
+            widget: new TableWidget(tableText, from, to),
             block: true,
           }).range(from, to)
         )
