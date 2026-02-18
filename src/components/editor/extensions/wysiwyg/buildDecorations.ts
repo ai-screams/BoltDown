@@ -291,7 +291,7 @@ export function buildDecorations(
             const replaceTo = nextChar === ' ' ? taskMarker.to + 1 : taskMarker.to
             decorations.push(
               Decoration.replace({
-                widget: new TaskCheckboxWidget(isChecked),
+                widget: new TaskCheckboxWidget(isChecked, taskMarker.from, taskMarker.to),
               }).range(replaceFrom, replaceTo)
             )
           } else if (listMark.length > 0) {
@@ -338,7 +338,7 @@ export function buildDecorations(
             const replaceTo = nextChar === ' ' ? taskMarker.to + 1 : taskMarker.to
             decorations.push(
               Decoration.replace({
-                widget: new TaskCheckboxWidget(isChecked),
+                widget: new TaskCheckboxWidget(isChecked, taskMarker.from, taskMarker.to),
               }).range(taskMarker.from, replaceTo)
             )
           }
