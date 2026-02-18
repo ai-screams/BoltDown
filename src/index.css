@@ -283,6 +283,14 @@
 
 /* Animations */
 @layer utilities {
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
   .animate-bolt {
     animation: bolt 0.3s ease-in-out;
   }

@@ -4,7 +4,6 @@ import {
   Code2,
   Columns2,
   Download,
-  Eye,
   FileText,
   FolderOpen,
   HelpCircle,
@@ -12,6 +11,7 @@ import {
   Keyboard,
   Monitor,
   Moon,
+  PenLine,
   Printer,
   Save,
   ScrollText,
@@ -30,7 +30,7 @@ import IconButton from '@components/common/IconButton'
 const modes: { mode: EditorMode; icon: typeof Columns2; label: string }[] = [
   { mode: 'split', icon: Columns2, label: 'Split' },
   { mode: 'source', icon: Code2, label: 'Source' },
-  { mode: 'zen', icon: Eye, label: 'Zen' },
+  { mode: 'live', icon: PenLine, label: 'Live' },
 ]
 
 const themeIcon = { light: Sun, dark: Moon, system: Monitor }

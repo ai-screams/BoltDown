@@ -30,6 +30,7 @@ import { focusExtension } from './extensions/focus'
 import { markdownExtension } from './extensions/markdown'
 import { boltdownDarkTheme, boltdownTheme } from './extensions/theme'
 import { typewriterExtension } from './extensions/typewriter'
+import { formattingKeymap } from './formatCommands'
 
 // Module-level cache for lazy-loaded wysiwyg extension
 let cachedWysiwygFn: ((level: MermaidSecurityLevel) => Extension) | null = null
@@ -68,9 +69,11 @@ export default memo(function MarkdownEditor() {
 
   activeTabIdRef.current = activeTabId
 
-  // Lazy-load wysiwyg extension when Zen mode is first activated
+  const isWysiwyg = mode === 'live' || mode === 'zen'
+
+  // Lazy-load wysiwyg extension when Live/Zen mode is first activated
   useEffect(() => {
-    if (mode !== 'zen' || cachedWysiwygFn) return
+    if (!isWysiwyg || cachedWysiwygFn) return
     void import('./extensions/wysiwyg').then(mod => {
       cachedWysiwygFn = mod.wysiwygExtension
       const view = viewRef.current
@@ -80,7 +83,7 @@ export default memo(function MarkdownEditor() {
         })
       }
     })
-  }, [mode, mermaidSecurityLevel])
+  }, [isWysiwyg, mermaidSecurityLevel])
 
   useEffect(() => {
     const media = window.matchMedia(MEDIA_QUERIES.prefersDark)
@@ -95,16 +98,24 @@ export default memo(function MarkdownEditor() {
     () => [
       themeCompRef.current.reconfigure(isDark ? boltdownDarkTheme : boltdownTheme),
       wysiwygCompRef.current.reconfigure(
-        mode === 'zen' && cachedWysiwygFn ? cachedWysiwygFn(mermaidSecurityLevel) : []
+        isWysiwyg && cachedWysiwygFn ? cachedWysiwygFn(mermaidSecurityLevel) : []
       ),
-      gutterCompRef.current.reconfigure(buildGutterExts(mode !== 'zen')),
+      gutterCompRef.current.reconfigure(buildGutterExts(true)),
       focusCompRef.current.reconfigure(focusMode ? focusExtension(focusContextLines) : []),
       spellcheckCompRef.current.reconfigure(
         EditorView.contentAttributes.of(getSpellingContentAttributes(spellcheck))
       ),
       typewriterCompRef.current.reconfigure(typewriterMode ? typewriterExtension() : []),
     ],
-    [focusContextLines, focusMode, isDark, mermaidSecurityLevel, mode, spellcheck, typewriterMode]
+    [
+      focusContextLines,
+      focusMode,
+      isDark,
+      isWysiwyg,
+      mermaidSecurityLevel,
+      spellcheck,
+      typewriterMode,
+    ]
   )
 
   // Build extensions array with current compartment state
@@ -112,9 +123,9 @@ export default memo(function MarkdownEditor() {
     markdownExtension(),
     themeCompRef.current.of(isDark ? boltdownDarkTheme : boltdownTheme),
     wysiwygCompRef.current.of(
-      mode === 'zen' && cachedWysiwygFn ? cachedWysiwygFn(mermaidSecurityLevel) : []
+      isWysiwyg && cachedWysiwygFn ? cachedWysiwygFn(mermaidSecurityLevel) : []
     ),
-    gutterCompRef.current.of(buildGutterExts(mode !== 'zen')),
+    gutterCompRef.current.of(buildGutterExts(true)),
     focusCompRef.current.of(focusMode ? focusExtension(focusContextLines) : []),
     spellcheckCompRef.current.of(
       EditorView.contentAttributes.of(getSpellingContentAttributes(spellcheck))
@@ -128,6 +139,7 @@ export default memo(function MarkdownEditor() {
     highlightActiveLine(),
     EditorView.lineWrapping,
     keymap.of([
+      ...formattingKeymap,
       { key: 'Tab', run: indentOrderedListItem },
       ...defaultKeymap,
       ...historyKeymap,

@@ -53,6 +53,7 @@ export function useKeyboardShortcuts({
       const mode = useEditorStore.getState().mode
       const findReplaceOpen = useFindReplaceStore.getState().isOpen
 
+      // Escape from zen → live (both WYSIWYG, just toggle immersion)
       if (
         mode === 'zen' &&
         e.key === 'Escape' &&
@@ -62,7 +63,7 @@ export function useKeyboardShortcuts({
         !settingsOpenRef.current
       ) {
         e.preventDefault()
-        useEditorStore.getState().setMode('source')
+        useEditorStore.getState().setMode('live')
         return
       }
 
@@ -80,10 +81,19 @@ export function useKeyboardShortcuts({
 
       if (mod && e.key === '\\') {
         e.preventDefault()
-        const cycle: EditorMode[] = ['split', 'source', 'zen']
+        const cycle: EditorMode[] = ['split', 'source', 'live']
         const currentMode = useEditorStore.getState().mode
-        const idx = cycle.indexOf(currentMode)
+        // If in zen, cycle goes to split (zen is outside the normal cycle)
+        const idx = currentMode === 'zen' ? -1 : cycle.indexOf(currentMode)
         useEditorStore.getState().setMode(cycle[(idx + 1) % cycle.length]!)
+        return
+      }
+
+      // Cmd+Shift+Z — toggle zen (full immersion) mode
+      if (mod && e.shiftKey && e.key === 'z') {
+        e.preventDefault()
+        const currentMode = useEditorStore.getState().mode
+        useEditorStore.getState().setMode(currentMode === 'zen' ? 'live' : 'zen')
         return
       }
 

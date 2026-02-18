@@ -29,9 +29,20 @@ export const SHORTCUT_GROUPS: ShortcutGroup[] = [
     ],
   },
   {
+    title: 'Formatting',
+    shortcuts: [
+      { keys: `${MOD}+B`, label: 'Bold' },
+      { keys: `${MOD}+I`, label: 'Italic' },
+      { keys: `${MOD}+Shift+X`, label: 'Strikethrough' },
+      { keys: `${MOD}+E`, label: 'Inline code' },
+      { keys: `${MOD}+K`, label: 'Link' },
+    ],
+  },
+  {
     title: 'View',
     shortcuts: [
-      { keys: `${MOD}+\\`, label: 'Cycle mode (Split / Source / Zen)' },
+      { keys: `${MOD}+\\`, label: 'Cycle mode (Split / Source / Live)' },
+      { keys: `${MOD}+Shift+Z`, label: 'Toggle Zen (full immersion)' },
       { keys: `${MOD}+Shift+E`, label: 'Toggle sidebar' },
       { keys: `${MOD}+,`, label: 'Settings' },
       { keys: 'Escape', label: 'Exit Zen mode' },

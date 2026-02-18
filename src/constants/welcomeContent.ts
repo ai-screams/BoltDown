@@ -8,6 +8,10 @@ Welcome to **BoltDown** — a lightning-fast Markdown editor.
 
 **Bold text**, *italic text*, ~~strikethrough~~, and ***bold italic*** combined.
 
+<u>Underlined text</u>, <sup>superscript</sup>, <sub>subscript</sub>, and ==highlighted text==.
+
+Chemical formula: H<sub>2</sub>O, Einstein: E = mc<sup>2</sup>
+
 ## Links & Images
 
 [Visit GitHub](https://github.com) — click to open a link.
@@ -20,10 +24,19 @@ Welcome to **BoltDown** — a lightning-fast Markdown editor.
 
 1. Numbered item
 2. Another item
+   1. Nested numbered
+
+### Task List
+
+- [ ] Unchecked task
+- [x] Completed task
+- [ ] Another pending task
 
 ## Blockquote
 
 > "Make Markdown editing as fast as lightning, as light as air."
+>
+> — BoltDown
 
 ## Inline Code & Code Block
 
@@ -37,16 +50,22 @@ function greet(name: string): string {
 
 ## Table
 
-| Feature | Shortcut |
-|---------|----------|
-| Open    | Cmd+O    |
-| Save    | Cmd+S    |
-| New Tab | Cmd+N    |
-| Mode    | Cmd+\\   |
+| Feature      | Shortcut     | Description              |
+|--------------|--------------|--------------------------|
+| Open         | Cmd+O        | Open a file              |
+| Save         | Cmd+S        | Save current file        |
+| New Tab      | Cmd+N        | Create new tab           |
+| Cycle Mode   | Cmd+\\       | Split / Source / Live     |
+| Zen Mode     | Cmd+Shift+Z  | Full immersion mode      |
+| Bold         | Cmd+B        | Toggle bold              |
+| Italic       | Cmd+I        | Toggle italic            |
+| Code         | Cmd+E        | Toggle inline code       |
+| Link         | Cmd+K        | Insert link              |
+| Strikethrough| Cmd+Shift+X  | Toggle strikethrough     |
 
 ## Math (KaTeX)
 
-Inline math: $E = mc^2$
+Inline math: $E = mc^2$, quadratic: $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$
 
 $$
 \\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}
@@ -58,7 +77,28 @@ $$
 graph LR
   A[Write] --> B[Preview]
   B --> C[Export]
+  C --> D{Format?}
+  D -->|HTML| E[HTML File]
+  D -->|PDF| F[Print / PDF]
 \`\`\`
+
+## Heading Levels
+
+### Heading 3
+#### Heading 4
+##### Heading 5
+###### Heading 6
+
+---
+
+## View Modes
+
+- **Split** — Editor + Preview side by side
+- **Source** — Editor only (code view)
+- **Live** — WYSIWYG editor with full UI
+- **Zen** — Full immersion (Cmd+Shift+Z), Escape to exit
+
+[toc]
 
 ---
 
