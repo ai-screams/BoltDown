@@ -8,12 +8,7 @@ import type { MermaidSecurityLevel } from '@/types/settings'
 
 import { appendMathDecorations } from './BlockMathWidget'
 import { BulletWidget } from './BulletWidget'
-import {
-  CodeBlockWidget,
-  LanguageBadgeWidget,
-  applyPrismTokens,
-  getCodeBlockPalette,
-} from './CodeBlockWidget'
+import { LanguageBadgeWidget, applyPrismTokens, getCodeBlockPalette } from './CodeBlockWidget'
 import { ImageWidget } from './ImageWidget'
 import { MermaidWidget } from './MermaidWidget'
 import { TableWidget } from './TableWidget'
@@ -292,7 +287,7 @@ export function buildDecorations(
         )
       }
 
-      // Fenced code blocks: replace with syntax-highlighted block
+      // Fenced code blocks: mermaid as widget, others always editable
       if (node.name === 'FencedCode') {
         const codeInfoNode = node.node.getChildren('CodeInfo')
         const codeTextNode = node.node.getChildren('CodeText')
@@ -304,70 +299,127 @@ export function buildDecorations(
           codeTextNode.length > 0 ? state.sliceDoc(codeTextNode[0]!.from, codeTextNode[0]!.to) : ''
         const normalizedLanguage = language.toLowerCase()
 
-        if (!revealBlock) {
-          // Cursor outside: show full widget (current behavior)
-          const widget =
-            normalizedLanguage === 'mermaid'
-              ? new MermaidWidget(code, mermaidSecurityLevel)
-              : new CodeBlockWidget(code, language)
+        if (normalizedLanguage === 'mermaid') {
+          // MERMAID: Keep existing reveal behavior (widget when outside, reveal when inside)
+          if (!revealBlock) {
+            decorations.push(
+              Decoration.replace({
+                widget: new MermaidWidget(code, mermaidSecurityLevel),
+                block: true,
+              }).range(from, to)
+            )
+          } else {
+            // Cursor inside: hide fences, keep code editable with syntax highlighting
+            const firstLine = state.doc.lineAt(from)
+            const lastLine = state.doc.lineAt(to)
 
-          decorations.push(
-            Decoration.replace({
-              widget,
-              block: true,
-            }).range(from, to)
-          )
+            decorations.push(
+              Decoration.replace({}).range(
+                firstLine.from,
+                Math.min(firstLine.to + 1, state.doc.length)
+              )
+            )
+            if (lastLine.from > firstLine.to) {
+              decorations.push(Decoration.replace({}).range(lastLine.from - 1, lastLine.to))
+            }
+
+            const palette = codeBlockPalette
+            if (codeTextNode.length > 0) {
+              const codeFrom = codeTextNode[0]!.from
+              const codeTo = codeTextNode[0]!.to
+              const startLine = state.doc.lineAt(codeFrom)
+              const endLine = state.doc.lineAt(codeTo)
+
+              for (let i = startLine.number; i <= endLine.number; i++) {
+                const line = state.doc.line(i)
+                decorations.push(
+                  Decoration.line({
+                    attributes: {
+                      style: `background: ${palette.background}; font-family: monospace; font-size: 0.875em;`,
+                    },
+                  }).range(line.from)
+                )
+              }
+
+              const grammar = Prism.languages[normalizedLanguage]
+              if (grammar) {
+                const tokens = Prism.tokenize(code, grammar)
+                applyPrismTokens(decorations, tokens, codeFrom, palette)
+              }
+            }
+
+            if (language && codeInfoNode.length > 0) {
+              const infoFrom = codeInfoNode[0]!.from
+              const infoTo = codeInfoNode[0]!.to
+              decorations.push(
+                Decoration.widget({
+                  widget: new LanguageBadgeWidget(language, infoFrom, infoTo),
+                  side: -1,
+                }).range(codeTextNode.length > 0 ? codeTextNode[0]!.from : from)
+              )
+            }
+          }
         } else {
-          // Cursor inside: hide fences, keep code editable with syntax highlighting
+          // NON-MERMAID: Always show styled editable code block (Typora-style)
           const firstLine = state.doc.lineAt(from)
           const lastLine = state.doc.lineAt(to)
+          const cursorOnFence = cursorLine === firstLine.number
 
-          // Hide the opening fence line (clamp to doc length for unclosed fences)
-          decorations.push(
-            Decoration.replace({}).range(
-              firstLine.from,
-              Math.min(firstLine.to + 1, state.doc.length)
+          // Hide opening fence (unless cursor is on it — via badge click for language editing)
+          if (!cursorOnFence) {
+            decorations.push(
+              Decoration.replace({}).range(
+                firstLine.from,
+                Math.min(firstLine.to + 1, state.doc.length)
+              )
             )
-          )
-          // Hide the closing fence line
+          }
+
+          // Always hide closing fence
           if (lastLine.from > firstLine.to) {
             decorations.push(Decoration.replace({}).range(lastLine.from - 1, lastLine.to))
           }
 
-          // Style the code area with a background (palette hoisted above tree.iterate)
-          const palette = codeBlockPalette
+          // Style code lines with shared CSS classes
           if (codeTextNode.length > 0) {
             const codeFrom = codeTextNode[0]!.from
             const codeTo = codeTextNode[0]!.to
-
-            // Apply background to each line of the code block
             const startLine = state.doc.lineAt(codeFrom)
             const endLine = state.doc.lineAt(codeTo)
+
             for (let i = startLine.number; i <= endLine.number; i++) {
               const line = state.doc.line(i)
-              decorations.push(
-                Decoration.line({
-                  attributes: {
-                    style: `background: ${palette.background}; font-family: monospace; font-size: 0.875em;`,
-                  },
-                }).range(line.from)
-              )
+              const lineNum = i - startLine.number + 1
+              const isFirst = i === startLine.number
+              const isLast = i === endLine.number
+
+              const attrs: Record<string, string> = {
+                class: 'codeblock-line',
+                'data-line-number': String(lineNum),
+              }
+              if (isFirst) attrs['data-codeblock-first'] = ''
+              if (isLast) attrs['data-codeblock-last'] = ''
+
+              decorations.push(Decoration.line({ attributes: attrs }).range(line.from))
             }
 
-            // Apply Prism syntax highlighting as mark decorations
+            // Apply Prism syntax highlighting
             const grammar = Prism.languages[normalizedLanguage]
             if (grammar) {
               const tokens = Prism.tokenize(code, grammar)
-              applyPrismTokens(decorations, tokens, codeFrom, palette)
+              applyPrismTokens(decorations, tokens, codeFrom, codeBlockPalette)
             }
           }
 
-          // Show language badge if present
-          if (language && codeInfoNode.length > 0) {
+          // Language badge widget (only when fence is hidden)
+          const codeInfoFrom = codeInfoNode.length > 0 ? codeInfoNode[0]!.from : from + 3
+          const codeInfoTo = codeInfoNode.length > 0 ? codeInfoNode[0]!.to : from + 3
+          if (language && !cursorOnFence) {
             decorations.push(
               Decoration.widget({
-                widget: new LanguageBadgeWidget(language),
+                widget: new LanguageBadgeWidget(language, codeInfoFrom, codeInfoTo),
                 side: -1,
+                block: true,
               }).range(codeTextNode.length > 0 ? codeTextNode[0]!.from : from)
             )
           }
