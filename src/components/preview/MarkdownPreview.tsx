@@ -12,6 +12,47 @@ import { getMermaidThemeFromDom } from '@/utils/themeRuntime'
 let mermaidDebounceTimer: ReturnType<typeof setTimeout> | null = null
 const mermaidPreviewCache = new LruCache<string>(50)
 
+/** Apply rendered SVG to a mermaid block and mark it as rendered. */
+function commitMermaidBlock(block: HTMLPreElement, svg: string, configKey: string): void {
+  block.innerHTML = svg
+  block.dataset['renderedConfig'] = configKey
+  block.classList.add('mermaid-rendered')
+}
+
+/** Synchronously apply cached Mermaid SVGs — no debounce, no flash. Returns true if ALL blocks were cache hits. */
+function applyCachedMermaidBlocks(
+  container: HTMLElement,
+  securityLevel: MermaidSecurityLevel
+): boolean {
+  const theme: string = getMermaidThemeFromDom()
+  const configKey: string = `${theme}:${securityLevel}`
+  const blocks: NodeListOf<HTMLPreElement> = container.querySelectorAll('pre.mermaid-block')
+  let allCached: boolean = true
+
+  for (const block of blocks) {
+    if (
+      block.classList.contains('mermaid-rendered') &&
+      block.dataset['renderedConfig'] === configKey
+    ) {
+      continue
+    }
+
+    const code: string | undefined = block.querySelector('code')?.textContent ?? undefined
+    if (!code) continue
+
+    const cacheKey: string = `${code}:${configKey}`
+    const cached: string | undefined = mermaidPreviewCache.get(cacheKey)
+    if (cached === undefined) {
+      allCached = false
+      continue
+    }
+
+    commitMermaidBlock(block, cached, configKey)
+  }
+
+  return allCached
+}
+
 async function renderMermaidBlocks(
   container: HTMLElement,
   securityLevel: MermaidSecurityLevel,
@@ -49,11 +90,9 @@ async function renderMermaidBlocks(
           const cacheKey = `${code}:${configKey}`
           const cached = mermaidPreviewCache.get(cacheKey)
 
-          if (cached) {
+          if (cached !== undefined) {
             if (!container.isConnected || container.dataset['mermaidToken'] !== token) return
-            block.innerHTML = cached
-            block.dataset['renderedConfig'] = configKey
-            block.classList.add('mermaid-rendered')
+            commitMermaidBlock(block, cached, configKey)
             return
           }
 
@@ -65,9 +104,7 @@ async function renderMermaidBlocks(
 
             const sanitizedSvg = sanitizeSvgHtml(svg)
             mermaidPreviewCache.set(cacheKey, sanitizedSvg)
-            block.innerHTML = sanitizedSvg
-            block.dataset['renderedConfig'] = configKey
-            block.classList.add('mermaid-rendered')
+            commitMermaidBlock(block, sanitizedSvg, configKey)
           } catch {
             // Leave as code block on error
           }
@@ -155,13 +192,34 @@ export default memo(function MarkdownPreview() {
   const enhancePreview = useCallback(() => {
     if (!containerRef.current) return
     resolveImageSources(containerRef.current, markdownFilePath)
-    void renderMermaidBlocks(containerRef.current, preview.mermaidSecurityLevel, renderTokenRef)
+
+    // Synchronous cache-hit path: apply cached SVGs immediately (no flash)
+    const allCached: boolean = applyCachedMermaidBlocks(
+      containerRef.current,
+      preview.mermaidSecurityLevel
+    )
+
+    // Only enter debounced async path for cache misses
+    if (!allCached) {
+      void renderMermaidBlocks(containerRef.current, preview.mermaidSecurityLevel, renderTokenRef)
+    }
+
     addCopyButtons(containerRef.current)
   }, [markdownFilePath, preview.mermaidSecurityLevel])
 
   useEffect(() => {
     enhancePreview()
   }, [html, enhancePreview])
+
+  // Clean up debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (mermaidDebounceTimer) {
+        clearTimeout(mermaidDebounceTimer)
+        mermaidDebounceTimer = null
+      }
+    }
+  }, [])
 
   useEffect(() => {
     const root = document.documentElement

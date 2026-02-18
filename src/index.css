@@ -371,3 +371,15 @@
     padding: 0 !important;
   }
 }
+
+/* Mermaid async render placeholder */
+@layer components {
+  /* Hide raw mermaid source text during async render.
+     Cache hits apply SVG synchronously — no visible blank gap.
+     Cache misses show a placeholder skeleton until render completes. */
+  pre.mermaid-block:not(.mermaid-rendered) {
+    visibility: hidden;
+    /* Reserve space to prevent layout shift — approximate single-diagram height */
+    min-height: 80px;
+  }
+}
