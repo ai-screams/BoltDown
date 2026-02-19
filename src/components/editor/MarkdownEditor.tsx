@@ -33,6 +33,7 @@ import { focusExtension } from './extensions/focus'
 import { markdownExtension } from './extensions/markdown'
 import { boltdownDarkTheme, boltdownTheme } from './extensions/theme'
 import { typewriterExtension } from './extensions/typewriter'
+import { vimIMEExtension } from './extensions/vimIME'
 import { codeBlockArrowNavigationKeymap } from './extensions/wysiwyg/codeBlockArrowNavigationKeymap'
 import { formattingKeymap } from './formatCommands'
 
@@ -128,7 +129,7 @@ export default memo(function MarkdownEditor() {
       codeBlockArrowNavCompRef.current.reconfigure(
         isWysiwyg ? codeBlockArrowNavigationKeymap() : []
       ),
-      vimCompRef.current.reconfigure(vimMode ? vim() : []),
+      vimCompRef.current.reconfigure(vimMode ? [vim(), vimIMEExtension()] : []),
     ],
     [
       focusContextLines,
@@ -156,7 +157,7 @@ export default memo(function MarkdownEditor() {
     ),
     typewriterCompRef.current.of(typewriterMode ? typewriterExtension() : []),
     codeBlockArrowNavCompRef.current.of(isWysiwyg ? codeBlockArrowNavigationKeymap() : []),
-    vimCompRef.current.of(vimMode ? vim() : []),
+    vimCompRef.current.of(vimMode ? [vim(), vimIMEExtension()] : []),
     fenceLanguageCompletion(),
     history(),
     search(),
