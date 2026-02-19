@@ -76,6 +76,8 @@ src-tauri/src/
 - `tauri-plugin-fs` — File system access
 - `tauri-plugin-dialog` — Open/Save file dialogs
 - `tauri-plugin-shell` — Shell commands (print)
+- `tauri-plugin-updater` — In-app auto-update with signature verification (Tauri signing keys, not Apple codesign)
+- `tauri-plugin-process` — Process control for app restart after update
 
 ## Security Features
 
@@ -100,5 +102,6 @@ src-tauri/src/
 
 - Frontend communicates via `@tauri-apps/api/core` invoke()
 - Frontend uses `@tauri-apps/plugin-dialog` for file picker
+- Frontend uses `@tauri-apps/plugin-updater` + `@tauri-apps/plugin-process` for auto-update
 - `thiserror` provides ergonomic error handling with derive macros
 - `tokio` provides async runtime for file operations
