@@ -37,16 +37,18 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 
 ## Configuration Files
 
-| File                   | Purpose                                                                         |
-| ---------------------- | ------------------------------------------------------------------------------- |
-| `package.json`         | Dependencies, scripts (dev/build/lint/validate)                                 |
-| `vite.config.ts`       | Build: path aliases, vendor chunk splitting (CM/Mermaid/markdown)               |
-| `tsconfig.json`        | Strict TS, path aliases (@/, @components/, etc.)                                |
-| `tailwind.config.js`   | Brand colors (electric-yellow, deep-blue), Inter/Pretendard fonts               |
-| `eslint.config.js`     | ESLint v9 flat config, TS/React/a11y/import-order, perfectionist sort-jsx-props |
-| `.prettierrc`          | No semi, single quote, 100 width, Tailwind class sort                           |
-| `commitlint.config.js` | Conventional Commits enforcement                                                |
-| `package-lock.json`    | npm dependency lockfile                                                         |
+| File                            | Purpose                                                                         |
+| ------------------------------- | ------------------------------------------------------------------------------- |
+| `package.json`                  | Dependencies, scripts (dev/build/lint/validate)                                 |
+| `vite.config.ts`                | Build: path aliases, vendor chunk splitting (CM/Mermaid/markdown)               |
+| `tsconfig.json`                 | Strict TS, path aliases (@/, @components/, etc.)                                |
+| `tailwind.config.js`            | Brand colors (electric-yellow, deep-blue), Inter/Pretendard fonts               |
+| `eslint.config.js`              | ESLint v9 flat config, TS/React/a11y/import-order, perfectionist sort-jsx-props |
+| `.prettierrc`                   | No semi, single quote, 100 width, Tailwind class sort                           |
+| `commitlint.config.js`          | Conventional Commits enforcement (26 scopes)                                    |
+| `package-lock.json`             | npm dependency lockfile                                                         |
+| `release-please-config.json`    | Release-please: node release type, extra-files (Cargo.toml, tauri.conf.json)    |
+| `.release-please-manifest.json` | Release-please: current version tracking                                        |
 
 ## Key Components & Stores
 
@@ -172,10 +174,59 @@ src-tauri/src/
 | Build          | Vite 7 + esbuild                                                |
 | Error Handling | thiserror (Rust backend)                                        |
 
+## CI/CD
+
+### Workflows
+
+| Workflow        | File                   | Trigger                             | Purpose                                                  |
+| --------------- | ---------------------- | ----------------------------------- | -------------------------------------------------------- |
+| CI              | `ci.yaml`              | PR to main/develop, push to develop | Orchestrator: lint → (test ∥ build), security (parallel) |
+| Lint & Format   | `quality-lint.yaml`    | `workflow_call`                     | TS type-check, ESLint, Prettier, rustfmt, clippy         |
+| Test            | `quality-test.yaml`    | `workflow_call`                     | Vitest + Cargo test                                      |
+| Build           | `build.yaml`           | `workflow_call`                     | Tauri build verification (Linux only)                    |
+| Security Scan   | `security-scan.yaml`   | `workflow_call`                     | npm audit + cargo audit                                  |
+| Weekly Security | `security-weekly.yaml` | cron (Sun 00:00 UTC)                | Scheduled security scan                                  |
+| Release         | `release-please.yaml`  | push to main                        | release-please + tauri-action cross-platform build       |
+
+### CI Job DAG
+
+```
+PR / push(develop)
+    │
+    ├── lint ──┬── test     (parallel after lint)
+    │          └── build    (parallel after lint)
+    └── security            (independent, parallel)
+```
+
+### Release Flow
+
+```
+feat/fix commits merge to main
+    → release-please creates Release PR (version bump + CHANGELOG)
+    → maintainer merges Release PR
+    → GitHub Release created + build-tauri 4-way parallel
+    → Assets uploaded: DMG (ARM64/x64), MSI, NSIS exe, deb, AppImage
+```
+
+### Trigger Optimization
+
+- **PR merge to main**: CI skipped (already validated in PR), only release-please runs
+- **docs-only changes**: CI skipped via `paths-ignore` (`**.md`, `.docs/**`, `LICENSE`)
+- **concurrency**: PR-number-based grouping, cancel-in-progress on new push
+- **GITHUB_TOKEN limitation**: tag-triggered workflows won't fire from GITHUB_TOKEN-created tags, so build-tauri is integrated into release-please.yaml as conditional job
+
+### Release Versioning (Semantic)
+
+- `feat:` → minor bump (0.1.0 → 0.2.0)
+- `fix:` → patch bump (0.1.0 → 0.1.1)
+- `feat!:` / `BREAKING CHANGE:` → minor during 0.x, major after 1.0
+- Version sync: `package.json` + `Cargo.toml` + `tauri.conf.json` via release-please `extra-files`
+
 ## Git
 
 - Branch strategy: feature branches → PR → main
 - Commit style: Conventional Commits (`feat(editor):`, `fix(preview):`, etc.)
+- Scopes (26): editor, preview, parser, math, diagram, vim, find, ui, sidebar, tab, tree, settings, theme, store, file, export, config, deps, rust, tauri, ci, release, a11y, security, perf
 - Pre-commit: Husky + lint-staged + commitlint
 - Current branch is workspace-dependent; verify with `git branch --show-current`
 
