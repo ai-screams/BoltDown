@@ -7,7 +7,7 @@ import { BYTES_PER_MEGABYTE, IMAGE_POLICY } from '@/constants/file'
 import { useEditorStore } from '@/stores/editorStore'
 import { useTabStore } from '@/stores/tabStore'
 import { getDirectoryPath, joinPath, toPosixPath } from '@/utils/imagePath'
-import { isTauri } from '@/utils/tauri'
+import { invokeTauri, isTauri } from '@/utils/tauri'
 
 // Constants
 export const MAX_IMAGE_SIZE = IMAGE_POLICY.maxBytes
@@ -27,16 +27,6 @@ interface TextChange {
   from: number
   to: number
   insert: string
-}
-
-let tauriInvokePromise: Promise<(typeof import('@tauri-apps/api/core'))['invoke']> | null = null
-
-export async function getTauriInvoke() {
-  if (!tauriInvokePromise) {
-    tauriInvokePromise = import('@tauri-apps/api/core').then(mod => mod.invoke)
-  }
-
-  return tauriInvokePromise
 }
 
 export function getActiveMarkdownFilePath(): string | null {
@@ -157,10 +147,9 @@ export async function toImageMarkdown(
         }
 
         const destinationPath = buildDestinationImagePath(markdownFilePath, file.name, index)
-        const invoke = await getTauriInvoke()
 
         if (sourcePath) {
-          await invoke('copy_file', {
+          await invokeTauri('copy_file', {
             srcPath: sourcePath,
             destPath: destinationPath,
           })
@@ -177,7 +166,7 @@ export async function toImageMarkdown(
             return `<!-- Image "${altText}" skipped: ${sizeMb}MB exceeds ${MAX_IMAGE_SIZE_MB}MB limit -->`
           }
           const data = Array.from(new Uint8Array(await file.arrayBuffer()))
-          await invoke('write_binary_file', {
+          await invokeTauri('write_binary_file', {
             destPath: destinationPath,
             data,
           })
@@ -228,9 +217,7 @@ export async function toImageMarkdownFromPath(
       }
 
       const destinationPath = buildDestinationImagePath(markdownFilePath, fileName, index)
-      const invoke = await getTauriInvoke()
-
-      await invoke('copy_file', {
+      await invokeTauri('copy_file', {
         srcPath: sourcePath,
         destPath: destinationPath,
       })

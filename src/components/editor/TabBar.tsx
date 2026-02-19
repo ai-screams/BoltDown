@@ -9,6 +9,7 @@ import { useEditorStore } from '@/stores/editorStore'
 import { useSidebarStore } from '@/stores/sidebarStore'
 import { useTabStore } from '@/stores/tabStore'
 import { getDirectoryPath, joinPath } from '@/utils/imagePath'
+import { invokeTauri } from '@/utils/tauri'
 
 export default memo(function TabBar() {
   const { tabs, activeTabId } = useTabStore(
@@ -74,8 +75,7 @@ export default memo(function TabBar() {
       try {
         if (tab.filePath) {
           const newPath = joinPath(getDirectoryPath(tab.filePath), newFileName)
-          const { invoke } = await import('@tauri-apps/api/core')
-          await invoke('rename_file', { oldPath: tab.filePath, newPath })
+          await invokeTauri('rename_file', { oldPath: tab.filePath, newPath })
           renameTab(tabId, newFileName, newPath)
         } else {
           renameTab(tabId, newFileName, null)
