@@ -618,6 +618,13 @@ function EditorPanel() {
           onChange={v => updateEditor({ typewriterMode: v })}
         />
       </SettingRow>
+      <SettingRow description="Enable Vim keybindings in the editor" label="Vim Mode">
+        <Toggle
+          checked={editor.vimMode}
+          label="Vim Mode"
+          onChange={v => updateEditor({ vimMode: v })}
+        />
+      </SettingRow>
     </div>
   )
 }

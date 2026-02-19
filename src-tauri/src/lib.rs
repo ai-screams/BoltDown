@@ -18,6 +18,10 @@ pub fn run() {
             commands::directory::list_directory,
             commands::settings::read_settings,
             commands::settings::write_settings,
+            commands::ime::get_input_source,
+            commands::ime::select_ascii_input,
+            commands::ime::select_input_source,
+            commands::ime::ime_save_and_switch_ascii,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

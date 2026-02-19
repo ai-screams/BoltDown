@@ -3,6 +3,7 @@ import { bracketMatching, indentOnInput } from '@codemirror/language'
 import { search } from '@codemirror/search'
 import { Compartment, EditorState, type Extension } from '@codemirror/state'
 import { EditorView, highlightActiveLine, keymap } from '@codemirror/view'
+import { Vim, vim } from '@replit/codemirror-vim'
 import { clsx } from 'clsx'
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 
@@ -32,11 +33,39 @@ import { focusExtension } from './extensions/focus'
 import { markdownExtension } from './extensions/markdown'
 import { boltdownDarkTheme, boltdownTheme } from './extensions/theme'
 import { typewriterExtension } from './extensions/typewriter'
+import { vimIMEExtension } from './extensions/vimIME'
 import { codeBlockArrowNavigationKeymap } from './extensions/wysiwyg/codeBlockArrowNavigationKeymap'
 import { formattingKeymap } from './formatCommands'
 
 // Module-level cache for lazy-loaded wysiwyg extension
 let cachedWysiwygFn: ((level: MermaidSecurityLevel) => Extension) | null = null
+
+// Register Vim Ex commands once at module level
+const dispatchSave = () =>
+  window.dispatchEvent(new KeyboardEvent('keydown', { key: 's', metaKey: true, bubbles: true }))
+const dispatchClose = () =>
+  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'w', metaKey: true, bubbles: true }))
+
+Vim.defineEx('write', 'w', dispatchSave)
+Vim.defineEx('quit', 'q', dispatchClose)
+Vim.defineEx('wquit', 'wq', () => {
+  dispatchSave()
+  // Wait for save to complete (savedContent === content) before closing.
+  // This prevents the "unsaved changes" prompt from firing after :wq.
+  const WQ_TIMEOUT_MS = 2000
+  const unsub = useTabStore.subscribe(state => {
+    const tab = state.tabs.find(t => t.id === state.activeTabId)
+    if (tab && tab.content === tab.savedContent) {
+      unsub()
+      dispatchClose()
+    }
+  })
+  // Safety timeout: close anyway after 2s (dirty guard still protects data)
+  setTimeout(() => {
+    unsub()
+    dispatchClose()
+  }, WQ_TIMEOUT_MS)
+})
 
 export default memo(function MarkdownEditor() {
   const mode = useEditorStore(s => s.mode)
@@ -51,6 +80,7 @@ export default memo(function MarkdownEditor() {
   const focusContextLines = useSettingsStore(s => s.settings.editor.focusContextLines)
   const spellcheck = useSettingsStore(s => s.settings.editor.spellcheck)
   const typewriterMode = useSettingsStore(s => s.settings.editor.typewriterMode)
+  const vimMode = useSettingsStore(s => s.settings.editor.vimMode)
   const mermaidSecurityLevel = useSettingsStore(s => s.settings.preview.mermaidSecurityLevel)
 
   const activeTabId = useTabStore(s => s.activeTabId)
@@ -70,6 +100,7 @@ export default memo(function MarkdownEditor() {
   const spellcheckCompRef = useRef(new Compartment())
   const typewriterCompRef = useRef(new Compartment())
   const codeBlockArrowNavCompRef = useRef(new Compartment())
+  const vimCompRef = useRef(new Compartment())
 
   activeTabIdRef.current = activeTabId
 
@@ -113,6 +144,7 @@ export default memo(function MarkdownEditor() {
       codeBlockArrowNavCompRef.current.reconfigure(
         isWysiwyg ? codeBlockArrowNavigationKeymap() : []
       ),
+      vimCompRef.current.reconfigure(vimMode ? [vim(), vimIMEExtension()] : []),
     ],
     [
       focusContextLines,
@@ -122,6 +154,7 @@ export default memo(function MarkdownEditor() {
       mermaidSecurityLevel,
       spellcheck,
       typewriterMode,
+      vimMode,
     ]
   )
 
@@ -139,6 +172,7 @@ export default memo(function MarkdownEditor() {
     ),
     typewriterCompRef.current.of(typewriterMode ? typewriterExtension() : []),
     codeBlockArrowNavCompRef.current.of(isWysiwyg ? codeBlockArrowNavigationKeymap() : []),
+    vimCompRef.current.of(vimMode ? [vim(), vimIMEExtension()] : []),
     fenceLanguageCompletion(),
     history(),
     search(),

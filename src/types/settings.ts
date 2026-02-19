@@ -25,6 +25,7 @@ export interface EditorSettings {
   focusMode: boolean // default false
   focusContextLines: number // 0–3, default 0
   typewriterMode: boolean // default false
+  vimMode: boolean // default false
 }
 
 export interface PreviewSettings {
@@ -67,6 +68,7 @@ export const DEFAULT_EDITOR: EditorSettings = {
   focusMode: SETTINGS_DEFAULTS.editor.focusMode,
   focusContextLines: SETTINGS_DEFAULTS.editor.focusContextLines,
   typewriterMode: SETTINGS_DEFAULTS.editor.typewriterMode,
+  vimMode: SETTINGS_DEFAULTS.editor.vimMode,
 }
 
 export const DEFAULT_PREVIEW: PreviewSettings = {

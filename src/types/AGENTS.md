@@ -10,7 +10,7 @@ Shared TypeScript interfaces and type aliases used across the frontend.
 
 - `editor.ts` — `EditorMode` type (`'split' | 'source' | 'zen'`) and `Tab` interface (`id`, `filePath`, `fileName`, `content`, `savedContent`). Note: `isDirty` is derived, not stored.
 - `sidebar.ts` — `FileTreeNode` (hierarchical tree data), `RecentFile` (path + name + timestamp), `SidebarTab` (`'files' | 'recent' | 'outline'`), `HeadingNode` (level, text, line).
-- `settings.ts` — Settings system types: `ThemeMode` (`'light' | 'dark' | 'system'`), `FontFamily`, `MermaidSecurityLevel` (`'strict' | 'loose'`), `ThemeSettings`, `EditorSettings`, `PreviewSettings`, `GeneralSettings` (includes `autoSave`, `autoSaveDelay`, `restoreLastFile`), `AppSettings` aggregate, `SettingsCategory = keyof AppSettings`. All `DEFAULT_*` constants exported.
+- `settings.ts` — Settings system types: `ThemeMode` (`'light' | 'dark' | 'system'`), `FontFamily`, `MermaidSecurityLevel` (`'strict' | 'loose'`), `ThemeSettings`, `EditorSettings` (includes `vimMode: boolean`), `PreviewSettings`, `GeneralSettings` (includes `autoSave`, `autoSaveDelay`, `restoreLastFile`), `AppSettings` aggregate, `SettingsCategory = keyof AppSettings`. All `DEFAULT_*` constants exported.
 
 ## For AI Agents
 

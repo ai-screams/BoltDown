@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) + **React 19** (TypeScript frontend) + **CodeMirror 6** (editor engine). Phase 1 and Phase 2 are complete, and post-Phase-2 waves are also merged (live mode parity updates, ordered-list normalization, split sync hardening, table editing stabilization, and fenced code-block boundary navigation with code-block-scoped `Mod+A`). WYSIWYG decorations run in both **live** and **zen** modes via StateField-based rendering. **WIG Compliance**: 18 accessibility fixes across 9 files (TabBar WAI-ARIA tabs, Header export menu keyboard nav, FileTreeNode context menu keyboard nav, SettingsModal form accessibility, FindReplaceModal ARIA, Footer live region, Sidebar decorative icons, App beforeunload guard, index.html preconnect).
+Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) + **React 19** (TypeScript frontend) + **CodeMirror 6** (editor engine). Phase 1 and Phase 2 are complete, and post-Phase-2 waves are also merged (live mode parity updates, ordered-list normalization, split sync hardening, table editing stabilization, and fenced code-block boundary navigation with code-block-scoped `Mod+A`). WYSIWYG decorations run in both **live** and **zen** modes via StateField-based rendering. **Vim Mode**: Optional vim keybindings via `@replit/codemirror-vim` with CJK IME auto-switch (macOS Carbon FFI for Normal→ASCII, Insert→restore). **WIG Compliance**: 18 accessibility fixes across 9 files (TabBar WAI-ARIA tabs, Header export menu keyboard nav, FileTreeNode context menu keyboard nav, SettingsModal form accessibility, FindReplaceModal ARIA, Footer live region, Sidebar decorative icons, App beforeunload guard, index.html preconnect).
 
 ## Architecture Overview
 
@@ -18,8 +18,8 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 │  │        Zustand Stores (5 stores)          │  │
 │  └───────────────────────────────────────────┘  │
 │              Rust IPC Commands                  │
-│  (file ops, directory, settings)                │
-│  Modular: commands/{file,directory,settings}    │
+│  (file ops, directory, settings, IME)           │
+│  Modular: commands/{file,directory,settings,ime}│
 │  Error: unified AppError with thiserror         │
 │  Utils: path validation with security           │
 └─────────────────────────────────────────────────┘
@@ -55,7 +55,7 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 - `editorStore.ts` — Editor mode (split/source/live/zen), status messages, flash notifications
 - `tabStore.ts` — Tab management (open/close/switch), content, filePath, dirty state tracking (`content !== savedContent`)
 - `sidebarStore.ts` — Sidebar state (open/width/resizing), active tab (files/outline/recent), file tree data, recent files. **Action**: `loadParentDirectory(filePath, openSidebar?)` loads directory entries and optionally opens sidebar
-- `settingsStore.ts` — User preferences (theme, font, autosave, preview, editor settings), Tauri persistence
+- `settingsStore.ts` — User preferences (theme, font, autosave, preview, editor settings incl. vimMode), Tauri persistence
 - `findReplaceStore.ts` — Find & replace state (query, replace text, case/regex/whole word, current match)
 
 ### Components
@@ -74,11 +74,11 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 
 - `Footer.tsx` — Status bar with **`aria-live="polite"` + `aria-atomic="true"`** on status text for screen reader announcements. Word/line/char count on right.
 
-- `SettingsModal.tsx` — 4-category settings. **Form accessibility**: all Toggle components have `role="switch"`, `aria-checked`, `aria-label`; all Select/NumberInput have `aria-label`; dialog has `aria-labelledby` and `aria-modal="true"`; decorative icons marked with `aria-hidden="true"`. 6 theme presets, CustomCssEditor with 10240 char limit, CssReference panel.
+- `SettingsModal.tsx` — 4-category settings. **Form accessibility**: all Toggle components have `role="switch"`, `aria-checked`, `aria-label`; all Select/NumberInput have `aria-label`; dialog has `aria-labelledby` and `aria-modal="true"`; decorative icons marked with `aria-hidden="true"`. 6 theme presets, CustomCssEditor with 10240 char limit, CssReference panel. EditorPanel includes **Vim Mode** toggle.
 
 - `FindReplaceModal.tsx` — Custom Find & Replace UI. **Full accessibility**: dialog with `aria-labelledby` and `aria-modal="true"`, toggle buttons with `aria-pressed` and `aria-label`, match counter with `role="status"`, `aria-live="polite"`, `aria-atomic="true"`, input fields with `aria-label`, all icons with `aria-hidden="true"`. ReDoS protection, debounced search, lazy line info, memoized rows.
 
-- `MarkdownEditor.tsx` — CM6 editor with per-tab EditorState cache and compartment reconfiguration. Ordered-list Tab behavior, code-block boundary keymap compartment (`codeBlockArrowNavCompRef`) for `ArrowUp`/`ArrowDown` + code-block-scoped `Mod+A` in live/zen mode, searchKeymap removed (replaced by FindReplaceModal). **UI Polish**: Live/zen modes apply `max-w-4xl` (896px) with `mx-auto` centering for optimal markdown reading width (~112 chars/line).
+- `MarkdownEditor.tsx` — CM6 editor with per-tab EditorState cache and compartment reconfiguration. Ordered-list Tab behavior, code-block boundary keymap compartment (`codeBlockArrowNavCompRef`) for `ArrowUp`/`ArrowDown` + code-block-scoped `Mod+A` in live/zen mode, searchKeymap removed (replaced by FindReplaceModal). **Vim mode**: `vimCompRef` compartment hot-toggles `@replit/codemirror-vim` extension + CJK IME guard (`vimIME.ts`); `Vim.defineEx` registers `:w`/`:q`/`:wq` commands. **UI Polish**: Live/zen modes apply `max-w-4xl` (896px) with `mx-auto` centering for optimal markdown reading width (~112 chars/line).
 
 - `ResizeHandle.tsx` — Draggable divider with **`role="separator"`, `aria-orientation="vertical"`, `aria-label="Resize sidebar"`**.
 
@@ -94,7 +94,7 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 ### Constants
 
 - `constants/theme.ts` — THEME_PRESETS array (6 built-in themes with name/label/description/swatches/info/danger), THEME_MODES, DEFAULT_THEME_NAME, isBuiltInThemeName() validator
-- `constants/settingsLimits.ts` — EDITOR_SETTING_LIMITS, PREVIEW_SETTING_LIMITS, GENERAL_SETTING_LIMITS, CUSTOM_CSS_LIMITS (maxLength: 10240, warningThreshold: 8192, debounceMs: 150), SETTINGS_DEFAULTS, SETTINGS_POLICY
+- `constants/settingsLimits.ts` — EDITOR_SETTING_LIMITS, PREVIEW_SETTING_LIMITS, GENERAL_SETTING_LIMITS, CUSTOM_CSS_LIMITS (maxLength: 10240, warningThreshold: 8192, debounceMs: 150), SETTINGS_DEFAULTS (incl. `vimMode: false`), SETTINGS_POLICY
 
 ## Tauri Backend (Modular Architecture)
 
@@ -107,7 +107,8 @@ src-tauri/src/
 │   ├── mod.rs          — Command module exports
 │   ├── file.rs         — 6 file operations (read, write, rename, delete, copy, write_binary)
 │   ├── directory.rs    — Directory listing with FileEntry struct
-│   └── settings.rs     — Settings persistence via AppHandle.path().app_data_dir()
+│   ├── settings.rs     — Settings persistence via AppHandle.path().app_data_dir()
+│   └── ime.rs          — macOS IME control via Carbon FFI (TIS API)
 ├── error.rs            — Unified AppError enum with thiserror
 └── utils/
     ├── mod.rs          — Utility module exports
@@ -119,6 +120,7 @@ src-tauri/src/
 - **File Operations**: `read_file` (50MB limit), `write_file` (atomic .tmp), `rename_file`, `delete_file`, `copy_file`, `write_binary_file`
 - **Directory**: `list_directory` (filters hidden/system dirs, returns FileEntry[])
 - **Settings**: `read_settings`, `write_settings` (atomic .tmp, AppHandle pattern)
+- **IME**: `get_input_source`, `select_ascii_input`, `select_input_source`, `ime_save_and_switch_ascii` (macOS Carbon TIS API for CJK vim mode support)
 
 ### Security
 
@@ -135,6 +137,7 @@ src-tauri/src/
 - **Path aliases**: `@/` → `src/`, `@components/` → `src/components/`, etc.
 - **Zustand pattern**: Always use primitive-returning selectors (not object destructuring)
 - **CM6 pattern**: Compartments in `useRef`, not module-level singletons
+- **Vim mode pattern**: `vimCompRef` compartment hot-toggles vim extension + IME guard; `Vim.defineEx` for Ex commands; CJK IME auto-switch via `vim-mode-change` synchronous event + `compositionstart` defense
 - **Code-block keymap wiring**: keep `codeBlockArrowNavigationKeymap()` model/keymap/compartment wiring aligned (`codeBlockArrowNavigationModel.ts` ↔ `codeBlockArrowNavigationKeymap.ts` ↔ `MarkdownEditor.tsx` compartment reconfigure path)
 - **Derived state**: `isDirty = content !== savedContent` (not stored)
 - **Sidebar sync**: `loadParentDirectory(filePath, openSidebar?)` consolidates directory loading logic
@@ -160,7 +163,7 @@ src-tauri/src/
 | -------------- | --------------------------------------------------------------- |
 | Desktop Shell  | Tauri 2.0 (Rust, modular architecture)                          |
 | UI Framework   | React 19 + TypeScript (strict)                                  |
-| Editor         | CodeMirror 6 (direct API)                                       |
+| Editor         | CodeMirror 6 (direct API) + @replit/codemirror-vim (optional)   |
 | Markdown       | markdown-it + KaTeX + Mermaid + Prism.js + tocPlugin            |
 | State          | Zustand (5 stores: editor, tab, sidebar, settings, findReplace) |
 | Styling        | Tailwind CSS (dark mode: class-based)                           |

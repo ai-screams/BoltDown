@@ -17,6 +17,9 @@ pub enum AppError {
 
     #[error("File too large: {size} bytes (max: {max} bytes)")]
     FileTooLarge { size: u64, max: u64 },
+
+    #[error("IME operation failed: {0}")]
+    Ime(String),
 }
 
 impl Serialize for AppError {
