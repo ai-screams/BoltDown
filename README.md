@@ -1,256 +1,214 @@
 # ⚡ BoltDown
 
-**Lightning-Fast Markdown Editor Built with Tauri**
+**Lightning-fast Markdown editor. 10x smaller than Electron apps.**
 
 <div align="center">
 
-```
-┌─────────────────────────────┐
-│  ⚡ BoltDown                │
-│  Lightning-Fast Markdown    │
-└─────────────────────────────┘
-```
-
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Tauri](https://img.shields.io/badge/Tauri-2.0-blue.svg)](https://tauri.app)
-[![React](https://img.shields.io/badge/React-18-blue.svg)](https://react.dev)
+[![Tauri](https://img.shields.io/badge/Tauri-2.0-FFC131.svg)](https://tauri.app)
+[![React](https://img.shields.io/badge/React-19-61DAFB.svg)](https://react.dev)
 
-**[Download](https://github.com/ai-screams/BoltDown/releases)** •
-**[Documentation](https://docs.boltdown.io)**
+[📦 Download](https://github.com/ai-screams/BoltDown/releases) · [🐛 Report Bug](https://github.com/ai-screams/BoltDown/issues) · [📐 Architecture](.docs/adr/)
 
 </div>
 
 ---
 
-## 🚗 Why BoltDown?
+## 🤔 Why BoltDown?
 
-> **"Electron apps are gas-guzzling SUVs. BoltDown is a Tesla."**
+> **Electron apps are gas-guzzling SUVs. BoltDown is a Tesla.**
 
-| Feature          | ⚡ BoltDown            | ⛽ Typora   | 📊 Obsidian |
-| ---------------- | ---------------------- | ----------- | ----------- |
-| **Bundle Size**  | **7MB**                | 120MB       | 100MB       |
-| **Memory Usage** | **50-100MB**           | 200-500MB   | 300-400MB   |
-| **Startup Time** | **<1 second**          | 2-3 seconds | 2-3 seconds |
-| **Price**        | **Free** (Open Source) | $14.99      | Free        |
-| **Framework**    | **Tauri** (Rust)       | Electron    | Electron    |
+|             | ⚡ BoltDown         | Typora      | Obsidian    |
+| ----------- | ------------------- | ----------- | ----------- |
+| **Size**    | **~7 MB** 🪶        | ~120 MB     | ~100 MB     |
+| **Memory**  | **50-100 MB** 💨    | 200-500 MB  | 300-400 MB  |
+| **Startup** | **< 1 second** 🚀   | 2-3 seconds | 2-3 seconds |
+| **Price**   | **Free** 🎉         | $14.99      | Free        |
+| **Engine**  | **Tauri (Rust)** 🦀 | Electron    | Electron    |
 
-### 🎯 10x smaller. 4x faster. 100% free.
+BoltDown is a native desktop Markdown editor built with Tauri 2.0 and Rust. It launches instantly, stays light on memory, and gives you a complete writing experience — without the Electron baggage.
 
 ---
 
 ## ✨ Features
 
-### Phase 1: MVP (Current)
+### ✍️ Writing Experience
 
-- ⚡ **Instant Startup** - Less than 1 second
-- 📝 **WYSIWYG Editing** - What You See Is What You Mean
-- 🔄 **Split View** - Source + Preview with sync scroll
-- 🧮 **Math Support** - KaTeX for LaTeX equations
-- 📊 **Diagrams** - Mermaid for flowcharts, sequences, Gantt
-- 🎨 **Code Highlighting** - 100+ programming languages
-- 📂 **File Manager** - Sidebar with folder tree
-- 💾 **Auto-Save** - Never lose your work
-- 🌓 **Dark Mode** - Easy on the eyes
-- 📤 **Export** - PDF, HTML, and more
+- **Live Preview** — WYSIWYG editing that renders Markdown as you type. Bold, italic, headings, links, and images display inline with real formatting.
+- **Split View** — Source code on the left, rendered preview on the right, with synchronized scrolling.
+- **Source Mode** — Clean, distraction-free code editing when you want full control.
+- **Zen Mode** 🧘 — Full-screen writing with nothing but your text. Press `Escape` to return.
 
-### Phase 2: Coming Soon
+### 📦 Rich Content
 
-- 🎯 Focus Mode & Typewriter Mode
-- 📋 WYSIWYG Table Editing
-- 🖼️ Image Optimization
-- 📊 Word Count & Reading Time
-- ✍️ Spell Checking (Korean + English)
-- 🗂️ Outline Panel & Auto TOC
+- **Math** 🧮 — LaTeX equations with KaTeX. Inline `$E=mc^2$` and block `$$...$$` with real-time rendering.
+- **Diagrams** 📊 — Mermaid flowcharts, sequence diagrams, Gantt charts, and more — rendered live in the editor.
+- **Code Blocks** 💻 — Syntax highlighting for 100+ languages with language badges, autocomplete, and boundary navigation.
+- **Tables** 📋 — Interactive WYSIWYG table editing. Add/remove rows and columns, set alignment, resize — all in place.
+- **Table of Contents** 🗂️ — Type `[TOC]` anywhere to generate a linked table of contents from your headings.
 
----
+### 🛠️ Editor Features
 
-## 📦 Installation
+- **Tabs** — Work with multiple files at once. Drag, rename, close — with unsaved change indicators.
+- **File Tree** 📂 — Sidebar with folder navigation, file icons by type, and context menus for file operations.
+- **Outline Panel** — Navigate your document by heading structure.
+- **Find & Replace** 🔍 — Full-featured search with regex, case sensitivity, whole word matching, and live match counter.
+- **Focus Mode** 🎯 — Dims all lines except where your cursor is, helping you concentrate on the current paragraph.
+- **Typewriter Mode** ⌨️ — Keeps your active line vertically centered as you type.
+- **Vim Mode** 🖥️ — Optional vim keybindings with `:w`, `:q`, `:wq` commands. CJK users get automatic input method switching (Normal → English, Insert → restore previous).
+- **Auto-Save** 💾 — Configurable automatic saving so you never lose work.
+- **Spellcheck** ✏️ — Native spellcheck with underline indicators.
+- **Export** 📤 — Save your work as HTML or PDF.
 
-### macOS
+### 🎨 Customization
 
-```bash
-# Homebrew (recommended)
-brew install boltdown
+- **6 Built-in Themes** — Bolt, Sepia, Nord, Contrast, Meadow, and Vivid — each with light and dark variants.
+- **Custom CSS** — Write your own CSS overrides with a built-in editor, live preview, and reference guide.
+- **Editor Settings** — Font family, font size, line height, tab size, line numbers, and more.
 
-# Or download from releases
-# https://github.com/ai-screams/BoltDown/releases
-```
+### ♿ Accessibility
 
-### Windows
-
-```bash
-# Winget
-winget install boltdown
-
-# Or download installer
-# https://github.com/ai-screams/BoltDown/releases
-```
-
-### Linux
-
-```bash
-# Snap
-snap install boltdown
-
-# AppImage
-# Download from releases
-```
+- Full keyboard navigation throughout the app
+- WAI-ARIA compliant tabs, menus, dialogs, and form controls
+- Screen reader support with live regions for status updates
+- `prefers-reduced-motion` respected
 
 ---
 
-## 🚀 Quick Start
+## 📥 Install
 
-### 1. Create New Document
+### 🍎 macOS
+
+Download the `.dmg` file from the [latest release](https://github.com/ai-screams/BoltDown/releases), open it, and drag BoltDown to your Applications folder.
+
+> 💡 **Apple Silicon and Intel** — We provide separate builds for each architecture for the best native performance.
+
+### 🪟 Windows
+
+Download the `.msi` installer from the [latest release](https://github.com/ai-screams/BoltDown/releases) and run it.
+
+### 🐧 Linux
+
+Download the `.AppImage` or `.deb` package from the [latest release](https://github.com/ai-screams/BoltDown/releases).
 
 ```bash
-# Open BoltDown
-boltdown
+# Debian / Ubuntu
+sudo dpkg -i boltdown_*.deb
 
-# Or open specific file
-boltdown README.md
+# AppImage (any distro)
+chmod +x BoltDown_*.AppImage
+./BoltDown_*.AppImage
 ```
-
-### 2. Start Writing
-
-```markdown
-# Hello BoltDown! ⚡
-
-Strike through your writing at the speed of light.
-
-## Math
-
-$E = mc^2$
-
-## Diagram
-
-\`\`\`mermaid
-flowchart LR
-A[Fast] --> B[Faster]
-B --> C[BoltDown]
-\`\`\`
-```
-
-### 3. Export to PDF
-
-1. Click **File → Export → PDF**
-2. Choose destination
-3. Done! ⚡
 
 ---
 
-## 🛠️ Development
+## ⌨️ Keyboard Shortcuts
+
+| Action         | macOS         | Windows/Linux  |
+| -------------- | ------------- | -------------- |
+| New tab        | `Cmd+N`       | `Ctrl+N`       |
+| Open file      | `Cmd+O`       | `Ctrl+O`       |
+| Save           | `Cmd+S`       | `Ctrl+S`       |
+| Save as        | `Cmd+Shift+S` | `Ctrl+Shift+S` |
+| Find           | `Cmd+F`       | `Ctrl+F`       |
+| Find & Replace | `Cmd+H`       | `Ctrl+H`       |
+| Cycle mode     | `Cmd+\`       | `Ctrl+\`       |
+| Zen mode       | `Cmd+Shift+Z` | `Ctrl+Shift+Z` |
+| Toggle sidebar | `Cmd+Shift+E` | `Ctrl+Shift+E` |
+| Settings       | `Cmd+,`       | `Ctrl+,`       |
+| Shortcuts help | `Cmd+Shift+/` | `Ctrl+Shift+/` |
+
+---
+
+## 🧑‍💻 Development
 
 ### Prerequisites
 
-- **Node.js** 18+ (LTS recommended)
-- **Rust** 1.70+ ([rustup.rs](https://rustup.rs))
-- **pnpm** (recommended) or npm
+- [Node.js](https://nodejs.org/) 20+
+- [Rust](https://rustup.rs/) (stable)
+- [Tauri CLI](https://tauri.app/start/create-project/) 2.0
 
 ### Setup
 
 ```bash
-# Clone repository
 git clone https://github.com/ai-screams/BoltDown.git
 cd BoltDown
-
-# Install dependencies
-pnpm install
-
-# Run development server
-pnpm tauri:dev
+npm install
+npm run tauri:dev
 ```
 
 ### Build
 
 ```bash
-# Build for production
-pnpm tauri:build
+# Build for your current platform
+npm run tauri:build
 
-# Output:
-# - macOS: src-tauri/target/release/bundle/dmg/
-# - Windows: src-tauri/target/release/bundle/msi/
-# - Linux: src-tauri/target/release/bundle/appimage/
+# macOS DMG only
+npm run tauri build -- --bundles dmg
+
+# Validate before committing
+npm run validate
 ```
+
+### Project Structure
+
+```
+src/              ⚛️  React frontend (components, stores, hooks)
+src-tauri/        🦀  Rust backend (file ops, settings, IME)
+.docs/            📚  Documentation (ADR, PRD, planning)
+tests/            🧪  E2E tests (Playwright)
+```
+
+### Quality Gates
+
+| Check          | Command                       |
+| -------------- | ----------------------------- |
+| Type check     | `npx tsc --noEmit`            |
+| Lint           | `npx eslint src/`             |
+| Unit tests     | `npm run test:run`            |
+| Frontend build | `npx vite build`              |
+| Rust check     | `cd src-tauri && cargo check` |
+| Dead code      | `npm run knip`                |
 
 ---
 
 ## 🏗️ Tech Stack
 
-### Frontend
-
-- ⚛️ **React 18** - UI framework
-- ⚡ **Vite 5** - Build tool (<200ms HMR)
-- 📝 **CodeMirror 6** - Editor engine (500KB)
-- 🔤 **markdown-it** - Parser (Benchmark: 97.3)
-- 🧮 **KaTeX** - Math rendering (10x faster than MathJax)
-- 📊 **Mermaid** - Diagram generation
-- 🎨 **Tailwind CSS** - Styling
-- 🗂️ **Zustand** - State management (1KB)
-
-### Backend
-
-- 🦀 **Rust** - Memory-safe systems language
-- 🚀 **Tauri 2.0** - Desktop framework (40x smaller than Electron)
-- ⚡ **Tokio** - Async runtime
-- 📁 **notify-rs** - File watching (auto-save)
-
----
-
-## 📚 Documentation
-
-- **User Guide**: [docs.boltdown.io/guide](https://docs.boltdown.io/guide)
-- **API Reference**: [docs.boltdown.io/api](https://docs.boltdown.io/api)
-- **Contributing**: [CONTRIBUTING.md](CONTRIBUTING.md)
-- **Architecture Decisions**: [.docs/adr/](.docs/adr/)
+| Layer       | Technology                                                                                                                                                   |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 🖥️ Shell    | [Tauri 2.0](https://tauri.app) (Rust)                                                                                                                        |
+| ⚛️ UI       | [React 19](https://react.dev) + TypeScript                                                                                                                   |
+| ✏️ Editor   | [CodeMirror 6](https://codemirror.net)                                                                                                                       |
+| 📝 Markdown | [markdown-it](https://github.com/markdown-it/markdown-it) + [KaTeX](https://katex.org) + [Mermaid](https://mermaid.js.org) + [Prism.js](https://prismjs.com) |
+| 🗃️ State    | [Zustand](https://zustand.docs.pmnd.rs/)                                                                                                                     |
+| 🎨 Styling  | [Tailwind CSS](https://tailwindcss.com)                                                                                                                      |
+| 🖥️ Vim      | [@replit/codemirror-vim](https://github.com/replit/codemirror-vim)                                                                                           |
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-### Development Workflow
-
 1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
+2. Create a feature branch (`git checkout -b feat/my-feature`)
+3. Commit with [Conventional Commits](https://www.conventionalcommits.org/) (`feat(editor): add feature`)
+4. Push and open a Pull Request
+
+Pre-commit hooks enforce linting, formatting, and commit message style automatically. ✅
 
 ---
 
 ## 📄 License
 
-**MIT License** - See [LICENSE](LICENSE) for details.
-
-Copyright © 2026 BoltDown Team
-
----
-
-## 🙏 Acknowledgments
-
-Built with these amazing open-source projects:
-
-- [Tauri](https://tauri.app) - Desktop framework
-- [React](https://react.dev) - UI library
-- [CodeMirror](https://codemirror.net) - Editor engine
-- [markdown-it](https://github.com/markdown-it/markdown-it) - Markdown parser
-- [KaTeX](https://katex.org) - Math rendering
-- [Mermaid](https://mermaid.js.org) - Diagram generation
-
----
-
-## 📞 Contact
-
-- **Website**: [boltdown.io](https://boltdown.io)
-- **GitHub**: [github.com/ai-screams/BoltDown](https://github.com/ai-screams/BoltDown)
+[MIT](LICENSE) — Copyright 2026 PignuAnte ([Ai-Scream](https://github.com/ai-screams))
 
 ---
 
 <div align="center">
 
-**"Strike through your writing at the speed of light. ⚡"**
+⚡ **Built with Rust. Powered by open source.** ⚡
 
-Made with ⚡ by the BoltDown Team
+Made by [PignuAnte](https://github.com/ai-screams) @ Ai-Scream
+
+[GitHub](https://github.com/ai-screams/BoltDown) · [Releases](https://github.com/ai-screams/BoltDown/releases) · [Issues](https://github.com/ai-screams/BoltDown/issues)
 
 </div>

@@ -52,7 +52,7 @@
       "icons/icon.ico"
     ],
     "resources": [],
-    "copyright": "© 2026 BoltDown Team",
+    "copyright": "© 2026 PignuAnte (Ai-Scream)",
     "category": "Productivity",
     "shortDescription": "Lightning-fast Markdown editor",
     "longDescription": "BoltDown is a lightning-fast, lightweight Markdown editor built with Tauri. 10x smaller than Electron apps, with instant startup and beautiful WYSIWYG editing."
