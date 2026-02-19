@@ -43,13 +43,28 @@ let cachedWysiwygFn: ((level: MermaidSecurityLevel) => Extension) | null = null
 // Register Vim Ex commands once at module level
 const dispatchSave = () =>
   window.dispatchEvent(new KeyboardEvent('keydown', { key: 's', metaKey: true, bubbles: true }))
-Vim.defineEx('write', 'w', dispatchSave)
-Vim.defineEx('quit', 'q', () =>
+const dispatchClose = () =>
   window.dispatchEvent(new KeyboardEvent('keydown', { key: 'w', metaKey: true, bubbles: true }))
-)
+
+Vim.defineEx('write', 'w', dispatchSave)
+Vim.defineEx('quit', 'q', dispatchClose)
 Vim.defineEx('wquit', 'wq', () => {
   dispatchSave()
-  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'w', metaKey: true, bubbles: true }))
+  // Wait for save to complete (savedContent === content) before closing.
+  // This prevents the "unsaved changes" prompt from firing after :wq.
+  const WQ_TIMEOUT_MS = 2000
+  const unsub = useTabStore.subscribe(state => {
+    const tab = state.tabs.find(t => t.id === state.activeTabId)
+    if (tab && tab.content === tab.savedContent) {
+      unsub()
+      dispatchClose()
+    }
+  })
+  // Safety timeout: close anyway after 2s (dirty guard still protects data)
+  setTimeout(() => {
+    unsub()
+    dispatchClose()
+  }, WQ_TIMEOUT_MS)
 })
 
 export default memo(function MarkdownEditor() {

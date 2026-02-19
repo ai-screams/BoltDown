@@ -32,6 +32,9 @@ function warmInvokeCache(): void {
 if (isTauri()) warmInvokeCache()
 
 // ── State ──
+// Single-instance assumption: BoltDown runs one EditorView at a time,
+// so a module-level variable is safe. If multiple editors are ever
+// needed, this should move into per-view plugin state.
 
 let savedInputSource: string | null = null
 

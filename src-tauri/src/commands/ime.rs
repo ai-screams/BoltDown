@@ -129,7 +129,8 @@ mod macos {
         }
     }
 
-    /// Atomically: get current source ID + switch to ASCII. Returns the previous source ID.
+    /// Get current source ID + switch to ASCII. Returns the previous source ID.
+    /// Effectively atomic: called within synchronous vim-mode-change event handler.
     pub fn save_and_switch_to_ascii() -> Option<String> {
         let prev = get_current_source_id();
         select_ascii_source();
@@ -188,7 +189,7 @@ pub fn get_input_source() -> Result<String, AppError> {
     #[cfg(target_os = "macos")]
     {
         macos::get_current_source_id()
-            .ok_or_else(|| AppError::PathValidation("Failed to get input source".into()))
+            .ok_or_else(|| AppError::Ime("Failed to get input source".into()))
     }
     #[cfg(not(target_os = "macos"))]
     {
@@ -202,7 +203,7 @@ pub fn select_ascii_input() -> Result<String, AppError> {
     #[cfg(target_os = "macos")]
     {
         macos::select_ascii_source()
-            .ok_or_else(|| AppError::PathValidation("Failed to select ASCII input source".into()))
+            .ok_or_else(|| AppError::Ime("Failed to select ASCII input source".into()))
     }
     #[cfg(not(target_os = "macos"))]
     {
@@ -210,13 +211,15 @@ pub fn select_ascii_input() -> Result<String, AppError> {
     }
 }
 
-/// Atomically save current input source and switch to ASCII. Returns previous source ID.
+/// Save current input source and switch to ASCII. Returns previous source ID.
+/// Effectively atomic in practice: called from synchronous `vim-mode-change`
+/// event handler, so no interleaving IME switches can occur.
 #[tauri::command]
 pub fn ime_save_and_switch_ascii() -> Result<String, AppError> {
     #[cfg(target_os = "macos")]
     {
         macos::save_and_switch_to_ascii()
-            .ok_or_else(|| AppError::PathValidation("Failed to switch input source".into()))
+            .ok_or_else(|| AppError::Ime("Failed to switch input source".into()))
     }
     #[cfg(not(target_os = "macos"))]
     {
