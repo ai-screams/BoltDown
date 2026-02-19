@@ -40,6 +40,7 @@ export interface GeneralSettings {
   autoSave: boolean // default false
   autoSaveDelay: number // 1000–10000 ms, default 3000
   restoreLastFile: boolean // default true
+  autoUpdate: boolean // default true
 }
 
 export interface AppSettings {
@@ -83,6 +84,7 @@ export const DEFAULT_GENERAL: GeneralSettings = {
   autoSave: SETTINGS_DEFAULTS.general.autoSave,
   autoSaveDelay: SETTINGS_DEFAULTS.general.autoSaveDelay,
   restoreLastFile: SETTINGS_DEFAULTS.general.restoreLastFile,
+  autoUpdate: SETTINGS_DEFAULTS.general.autoUpdate,
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {

@@ -38,6 +38,7 @@ export const SETTINGS_DEFAULTS = {
     autoSave: false,
     autoSaveDelay: 3000,
     restoreLastFile: true,
+    autoUpdate: true,
   },
 } as const
 
