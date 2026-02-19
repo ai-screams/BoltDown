@@ -1,0 +1,82 @@
+# =============================================================================
+# Release — Tauri 크로스 플랫폼 빌드 + GitHub Releases 배포
+#
+# release-please가 태그(v*)를 push하면 트리거:
+#   - macOS: aarch64 (Apple Silicon) + x86_64 (Intel) → DMG
+#   - Windows: x64 → MSI + NSIS exe
+#   - Linux: x64 → deb + AppImage
+#
+# 빌드 산출물은 release-please가 생성한 GitHub Release에 업로드
+# =============================================================================
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build-tauri:
+    name: Build (${{ matrix.label }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            args: '--target aarch64-apple-darwin'
+            label: macOS-ARM64
+          - platform: macos-latest
+            args: '--target x86_64-apple-darwin'
+            label: macOS-x64
+          - platform: ubuntu-22.04
+            args: ''
+            label: Linux-x64
+          - platform: windows-latest
+            args: ''
+            label: Windows-x64
+
+    runs-on: ${{ matrix.platform }}
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: 'src-tauri -> target'
+
+      - name: Install system dependencies (Linux)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and upload Tauri binaries
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'BoltDown ${{ github.ref_name }}'
+          releaseBody: 'See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.'
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.args }}

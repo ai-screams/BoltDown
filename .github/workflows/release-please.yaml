@@ -1,0 +1,28 @@
+# =============================================================================
+# Release Please — Conventional Commits 기반 자동 버전 관리 + CHANGELOG 생성
+#
+# main에 push 시:
+#   1. Release PR 자동 생성/업데이트 (version bump + CHANGELOG)
+#   2. Release PR merge 시 → 태그 생성 + GitHub Release 생성
+#   3. 태그 생성 → release.yaml 트리거 (크로스 플랫폼 빌드)
+# =============================================================================
+name: Release Please
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    name: Release Please
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

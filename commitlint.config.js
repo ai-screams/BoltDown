@@ -23,12 +23,25 @@ export default {
       2,
       'always',
       [
+        // Core
         'editor',
         'preview',
         'parser',
         'math',
         'diagram',
+        'vim',
+        'find',
+
+        // UI components
         'ui',
+        'sidebar',
+        'tab',
+        'tree',
+        'settings',
+        'theme',
+
+        // Infrastructure
+        'store',
         'file',
         'export',
         'config',
@@ -36,6 +49,12 @@ export default {
         'rust',
         'tauri',
         'ci',
+        'release',
+
+        // Cross-cutting
+        'a11y',
+        'security',
+        'perf',
       ],
     ],
 
