@@ -4,11 +4,35 @@
 
 <div align="center">
 
+[![GitHub Release](https://img.shields.io/github/v/release/ai-screams/BoltDown?label=Latest&color=FFC131)](https://github.com/ai-screams/BoltDown/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/ai-screams/BoltDown/total?color=blue)](https://github.com/ai-screams/BoltDown/releases/latest)
+[![CI](https://img.shields.io/github/actions/workflow/status/ai-screams/BoltDown/ci.yaml?branch=main&label=CI&logo=githubactions&logoColor=white)](https://github.com/ai-screams/BoltDown/actions/workflows/ci.yaml)
+[![Release](https://img.shields.io/github/actions/workflow/status/ai-screams/BoltDown/release-please.yaml?branch=main&label=Release&logo=githubactions&logoColor=white)](https://github.com/ai-screams/BoltDown/actions/workflows/release-please.yaml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Tauri](https://img.shields.io/badge/Tauri-2.0-FFC131.svg)](https://tauri.app)
-[![React](https://img.shields.io/badge/React-19-61DAFB.svg)](https://react.dev)
 
-[📦 Download](https://github.com/ai-screams/BoltDown/releases) · [🐛 Report Bug](https://github.com/ai-screams/BoltDown/issues) · [📐 Architecture](.docs/adr/)
+[![Tauri](https://img.shields.io/badge/Tauri-2.0-FFC131.svg?logo=tauri&logoColor=white)](https://tauri.app)
+[![React](https://img.shields.io/badge/React-19-61DAFB.svg?logo=react&logoColor=white)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Rust](https://img.shields.io/badge/Rust-stable-DEA584.svg?logo=rust&logoColor=white)](https://www.rust-lang.org)
+[![Vite](https://img.shields.io/badge/Vite-7-646CFF.svg?logo=vite&logoColor=white)](https://vite.dev)
+[![CodeMirror](https://img.shields.io/badge/CodeMirror-6-D30707.svg)](https://codemirror.net)
+
+[![macOS](https://img.shields.io/badge/macOS-ARM64%20%7C%20x64-000000.svg?logo=apple&logoColor=white)](https://github.com/ai-screams/BoltDown/releases/latest)
+[![Windows](https://img.shields.io/badge/Windows-x64-0078D4.svg?logo=windows&logoColor=white)](https://github.com/ai-screams/BoltDown/releases/latest)
+[![Linux](https://img.shields.io/badge/Linux-x64-FCC624.svg?logo=linux&logoColor=black)](https://github.com/ai-screams/BoltDown/releases/latest)
+
+[![Stars](https://img.shields.io/github/stars/ai-screams/BoltDown?style=flat&logo=github&color=yellow)](https://github.com/ai-screams/BoltDown/stargazers)
+[![Forks](https://img.shields.io/github/forks/ai-screams/BoltDown?style=flat&logo=github)](https://github.com/ai-screams/BoltDown/network/members)
+[![Issues](https://img.shields.io/github/issues/ai-screams/BoltDown)](https://github.com/ai-screams/BoltDown/issues)
+[![PRs](https://img.shields.io/github/issues-pr/ai-screams/BoltDown)](https://github.com/ai-screams/BoltDown/pulls)
+[![Last Commit](https://img.shields.io/github/last-commit/ai-screams/BoltDown)](https://github.com/ai-screams/BoltDown/commits/main)
+[![Commit Activity](https://img.shields.io/github/commit-activity/m/ai-screams/BoltDown)](https://github.com/ai-screams/BoltDown/graphs/commit-activity)
+[![Repo Size](https://img.shields.io/github/repo-size/ai-screams/BoltDown)](https://github.com/ai-screams/BoltDown)
+[![Top Language](https://img.shields.io/github/languages/top/ai-screams/BoltDown)](https://github.com/ai-screams/BoltDown)
+[![Contributors](https://img.shields.io/github/contributors/ai-screams/BoltDown)](https://github.com/ai-screams/BoltDown/graphs/contributors)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-FE5196.svg?logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)
+
+[📦 Download](https://github.com/ai-screams/BoltDown/releases/latest) · [🐛 Report Bug](https://github.com/ai-screams/BoltDown/issues) · [📐 Architecture](.docs/adr/)
 
 </div>
 
@@ -79,17 +103,17 @@ BoltDown is a native desktop Markdown editor built with Tauri 2.0 and Rust. It l
 
 ### 🍎 macOS
 
-Download the `.dmg` file from the [latest release](https://github.com/ai-screams/BoltDown/releases), open it, and drag BoltDown to your Applications folder.
+Download the `.dmg` file from the [latest release](https://github.com/ai-screams/BoltDown/releases/latest), open it, and drag BoltDown to your Applications folder.
 
 > 💡 **Apple Silicon and Intel** — We provide separate builds for each architecture for the best native performance.
 
 ### 🪟 Windows
 
-Download the `.msi` installer from the [latest release](https://github.com/ai-screams/BoltDown/releases) and run it.
+Download the `.msi` installer from the [latest release](https://github.com/ai-screams/BoltDown/releases/latest) and run it.
 
 ### 🐧 Linux
 
-Download the `.AppImage` or `.deb` package from the [latest release](https://github.com/ai-screams/BoltDown/releases).
+Download the `.AppImage` or `.deb` package from the [latest release](https://github.com/ai-screams/BoltDown/releases/latest).
 
 ```bash
 # Debian / Ubuntu
