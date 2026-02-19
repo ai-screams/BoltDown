@@ -24,6 +24,7 @@ Modular CM6 extensions for markdown language support, editor theming, and WYSIWY
   - `BulletWidget.ts` — Bullet list marker widget. Styled list markers with theme-aware colors.
   - `utils.ts` — Shared utilities. Exports `scheduleEditorMeasure()` (defers layout recalculation for dynamic widget heights), `DocRange` type, `headingStyles` constant (font-size/weight per level), range helper functions (`createRangeChecker`, `isCursorOnRangeLine`, `isSelectionInRange`).
   - **Architecture notes**: `ignoreEvent()` varies by widget (`TableWidget` returns `true`, badge/TOC/task/image widgets intercept mouse events, math/mermaid/code widget can return `false`). Uses `ensureSyntaxTree()` with 50ms timeout fallback. Configurable `MermaidSecurityLevel` from settings (default 'strict'). Image widget uses DI (`markdownFilePath`) for testability.
+- `vimIME.ts` — **CJK IME auto-switch for vim mode**. CM6 ViewPlugin that listens for `vim-mode-change` synchronous events on the CM adapter. Normal mode → saves current input source + switches to ASCII via Tauri `ime_save_and_switch_ascii` IPC. Insert mode → restores saved input source via `select_input_source`. `compositionstart` guard handles manual CJK input in Normal mode (re-switches to ASCII). Uses module-level `cachedInvoke` for `@tauri-apps/api/core` import caching with `isTauri()` guard. Exports `vimIMEExtension(): Extension`.
 - `focus.ts` — Focus Mode ViewPlugin that dims non-cursor lines. Uses `cm-focus-dimmed` and `cm-focus-context` CSS classes. Configurable `contextLines` parameter controls how many lines around cursor remain bright. Only decorates visible ranges for performance. Exports `focusExtension(contextLines: number): Extension`.
 - `typewriter.ts` — Typewriter Mode extension (`ViewPlugin` + `scrollPastEnd`). Keeps caret line centered with RAF scheduling, defers recenter while pointer drag-selection is active, recenters on pointer release, and applies subtle active-line highlight.
 
@@ -33,6 +34,7 @@ Modular CM6 extensions for markdown language support, editor theming, and WYSIWY
 - Theme switching: `themeComp.reconfigure(isDark ? boltdownDarkTheme : boltdownTheme)`
 - Live/zen toggle: `wysiwygComp.reconfigure(mode === 'live' || mode === 'zen' ? wysiwygExtension(mermaidSecurityLevel) : [])`
 - Code-block arrow keymap toggle: `codeBlockArrowNavComp.reconfigure(mode === 'live' || mode === 'zen' ? codeBlockArrowNavigationKeymap() : [])`
+- Vim mode toggle: `vimComp.reconfigure(vimMode ? [vim(), vimIMEExtension()] : [])` — hot-toggleable without editor remount
 - `wysiwygExtension()` returns a StateField (not ViewPlugin) — supports `block: true` on widget decorations
 - `wysiwygExtension()` traverses the syntax tree and compares cursor position to decide show/hide decorations
 - Focus mode: separate extension, toggled independently

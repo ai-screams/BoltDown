@@ -8,7 +8,7 @@ Core editing experience: CodeMirror 6 editor, tab management with keyboard navig
 
 ## Key Files
 
-- `MarkdownEditor.tsx` — Direct CM6 EditorView management (not @uiw/react-codemirror wrapper). Creates EditorView once on mount, caches EditorState per tab in `Map<tabId, EditorState>` (preserves undo history, cursor, scroll). Uses `useRef(new Compartment())` for theme/wysiwyg/gutter/focus/spellcheck/typewriter/**codeBlockArrowNav** compartments. Live+Zen modes enable WYSIWYG decorations. Ordered-list `Tab` / `Shift-Tab` run list-aware indent/outdent with tree renumber normalization after each operation. In live/zen, fenced code blocks also get boundary navigation (`ArrowUp`/`ArrowDown`) and code-block-scoped `Mod+A` through `codeBlockArrowNavigationKeymap()`. Uses `useSettingsStore` for isDark theme derivation and focus/typewriter/spellcheck settings. Removed built-in searchKeymap (replaced by custom FindReplaceModal UI). Exports EditorView via EditorViewContext for toolbar/find access. **UI Polish**: Live/zen modes apply `max-w-4xl` (896px) + `mx-auto` centering via conditional className for optimal markdown reading width (~112 chars/line).
+- `MarkdownEditor.tsx` — Direct CM6 EditorView management (not @uiw/react-codemirror wrapper). Creates EditorView once on mount, caches EditorState per tab in `Map<tabId, EditorState>` (preserves undo history, cursor, scroll). Uses `useRef(new Compartment())` for theme/wysiwyg/gutter/focus/spellcheck/typewriter/**codeBlockArrowNav**/**vim** compartments. Live+Zen modes enable WYSIWYG decorations. Ordered-list `Tab` / `Shift-Tab` run list-aware indent/outdent with tree renumber normalization after each operation. In live/zen, fenced code blocks also get boundary navigation (`ArrowUp`/`ArrowDown`) and code-block-scoped `Mod+A` through `codeBlockArrowNavigationKeymap()`. Uses `useSettingsStore` for isDark theme derivation and focus/typewriter/spellcheck/vimMode settings. Removed built-in searchKeymap (replaced by custom FindReplaceModal UI). Exports EditorView via EditorViewContext for toolbar/find access. **Vim mode**: `vimCompRef` compartment hot-toggles `@replit/codemirror-vim` extension + CJK IME guard (`vimIME.ts`); `Vim.defineEx` registers `:w`/`:q`/`:wq` commands. **UI Polish**: Live/zen modes apply `max-w-4xl` (896px) + `mx-auto` centering via conditional className for optimal markdown reading width (~112 chars/line).
 
 - `TabBar.tsx` — Horizontal tab bar with WAI-ARIA tabs pattern: sidebar toggle button (leftmost fixed), scrollable tabs (`w-[160px] shrink-0`), new tab button (after last tab). Keyboard navigation with ArrowLeft/Right/Home/End, roving tabindex (active tab = 0, others = -1). F2 triggers rename. Double-click to rename tab. Derives isDirty as `content !== savedContent`. Uses `joinPath()`/`getDirectoryPath()` from `@/utils/imagePath` for cross-platform file path manipulation during rename. Icons marked with `aria-hidden="true"`. Memoized with `memo()`.
 
@@ -63,7 +63,8 @@ EditorView (created once in useEffect[])
 │   ├── focusComp → focusExtension(contextLines) | []
 │   ├── spellcheckComp → EditorView.contentAttributes.of(...) | []
 │   ├── typewriterComp → typewriterExtension() | []
-│   └── codeBlockArrowNavComp → codeBlockArrowNavigationKeymap() | []
+│   ├── codeBlockArrowNavComp → codeBlockArrowNavigationKeymap() | []
+│   └── vimComp → [vim(), vimIMEExtension()] | []
 ├── EditorState cache: Map<tabId, EditorState>
 │   └── Preserves: undo history, cursor position, scroll
 └── updateListener → tabStore.updateContent()
@@ -74,6 +75,7 @@ EditorView (created once in useEffect[])
 - **EditorView ref**: Shared via EditorViewContext for toolbar access
 - **Ordered-list Tab behavior**: Custom keymap runs before `indentWithTab`; `Tab`/`Shift-Tab` only apply to caret selection inside ordered-list items (skip code blocks), move current item subtree, and renumber ordered-list trees after each change.
 - **Code-block keymap behavior**: `codeBlockArrowNavigationKeymap()` is enabled only for `mode === 'live' || mode === 'zen'`; outside WYSIWYG modes it must be reconfigured to `[]`.
+- **Vim mode behavior**: `vimCompRef` hot-toggles `[vim(), vimIMEExtension()]` based on `vimMode` setting. `Vim.defineEx` registers `:w` (save), `:q` (close tab), `:wq` (save+close) by dispatching synthetic `KeyboardEvent`s. CJK IME auto-switch via `vim-mode-change` synchronous event + `compositionstart` defense.
 
 ### TabBar Layout
 
