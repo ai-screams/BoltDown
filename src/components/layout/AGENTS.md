@@ -12,7 +12,7 @@ Top-level layout components that compose the application structure: header, foot
 
 - `Footer.tsx` — Status bar (h-8, flex-none): left side shows status text with `aria-live="polite"` and `aria-atomic="true"` for screen reader announcements (`editorStore.statusText` or "Ready"), right side shows word count, reading time (225 wpm), line count, character count with `toLocaleString()` formatting. Computed via `useDocumentStats()` hook. Memoized with `memo()`. Accepts optional `className` prop for zen mode dimming.
 
-- `MainLayout.tsx` — Flex-based split layout with draggable divider. Accepts `editor`, `preview`, `toolbar` ReactNode slots. Reads `editorStore.mode` to toggle panels ('split' = both, 'source'/'zen' = editor only). Divider uses `requestAnimationFrame` for 60fps resize, clamps ratio 0.2–0.8, double-click resets to 50/50. Window blur safety (cleanup on window blur). Pointer overlay during drag (fixed inset-0 z-40 with cursor-col-resize) prevents text selection. Preview container has `overscroll-contain` to prevent scroll chaining.
+- `MainLayout.tsx` — Flex-based split layout with draggable divider. Accepts `editor`, `preview`, `toolbar` ReactNode slots. Reads `editorStore.mode` to toggle panels (`split` = both, `source/live/zen` = editor only). Divider uses `requestAnimationFrame` for 60fps resize, clamps ratio 0.2–0.8, double-click resets to 50/50. Window blur safety (cleanup on window blur). Pointer overlay during drag (fixed inset-0 z-40 with cursor-col-resize) prevents text selection. Preview container has `overscroll-contain` to prevent scroll chaining.
 
 ## Accessibility Features
 

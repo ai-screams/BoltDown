@@ -108,9 +108,7 @@ export function appendMathDecorations(
 
       if (isInExcludedRange(matchFrom) || isInExcludedRange(matchTo - 1)) continue
 
-      const isActive =
-        isSelectionInRange(cursor, matchFrom, matchTo) ||
-        isCursorOnRangeLine(state, cursorLine, matchFrom, matchTo)
+      const isActive = isSelectionInRange(cursor, matchFrom, matchTo)
       if (isActive) continue
 
       decorations.push(

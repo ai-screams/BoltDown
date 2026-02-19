@@ -68,6 +68,16 @@
     border-radius: 6px;
   }
 
+  /* Hidden fence lines keep document coordinates but collapse visually */
+  .cm-editor .codeblock-fence-hidden-line {
+    height: 0 !important;
+    line-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    font-size: 0 !important;
+    overflow: hidden;
+  }
+
   /* Badge → language has badge, no language → no badge, so adjust first-line radius */
   .cm-editor .cm-widgetBuffer + .codeblock-line[data-codeblock-first] {
     border-radius: 0;

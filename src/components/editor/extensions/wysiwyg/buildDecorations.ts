@@ -5,13 +5,22 @@ import Prism from 'prismjs'
 
 import { useTabStore } from '@/stores/tabStore'
 import type { MermaidSecurityLevel } from '@/types/settings'
+import { stripInlineMarkdown } from '@/utils/markdownText'
 
 import { appendMathDecorations } from './BlockMathWidget'
 import { BulletWidget } from './BulletWidget'
+import { getFencedCodeBlockIdFromRange } from './codeBlockArrowNavigationModel'
 import { LanguageBadgeWidget, applyPrismTokens, getCodeBlockPalette } from './CodeBlockWidget'
 import { ImageWidget } from './ImageWidget'
+import {
+  appendInlineHtmlTagDecorations,
+  parseInlineHtmlMarker,
+  type InlineHtmlMarker,
+} from './inlineHtmlDecorations'
 import { MermaidWidget } from './MermaidWidget'
 import { TableWidget } from './TableWidget'
+import { TaskCheckboxWidget } from './TaskCheckboxWidget'
+import { TocWidget, type TocHeadingItem } from './TocWidget'
 import { headingStyles, isCursorOnRangeLine, isSelectionInRange, type DocRange } from './utils'
 
 /** Shared logic for symmetric inline formatting (bold, italic, inline code, strikethrough) */
@@ -39,6 +48,51 @@ function applyInlineFormatting(
   }
 }
 
+function isTocMarkerParagraphText(text: string): boolean {
+  return /^\[toc\]$/i.test(text.trim())
+}
+
+function isRangeWithinAnyRange(range: DocRange, ranges: readonly DocRange[]): boolean {
+  return ranges.some(candidate => range.from >= candidate.from && range.to <= candidate.to)
+}
+
+function extractTocHeadingItem(
+  state: EditorState,
+  nodeName: string,
+  from: number,
+  to: number
+): TocHeadingItem | null {
+  let level: number | null = null
+  let rawText = ''
+
+  const atxMatch = /^ATXHeading([1-6])$/.exec(nodeName)
+  if (atxMatch) {
+    level = Number.parseInt(atxMatch[1]!, 10)
+    const lineText = state.sliceDoc(from, to)
+    rawText = lineText
+      .replace(/^#{1,6}\s+/, '')
+      .replace(/\s+#{1,6}\s*$/, '')
+      .trim()
+  }
+
+  if (nodeName === 'SetextHeading1' || nodeName === 'SetextHeading2') {
+    level = nodeName === 'SetextHeading1' ? 1 : 2
+    const headingText = state.sliceDoc(from, to).split('\n').slice(0, -1).join(' ').trim()
+    rawText = headingText
+  }
+
+  if (level === null) return null
+
+  const text = stripInlineMarkdown(rawText).trim()
+  if (!text) return null
+
+  return {
+    from,
+    level,
+    text,
+  }
+}
+
 export function buildDecorations(
   state: EditorState,
   mermaidSecurityLevel: MermaidSecurityLevel
@@ -47,6 +101,9 @@ export function buildDecorations(
   const cursor = state.selection.main
   const cursorLine = state.doc.lineAt(cursor.head).number
   const codeRanges: DocRange[] = []
+  const tocParagraphRanges: DocRange[] = []
+  const tocHeadings: TocHeadingItem[] = []
+  const inlineHtmlMarkers: InlineHtmlMarker[] = []
   const tree = ensureSyntaxTree(state, state.doc.length, 50) ?? syntaxTree(state)
   const codeBlockPalette = getCodeBlockPalette()
 
@@ -63,9 +120,28 @@ export function buildDecorations(
       const revealBlock = cursorInRange || cursorOnNodeLine
       const revealInline = cursorInRange
 
-      // Collect code ranges for math exclusion
-      if (node.name === 'FencedCode' || node.name === 'InlineCode') {
+      // Collect code ranges for math and inline HTML exclusion
+      if (node.name === 'FencedCode' || node.name === 'CodeBlock' || node.name === 'InlineCode') {
         codeRanges.push({ from, to })
+      }
+
+      if (node.name === 'HTMLTag') {
+        const rawTagText = state.sliceDoc(from, to)
+        const marker = parseInlineHtmlMarker(rawTagText, from, to)
+        if (marker) {
+          inlineHtmlMarkers.push(marker)
+        }
+      }
+
+      const tocHeading = extractTocHeadingItem(state, node.name, from, to)
+      if (tocHeading) {
+        tocHeadings.push(tocHeading)
+      }
+
+      if (node.name === 'Paragraph' && isTocMarkerParagraphText(state.sliceDoc(from, to))) {
+        if (!revealBlock) {
+          tocParagraphRanges.push({ from, to })
+        }
       }
 
       // Headings: style the line when cursor is outside
@@ -157,6 +233,10 @@ export function buildDecorations(
 
       // Links: [text](url)
       if (node.name === 'Link') {
+        if (isRangeWithinAnyRange({ from, to }, tocParagraphRanges)) {
+          return
+        }
+
         const linkMarks = node.node.getChildren('LinkMark')
         const urlNode = node.node.getChildren('URL')
         // LinkMarks: [0]='[', [1]=']', [2]='(', [3]=')'
@@ -201,10 +281,22 @@ export function buildDecorations(
       if (node.name === 'ListItem' && node.node.parent?.type.name === 'BulletList') {
         const itemCursorInRange = isSelectionInRange(cursor, from, to)
         if (!itemCursorInRange && !cursorOnNodeLine) {
+          const taskNode = node.node.getChildren('Task')[0]
+          const taskMarker = taskNode?.getChildren('TaskMarker')[0]
           const listMark = node.node.getChildren('ListMark')
-          if (listMark.length > 0) {
+          if (taskMarker) {
+            const taskMarkerText = state.sliceDoc(taskMarker.from, taskMarker.to)
+            const isChecked = /\[[xX]\]/.test(taskMarkerText)
+            const replaceFrom = listMark.length > 0 ? listMark[0]!.from : taskMarker.from
+            const nextChar = state.sliceDoc(taskMarker.to, taskMarker.to + 1)
+            const replaceTo = nextChar === ' ' ? taskMarker.to + 1 : taskMarker.to
+            decorations.push(
+              Decoration.replace({
+                widget: new TaskCheckboxWidget(isChecked, taskMarker.from, taskMarker.to),
+              }).range(replaceFrom, replaceTo)
+            )
+          } else if (listMark.length > 0) {
             const mark = listMark[0]!
-            // Replace '- ' with bullet widget
             decorations.push(
               Decoration.replace({
                 widget: new BulletWidget(),
@@ -226,6 +318,8 @@ export function buildDecorations(
       if (node.name === 'ListItem' && node.node.parent?.type.name === 'OrderedList') {
         const itemCursorInRange = isSelectionInRange(cursor, from, to)
         if (!itemCursorInRange && !cursorOnNodeLine) {
+          const taskNode = node.node.getChildren('Task')[0]
+          const taskMarker = taskNode?.getChildren('TaskMarker')[0]
           const listMark = node.node.getChildren('ListMark')
           if (listMark.length > 0) {
             const mark = listMark[0]!
@@ -237,6 +331,19 @@ export function buildDecorations(
               }).range(mark.from, mark.to)
             )
           }
+
+          if (taskMarker) {
+            const taskMarkerText = state.sliceDoc(taskMarker.from, taskMarker.to)
+            const isChecked = /\[[xX]\]/.test(taskMarkerText)
+            const nextChar = state.sliceDoc(taskMarker.to, taskMarker.to + 1)
+            const replaceTo = nextChar === ' ' ? taskMarker.to + 1 : taskMarker.to
+            decorations.push(
+              Decoration.replace({
+                widget: new TaskCheckboxWidget(isChecked, taskMarker.from, taskMarker.to),
+              }).range(taskMarker.from, replaceTo)
+            )
+          }
+
           // Subtle left indent
           decorations.push(
             Decoration.line({
@@ -276,12 +383,12 @@ export function buildDecorations(
         }
       }
 
-      // Tables: replace with rendered HTML table
-      if (node.name === 'Table' && !revealBlock) {
+      // Tables: always render as editable widget in live/zen mode
+      if (node.name === 'Table') {
         const tableText = state.sliceDoc(from, to)
         decorations.push(
           Decoration.replace({
-            widget: new TableWidget(tableText),
+            widget: new TableWidget(tableText, from, to),
             block: true,
           }).range(from, to)
         )
@@ -289,6 +396,7 @@ export function buildDecorations(
 
       // Fenced code blocks: mermaid as widget, others always editable
       if (node.name === 'FencedCode') {
+        const blockId = getFencedCodeBlockIdFromRange(from, to)
         const codeInfoNode = node.node.getChildren('CodeInfo')
         const codeTextNode = node.node.getChildren('CodeText')
         const language =
@@ -298,10 +406,33 @@ export function buildDecorations(
         const code =
           codeTextNode.length > 0 ? state.sliceDoc(codeTextNode[0]!.from, codeTextNode[0]!.to) : ''
         const normalizedLanguage = language.toLowerCase()
+        const openingFenceLine = state.doc.lineAt(from)
+        const safeCodeInfoPos = Math.min(from + 3, to)
+        const codeInfoFrom = codeInfoNode.length > 0 ? codeInfoNode[0]!.from : safeCodeInfoPos
+        const codeInfoTo = codeInfoNode.length > 0 ? codeInfoNode[0]!.to : safeCodeInfoPos
+        const lineAboveFrom =
+          openingFenceLine.number > 1 ? state.doc.line(openingFenceLine.number - 1).from : null
+        const firstCodeLineEntryPos =
+          codeTextNode.length > 0
+            ? Math.min(codeTextNode[0]!.from + 1, state.doc.lineAt(codeTextNode[0]!.from).to)
+            : null
 
         if (normalizedLanguage === 'mermaid') {
           // MERMAID: Keep existing reveal behavior (widget when outside, reveal when inside)
           if (!revealBlock) {
+            decorations.push(
+              Decoration.widget({
+                widget: new LanguageBadgeWidget(language, {
+                  blockId,
+                  codeInfoFrom,
+                  codeInfoTo,
+                  lineAboveFrom,
+                  firstCodeLineEntryPos,
+                }),
+                side: -1,
+                block: true,
+              }).range(from)
+            )
             decorations.push(
               Decoration.replace({
                 widget: new MermaidWidget(code, mermaidSecurityLevel),
@@ -313,14 +444,21 @@ export function buildDecorations(
             const firstLine = state.doc.lineAt(from)
             const lastLine = state.doc.lineAt(to)
 
+            decorations.push(Decoration.replace({}).range(firstLine.from, firstLine.to))
             decorations.push(
-              Decoration.replace({}).range(
-                firstLine.from,
-                Math.min(firstLine.to + 1, state.doc.length)
-              )
+              Decoration.line({
+                class: 'codeblock-fence-hidden-line',
+                attributes: { 'data-codeblock-id': blockId },
+              }).range(firstLine.from)
             )
             if (lastLine.from > firstLine.to) {
-              decorations.push(Decoration.replace({}).range(lastLine.from - 1, lastLine.to))
+              decorations.push(Decoration.replace({}).range(lastLine.from, lastLine.to))
+              decorations.push(
+                Decoration.line({
+                  class: 'codeblock-fence-hidden-line',
+                  attributes: { 'data-codeblock-id': blockId },
+                }).range(lastLine.from)
+              )
             }
 
             const palette = codeBlockPalette
@@ -328,14 +466,14 @@ export function buildDecorations(
               const codeFrom = codeTextNode[0]!.from
               const codeTo = codeTextNode[0]!.to
               const startLine = state.doc.lineAt(codeFrom)
-              const endLine = state.doc.lineAt(codeTo)
-
+              const endLine = state.doc.lineAt(Math.max(codeFrom, codeTo - 1))
               for (let i = startLine.number; i <= endLine.number; i++) {
                 const line = state.doc.line(i)
                 decorations.push(
                   Decoration.line({
                     attributes: {
                       style: `background: ${palette.background}; font-family: monospace; font-size: 0.875em;`,
+                      'data-codeblock-id': blockId,
                     },
                   }).range(line.from)
                 )
@@ -348,36 +486,42 @@ export function buildDecorations(
               }
             }
 
-            if (language && codeInfoNode.length > 0) {
-              const infoFrom = codeInfoNode[0]!.from
-              const infoTo = codeInfoNode[0]!.to
-              decorations.push(
-                Decoration.widget({
-                  widget: new LanguageBadgeWidget(language, infoFrom, infoTo),
-                  side: -1,
-                }).range(codeTextNode.length > 0 ? codeTextNode[0]!.from : from)
-              )
-            }
+            decorations.push(
+              Decoration.widget({
+                widget: new LanguageBadgeWidget(language, {
+                  blockId,
+                  codeInfoFrom,
+                  codeInfoTo,
+                  lineAboveFrom,
+                  firstCodeLineEntryPos,
+                }),
+                side: -1,
+              }).range(from)
+            )
           }
         } else {
           // NON-MERMAID: Always show styled editable code block (Typora-style)
           const firstLine = state.doc.lineAt(from)
           const lastLine = state.doc.lineAt(to)
-          const cursorOnFence = cursorLine === firstLine.number
 
-          // Hide opening fence (unless cursor is on it — via badge click for language editing)
-          if (!cursorOnFence) {
-            decorations.push(
-              Decoration.replace({}).range(
-                firstLine.from,
-                Math.min(firstLine.to + 1, state.doc.length)
-              )
-            )
-          }
+          // Hide opening fence
+          decorations.push(Decoration.replace({}).range(firstLine.from, firstLine.to))
+          decorations.push(
+            Decoration.line({
+              class: 'codeblock-fence-hidden-line',
+              attributes: { 'data-codeblock-id': blockId },
+            }).range(firstLine.from)
+          )
 
           // Always hide closing fence
           if (lastLine.from > firstLine.to) {
-            decorations.push(Decoration.replace({}).range(lastLine.from - 1, lastLine.to))
+            decorations.push(Decoration.replace({}).range(lastLine.from, lastLine.to))
+            decorations.push(
+              Decoration.line({
+                class: 'codeblock-fence-hidden-line',
+                attributes: { 'data-codeblock-id': blockId },
+              }).range(lastLine.from)
+            )
           }
 
           // Style code lines with shared CSS classes
@@ -385,7 +529,7 @@ export function buildDecorations(
             const codeFrom = codeTextNode[0]!.from
             const codeTo = codeTextNode[0]!.to
             const startLine = state.doc.lineAt(codeFrom)
-            const endLine = state.doc.lineAt(codeTo)
+            const endLine = state.doc.lineAt(Math.max(codeFrom, codeTo - 1))
 
             for (let i = startLine.number; i <= endLine.number; i++) {
               const line = state.doc.line(i)
@@ -394,13 +538,18 @@ export function buildDecorations(
               const isLast = i === endLine.number
 
               const attrs: Record<string, string> = {
-                class: 'codeblock-line',
                 'data-line-number': String(lineNum),
+                'data-codeblock-id': blockId,
               }
               if (isFirst) attrs['data-codeblock-first'] = ''
               if (isLast) attrs['data-codeblock-last'] = ''
 
-              decorations.push(Decoration.line({ attributes: attrs }).range(line.from))
+              decorations.push(
+                Decoration.line({
+                  class: 'codeblock-line',
+                  attributes: attrs,
+                }).range(line.from)
+              )
             }
 
             // Apply Prism syntax highlighting
@@ -412,24 +561,36 @@ export function buildDecorations(
           }
 
           // Language badge widget (only when fence is hidden)
-          const codeInfoFrom = codeInfoNode.length > 0 ? codeInfoNode[0]!.from : from + 3
-          const codeInfoTo = codeInfoNode.length > 0 ? codeInfoNode[0]!.to : from + 3
-          if (language && !cursorOnFence) {
-            decorations.push(
-              Decoration.widget({
-                widget: new LanguageBadgeWidget(language, codeInfoFrom, codeInfoTo),
-                side: -1,
-                block: true,
-              }).range(codeTextNode.length > 0 ? codeTextNode[0]!.from : from)
-            )
-          }
+          decorations.push(
+            Decoration.widget({
+              widget: new LanguageBadgeWidget(language, {
+                blockId,
+                codeInfoFrom,
+                codeInfoTo,
+                lineAboveFrom,
+                firstCodeLineEntryPos,
+              }),
+              side: -1,
+              block: true,
+            }).range(from)
+          )
         }
       }
     },
   })
 
+  for (const tocRange of tocParagraphRanges) {
+    decorations.push(
+      Decoration.replace({
+        widget: new TocWidget(tocHeadings),
+        block: true,
+      }).range(tocRange.from, tocRange.to)
+    )
+  }
+
   // Math detection (separate pass after tree walk to avoid code ranges)
   codeRanges.sort((a, b) => a.from - b.from)
+  appendInlineHtmlTagDecorations(decorations, cursor, inlineHtmlMarkers, codeRanges)
   appendMathDecorations(state, decorations, cursor, cursorLine, codeRanges)
 
   return Decoration.set(decorations, true)

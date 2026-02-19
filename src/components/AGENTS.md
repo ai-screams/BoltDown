@@ -13,7 +13,9 @@ All React UI components organized by feature area. Most function components use 
 - `preview/` — Markdown preview renderer (see preview/AGENTS.md)
 - `sidebar/` — File tree with keyboard-navigable context menus, recent files, resize handle with ARIA separator (see sidebar/AGENTS.md)
 - `common/` — Shared UI primitives: ErrorBoundary, IconButton (see common/AGENTS.md)
+- `about/` — About/Changelog modals and static product metadata
 - `settings/` — Settings modal with form accessibility (aria-label on all controls) (see settings/AGENTS.md)
+- `shortcuts/` — Keyboard shortcuts reference modal content
 - `findreplace/` — Find & Replace modal with ARIA live region for match counter (see findreplace/AGENTS.md)
 
 ## Accessibility Features

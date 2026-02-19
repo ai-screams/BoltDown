@@ -46,6 +46,9 @@ export default defineConfig({
             '@codemirror/state',
             '@codemirror/lang-markdown',
           ],
+          'vendor-ui': ['clsx', 'lucide-react', 'react-arborist', 'zustand'],
+          'vendor-prism': ['prismjs'],
+          'vendor-sanitize': ['dompurify'],
           'vendor-markdown': ['markdown-it', 'katex'],
           'vendor-mermaid': ['mermaid'], // Lazy loaded
         },

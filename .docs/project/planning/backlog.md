@@ -2,7 +2,7 @@
 
 > 단일 백로그. 활성 코드 작업은 완료되었고 Known Issues만 유지.
 > SSoT: 이 파일은 현재/활성 계획 상태의 기준 문서이며, 구현 세부 이력은 `AGENTS.md`, `MEMORY.md`, `git log`를 함께 참조.
-> 최종 갱신: 2026-02-18 (Waves 1-9 완료, 문서/메모리 팩트체크 반영)
+> 최종 갱신: 2026-02-19 (Waves 1-10 완료 + 코드블록 경계 내비게이션/문서 팩트체크 반영)
 
 ---
 
@@ -10,15 +10,27 @@
 
 > 구조적 한계 또는 외부 의존성으로 인해 당장 해결하지 않는 항목.
 
-| ID  | Issue                              | Location                        | 사유                                                                                                           |
-| --- | ---------------------------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| P5  | Preview 매번 전체 재파싱           | `MarkdownPreview.tsx`           | markdown-it 자체가 증분 파싱 미지원. tree-sitter/mdast 등 아키텍처 전환 필요. 대용량 문서에서만 체감.          |
-| U4  | Zen/Split 렌더링 패리티            | `wysiwyg/`, `markdownConfig.ts` | CM6 데코레이션 vs markdown-it 파싱 엔진 차이. 완전한 패리티는 구조적으로 불가능. 회귀 픽스처 세트로 관리 필요. |
-| U5  | Spellcheck underline (macOS Tauri) | `MarkdownEditor.tsx`            | macOS WKWebView 레벨 이슈. Tauri/앱 코드로 제어 불가. OS 업데이트 또는 Hunspell 자체 통합 필요.                |
+| ID  | Issue                                      | Location                        | 사유                                                                                                                                 |
+| --- | ------------------------------------------ | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| P5  | Preview 매번 전체 재파싱                   | `MarkdownPreview.tsx`           | markdown-it 자체가 증분 파싱 미지원. tree-sitter/mdast 등 아키텍처 전환 필요. 대용량 문서에서만 체감.                                |
+| U4  | Live/Split 잔여 렌더링 패리티              | `wysiwyg/`, `markdownConfig.ts` | CM6 데코레이션 vs markdown-it 파싱 엔진 차이. 인터랙티브 위젯 동작 차이는 일부 의도적(편집 UX)이며 잔여 패리티는 회귀 픽스처로 관리. |
+| U5  | Spellcheck underline (macOS Tauri)         | `MarkdownEditor.tsx`            | macOS WKWebView 레벨 이슈. Tauri/앱 코드로 제어 불가. OS 업데이트 또는 Hunspell 자체 통합 필요.                                      |
+| U8  | Table resize 축소 시 데이터 절단 확인 없음 | `wysiwyg/TableWidget.ts`        | Rows/Cols 축소 시 데이터가 즉시 잘리며 확인 다이얼로그가 없음. 현재 정책은 "축소 시 손실 허용"이지만 UX 경고 검토 필요.              |
 
 ---
 
-## Completed (Waves 1-9)
+## Ideas (Future)
+
+> 당장 착수하지 않고 아이디어로만 보관하는 후보.
+
+| ID  | Idea                                              | Scope                                                     | Note                                                                                                                                                                             |
+| --- | ------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| I1  | Split 우측 렌더에 Live 뷰어 재사용 가능성 검토    | `wysiwyg/`, `MarkdownPreview`, split sync                 | 클릭 비활성 + 드래그 허용 read-only 상호작용, `data-source-line` 계약/스크롤 싱크 재설계 필요. 구현 난이도 중~고로 판단되어 추후 POC로만 검토.                                   |
+| I2  | Code block Live/Split 회귀 픽스처 + 패리티 게이트 | `wysiwyg/`, `MarkdownPreview`, `src/styles/codeblock.css` | 경계 이동(`ArrowUp/Down`), 블록 내부 `Mod+A`, 배지/언어 편집, CSS 결합 지점을 기준으로 파리티 회귀를 문서화. 계획: `.docs/project/planning/code-block-live-split-parity-plan.md` |
+
+---
+
+## Completed (Waves 1-10)
 
 ### Wave 1 — Phase 2 Completion (ba748dd)
 
@@ -74,6 +86,14 @@
 - **D2** ✅ `MEMORY.md` 최신 변경 이력 반영 (Wave 7/8 + 문서 동기화)
 - **D3** ✅ Serena memory 갱신 (프로젝트 개요/Phase 상태/검증 로그 최신화)
 
+### Wave 10 — Live Parity + Table UX Stabilization (2026-02-19)
+
+- **U6** ✅ Split sync hardening (DOM 기반 양방향 매핑 + anchor fallback + boundary clamp + offset decay)
+- **U7** ✅ Live `[toc]`/task/inline-html (`<u>/<sup>/<sub>`) 렌더링 파리티 보강
+- **Q16** ✅ Ordered list indent/outdent 번호 정규화 (Tab/Shift-Tab 대칭 + 트리 리넘버)
+- **F4** ✅ Live table 인플레이스 편집 + row/col/alignment 컨트롤 + resize 패널
+- **Q17** ✅ Table undo/focus/history 안정화 (컨트롤 직후 Cmd/Ctrl+Z/Y, nested update 재시도)
+
 ### Non-Issues (팩트체크 후 제거)
 
 - **P1** WYSIWYG 전체 데코레이션 재빌드 — KaTeX/Mermaid 캐싱으로 실질적 해결
@@ -91,6 +111,8 @@
 ## Related Documents
 
 - **PRD (원본 비전)**: `.docs/spec/prd/feature-roadmap.md` — Phase 1-4 전체 로드맵
+- **Idea/Plan**: `.docs/project/planning/markdown-lint-on-save-plan.md` — 저장 시 Markdown lint 런타임 통합 초안
+- **Idea/Plan**: `.docs/project/planning/code-block-live-split-parity-plan.md` — 코드블록 Live/Split 패리티 및 회귀 체크 계획
 - **Find & Replace 고급**: `.docs/project/planning/archive/polishing-phase-backlog.md` — Search history, Cmd+D 등
 - **Phase 2 아카이브**: `.docs/project/planning/archive/phase2-plan.md`
 - **아키텍처**: `AGENTS.md` (루트 및 각 디렉토리)

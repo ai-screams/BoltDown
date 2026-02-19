@@ -1,4 +1,4 @@
-export type EditorMode = 'split' | 'source' | 'zen'
+export type EditorMode = 'split' | 'source' | 'live' | 'zen'
 
 export interface Tab {
   id: string

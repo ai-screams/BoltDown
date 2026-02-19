@@ -7,7 +7,7 @@ import { BYTES_PER_MEGABYTE, IMAGE_POLICY } from '@/constants/file'
 import { useEditorStore } from '@/stores/editorStore'
 import { useTabStore } from '@/stores/tabStore'
 import { getDirectoryPath, joinPath, toPosixPath } from '@/utils/imagePath'
-import { isTauri } from '@/utils/tauri'
+import { invokeTauri, isTauri } from '@/utils/tauri'
 
 // Constants
 export const MAX_IMAGE_SIZE = IMAGE_POLICY.maxBytes
@@ -16,14 +16,17 @@ export const supportedImageExtensions = /\.(png|jpe?g|gif|webp|svg|bmp|avif|ico)
 export const nestedListIndent = '    '
 export const orderedListMarkerRegex = /^(\s*)(\d+)([.)])(\s*)/
 
-let tauriInvokePromise: Promise<(typeof import('@tauri-apps/api/core'))['invoke']> | null = null
+interface OrderedListItemContext {
+  from: number
+  to: number
+  indentLength: number
+  markerWidth: number
+}
 
-export async function getTauriInvoke() {
-  if (!tauriInvokePromise) {
-    tauriInvokePromise = import('@tauri-apps/api/core').then(mod => mod.invoke)
-  }
-
-  return tauriInvokePromise
+interface TextChange {
+  from: number
+  to: number
+  insert: string
 }
 
 export function getActiveMarkdownFilePath(): string | null {
@@ -144,10 +147,9 @@ export async function toImageMarkdown(
         }
 
         const destinationPath = buildDestinationImagePath(markdownFilePath, file.name, index)
-        const invoke = await getTauriInvoke()
 
         if (sourcePath) {
-          await invoke('copy_file', {
+          await invokeTauri('copy_file', {
             srcPath: sourcePath,
             destPath: destinationPath,
           })
@@ -164,7 +166,7 @@ export async function toImageMarkdown(
             return `<!-- Image "${altText}" skipped: ${sizeMb}MB exceeds ${MAX_IMAGE_SIZE_MB}MB limit -->`
           }
           const data = Array.from(new Uint8Array(await file.arrayBuffer()))
-          await invoke('write_binary_file', {
+          await invokeTauri('write_binary_file', {
             destPath: destinationPath,
             data,
           })
@@ -215,9 +217,7 @@ export async function toImageMarkdownFromPath(
       }
 
       const destinationPath = buildDestinationImagePath(markdownFilePath, fileName, index)
-      const invoke = await getTauriInvoke()
-
-      await invoke('copy_file', {
+      await invokeTauri('copy_file', {
         srcPath: sourcePath,
         destPath: destinationPath,
       })
@@ -350,52 +350,241 @@ export function isInOrderedList(state: EditorState, pos: number): boolean {
   return false
 }
 
+function getOrderedListItemContext(state: EditorState, pos: number): OrderedListItemContext | null {
+  let node = syntaxTree(state).resolve(pos, -1)
+
+  while (node) {
+    if (node.type.name === 'FencedCode' || node.type.name === 'InlineCode') {
+      return null
+    }
+
+    if (node.type.name === 'ListItem' && node.parent?.type.name === 'OrderedList') {
+      const line = state.doc.lineAt(node.from)
+      const markerMatch = orderedListMarkerRegex.exec(line.text)
+      if (!markerMatch) return null
+
+      const indentLength = markerMatch[1]!.length
+      const markerWidth = markerMatch[0].length - indentLength
+
+      return {
+        from: node.from,
+        to: node.to,
+        indentLength,
+        markerWidth,
+      }
+    }
+
+    const parent = node.parent
+    if (!parent) break
+    node = parent
+  }
+
+  return null
+}
+
+function getIndentStepFromPreviousSibling(
+  state: EditorState,
+  selectionPos: number,
+  currentIndentLength: number
+): number | null {
+  const currentItemNode = syntaxTree(state).resolve(selectionPos, -1)
+  let node = currentItemNode
+
+  while (!(node.type.name === 'ListItem' && node.parent?.type.name === 'OrderedList')) {
+    const parent = node.parent
+    if (!parent) return null
+    node = parent
+  }
+
+  const orderedListNode = node.parent
+  if (!orderedListNode) return null
+
+  const siblings = orderedListNode.getChildren('ListItem')
+  const index = siblings.findIndex(sibling => sibling.from === node.from && sibling.to === node.to)
+  if (index <= 0) return null
+
+  const previousSibling = siblings[index - 1]!
+  const nestedOrderedLists = previousSibling.getChildren('OrderedList')
+
+  for (const nestedOrderedList of nestedOrderedLists) {
+    const nestedItems = nestedOrderedList.getChildren('ListItem')
+    if (nestedItems.length === 0) continue
+
+    const nestedLine = state.doc.lineAt(nestedItems[0]!.from)
+    const nestedMatch = orderedListMarkerRegex.exec(nestedLine.text)
+    if (!nestedMatch) continue
+
+    const nestedIndentLength = nestedMatch[1]!.length
+    if (nestedIndentLength <= currentIndentLength) continue
+
+    return nestedIndentLength - currentIndentLength
+  }
+
+  return null
+}
+
+function getOutdentStep(
+  state: EditorState,
+  selectionPos: number,
+  currentIndentLength: number
+): number {
+  const currentItemNode = syntaxTree(state).resolve(selectionPos, -1)
+  let node = currentItemNode
+
+  while (!(node.type.name === 'ListItem' && node.parent?.type.name === 'OrderedList')) {
+    const parent = node.parent
+    if (!parent) return 0
+    node = parent
+  }
+
+  const parentOrderedList = node.parent
+  if (!parentOrderedList) return 0
+
+  const parentListItem = parentOrderedList.parent
+  if (!parentListItem || parentListItem.type.name !== 'ListItem') return 0
+
+  const parentLine = state.doc.lineAt(parentListItem.from)
+  const parentMatch = orderedListMarkerRegex.exec(parentLine.text)
+  const parentIndentLength = parentMatch
+    ? parentMatch[1]!.length
+    : (parentLine.text.match(/^\s*/)?.[0]?.length ?? 0)
+
+  const step = currentIndentLength - parentIndentLength
+  if (step > 0) return step
+
+  return Math.min(nestedListIndent.length, currentIndentLength)
+}
+
+function buildIndentedListItemChanges(
+  state: EditorState,
+  itemRange: OrderedListItemContext,
+  indentSize: number
+): TextChange[] {
+  const changes: TextChange[] = []
+  const fromLine = state.doc.lineAt(itemRange.from).number
+  const toLine = state.doc.lineAt(Math.max(itemRange.from, itemRange.to - 1)).number
+
+  for (let lineNo = fromLine; lineNo <= toLine; lineNo += 1) {
+    const line = state.doc.line(lineNo)
+    changes.push({
+      from: line.from,
+      to: line.from,
+      insert: ' '.repeat(indentSize),
+    })
+  }
+
+  return changes
+}
+
+function buildOutdentedListItemChanges(
+  state: EditorState,
+  itemRange: OrderedListItemContext,
+  indentSize: number
+): TextChange[] {
+  const changes: TextChange[] = []
+  const fromLine = state.doc.lineAt(itemRange.from).number
+  const toLine = state.doc.lineAt(Math.max(itemRange.from, itemRange.to - 1)).number
+
+  for (let lineNo = fromLine; lineNo <= toLine; lineNo += 1) {
+    const line = state.doc.line(lineNo)
+    const leadingSpaces = line.text.match(/^\s*/)?.[0] ?? ''
+    const removeLength = Math.min(indentSize, leadingSpaces.length)
+    if (removeLength === 0) continue
+
+    changes.push({
+      from: line.from,
+      to: line.from + removeLength,
+      insert: '',
+    })
+  }
+
+  return changes
+}
+
+function buildOrderedListRenumberChanges(state: EditorState): TextChange[] {
+  const changes: TextChange[] = []
+  const tree = syntaxTree(state)
+
+  tree.iterate({
+    enter(node) {
+      if (node.name !== 'OrderedList') return
+
+      const listItems = node.node.getChildren('ListItem')
+      let expectedNumber = 1
+
+      for (const listItem of listItems) {
+        const listMark = listItem.getChildren('ListMark')[0]
+        if (!listMark) continue
+
+        const markerText = state.sliceDoc(listMark.from, listMark.to)
+        const markerMatch = /^(\d+)([.)])$/.exec(markerText)
+        if (!markerMatch) continue
+
+        const delimiter = markerMatch[2]!
+        const expectedMarker = `${expectedNumber}${delimiter}`
+
+        if (markerText !== expectedMarker) {
+          changes.push({
+            from: listMark.from,
+            to: listMark.to,
+            insert: expectedMarker,
+          })
+        }
+
+        expectedNumber += 1
+      }
+    },
+  })
+
+  return changes
+}
+
+function applyOrderedListRenumbering(view: EditorView): void {
+  const renumberChanges = buildOrderedListRenumberChanges(view.state)
+  if (renumberChanges.length === 0) return
+
+  view.dispatch({ changes: renumberChanges })
+}
+
 export function indentOrderedListItem(view: EditorView): boolean {
   const selection = view.state.selection.main
   if (!selection.empty) return false
-  if (!isInOrderedList(view.state, selection.from)) return false
+  const itemContext = getOrderedListItemContext(view.state, selection.from)
+  if (!itemContext) return false
 
-  const doc = view.state.doc
-  const line = doc.lineAt(selection.from)
-  const currentMatch = orderedListMarkerRegex.exec(line.text)
-  if (!currentMatch) return false
+  const siblingStep = getIndentStepFromPreviousSibling(
+    view.state,
+    selection.from,
+    itemContext.indentLength
+  )
+  const indentSize = siblingStep ?? Math.max(1, itemContext.markerWidth)
 
-  const currentIndent = currentMatch[1]!
-  const currentNumber = Number(currentMatch[2])
-  const currentDelimiter = currentMatch[3]!
-  const currentSpace = currentMatch[4]!
-  if (!Number.isFinite(currentNumber)) return false
-
-  const changes: { from: number; to: number; insert: string }[] = []
-  changes.push({
-    from: line.from,
-    to: line.from + currentMatch[0].length,
-    insert: `${currentIndent}${nestedListIndent}1${currentDelimiter}${currentSpace}`,
-  })
-
-  let renumber = currentNumber
-
-  for (let lineNo = line.number + 1; lineNo <= doc.lines; lineNo++) {
-    const candidate = doc.line(lineNo)
-    const text = candidate.text
-
-    if (!text.trim()) break
-
-    const candidateIndent = text.match(/^\s*/)?.[0] ?? ''
-    if (candidateIndent.length < currentIndent.length) break
-
-    const siblingMatch = orderedListMarkerRegex.exec(text)
-    if (!siblingMatch) continue
-    if (siblingMatch[1] !== currentIndent) continue
-
-    changes.push({
-      from: candidate.from,
-      to: candidate.from + siblingMatch[0].length,
-      insert: `${currentIndent}${renumber}${siblingMatch[3]}${siblingMatch[4]}`,
-    })
-    renumber += 1
-  }
+  const changes = buildIndentedListItemChanges(view.state, itemContext, indentSize)
+  if (changes.length === 0) return false
 
   view.dispatch({ changes })
+  applyOrderedListRenumbering(view)
+
+  return true
+}
+
+export function outdentOrderedListItem(view: EditorView): boolean {
+  const selection = view.state.selection.main
+  if (!selection.empty) return false
+
+  const itemContext = getOrderedListItemContext(view.state, selection.from)
+  if (!itemContext) return false
+
+  if (itemContext.indentLength === 0) return false
+
+  const outdentSize = getOutdentStep(view.state, selection.from, itemContext.indentLength)
+  if (outdentSize === 0) return false
+
+  const changes = buildOutdentedListItemChanges(view.state, itemContext, outdentSize)
+  if (changes.length === 0) return false
+
+  view.dispatch({ changes })
+  applyOrderedListRenumbering(view)
+
   return true
 }

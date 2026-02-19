@@ -16,6 +16,15 @@ import 'prismjs/components/prism-tsx'
 import 'prismjs/components/prism-typescript'
 
 let _popoverSeq: number = 0
+const EMPTY_LANGUAGE_BADGE_LABEL = 'plain text'
+
+export interface LanguageBadgeMetadata {
+  blockId: string
+  codeInfoFrom: number
+  codeInfoTo: number
+  lineAboveFrom: number | null
+  firstCodeLineEntryPos: number | null
+}
 
 export function getCodeBlockPalette() {
   const isDark = document.documentElement.classList.contains('dark')
@@ -204,7 +213,9 @@ function showLanguagePopover(
   badgeEl: HTMLElement,
   codeInfoFrom: number,
   codeInfoTo: number,
-  currentLang: string
+  currentLang: string,
+  lineAboveFrom: number | null,
+  firstCodeLineEntryPos: number | null
 ) {
   // Remove any existing popover
   view.dom.querySelector('.codeblock-lang-popover')?.remove()
@@ -299,7 +310,10 @@ function showLanguagePopover(
       el.classList.toggle('active', i === activeIndex)
       el.setAttribute('aria-selected', String(i === activeIndex))
     })
-    items[activeIndex]?.scrollIntoView({ block: 'nearest' })
+    const activeItem = items[activeIndex] as HTMLElement | undefined
+    if (activeItem && typeof activeItem.scrollIntoView === 'function') {
+      activeItem.scrollIntoView({ block: 'nearest' })
+    }
     const activeEl: Element | undefined = items[activeIndex]
     if (activeEl?.id) {
       input.setAttribute('aria-activedescendant', activeEl.id)
@@ -338,19 +352,63 @@ function showLanguagePopover(
     closePopover()
   }
 
+  const moveToAboveLine = (): void => {
+    if (lineAboveFrom === null) return
+
+    const nextLang: string = input.value.trim().toLowerCase()
+    const changes =
+      nextLang !== currentLang ? { from: codeInfoFrom, to: codeInfoTo, insert: nextLang } : null
+    if (!closePopover()) return
+
+    view.dispatch({
+      changes: changes ?? undefined,
+      selection: { anchor: lineAboveFrom },
+      scrollIntoView: true,
+    })
+  }
+
+  const moveToFirstCodeLine = (): void => {
+    if (firstCodeLineEntryPos === null) return
+
+    const nextLang: string = input.value.trim().toLowerCase()
+    const changes =
+      nextLang !== currentLang ? { from: codeInfoFrom, to: codeInfoTo, insert: nextLang } : null
+    if (!closePopover()) return
+
+    view.dispatch({
+      changes: changes ?? undefined,
+      selection: { anchor: firstCodeLineEntryPos },
+      scrollIntoView: true,
+    })
+  }
+
   input.addEventListener('input', filterList)
 
   input.addEventListener('keydown', e => {
     const items = list.querySelectorAll('.codeblock-lang-option')
+    const query = input.value.trim().toLowerCase()
+    const isEmptyQuery = query.length === 0
+    const isListVisible = list.style.display !== 'none'
+    const hasSuggestions = items.length > 0
 
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setActive(activeIndex + 1)
+      if (isListVisible && !isEmptyQuery && hasSuggestions && activeIndex < items.length - 1) {
+        setActive(activeIndex + 1)
+      } else if (firstCodeLineEntryPos !== null) {
+        moveToFirstCodeLine()
+      } else if (hasSuggestions && activeIndex < items.length - 1) {
+        setActive(activeIndex + 1)
+      }
       return
     }
     if (e.key === 'ArrowUp') {
       e.preventDefault()
-      setActive(activeIndex - 1)
+      if (isListVisible && !isEmptyQuery && hasSuggestions && activeIndex > 0) {
+        setActive(activeIndex - 1)
+      } else {
+        moveToAboveLine()
+      }
       return
     }
     if (e.key === 'Enter') {
@@ -386,21 +444,42 @@ function showLanguagePopover(
 export class LanguageBadgeWidget extends WidgetType {
   constructor(
     private language: string,
-    private codeInfoFrom: number,
-    private codeInfoTo: number
+    private metadata: LanguageBadgeMetadata
   ) {
     super()
   }
   toDOM(view: EditorView) {
     const badge: HTMLButtonElement = document.createElement('button')
+    const displayLanguage = this.language || EMPTY_LANGUAGE_BADGE_LABEL
     badge.type = 'button'
     badge.className = 'codeblock-badge'
-    badge.textContent = this.language
-    badge.setAttribute('aria-label', `Change language: ${this.language}`)
+    badge.textContent = displayLanguage
+    badge.setAttribute(
+      'aria-label',
+      this.language ? `Change language: ${this.language}` : 'Change language: none'
+    )
+    badge.dataset['codeblockId'] = this.metadata.blockId
+    badge.dataset['codeLanguage'] = this.language
+    badge.dataset['codeInfoFrom'] = String(this.metadata.codeInfoFrom)
+    badge.dataset['codeInfoTo'] = String(this.metadata.codeInfoTo)
+    badge.dataset['lineAboveFrom'] =
+      this.metadata.lineAboveFrom === null ? '' : String(this.metadata.lineAboveFrom)
+    badge.dataset['firstCodeLineEntryPos'] =
+      this.metadata.firstCodeLineEntryPos === null
+        ? ''
+        : String(this.metadata.firstCodeLineEntryPos)
 
     badge.addEventListener('mousedown', e => {
       e.preventDefault()
-      showLanguagePopover(view, badge, this.codeInfoFrom, this.codeInfoTo, this.language)
+      showLanguagePopover(
+        view,
+        badge,
+        this.metadata.codeInfoFrom,
+        this.metadata.codeInfoTo,
+        this.language,
+        this.metadata.lineAboveFrom,
+        this.metadata.firstCodeLineEntryPos
+      )
     })
 
     return badge
@@ -408,13 +487,58 @@ export class LanguageBadgeWidget extends WidgetType {
   eq(other: LanguageBadgeWidget) {
     return (
       this.language === other.language &&
-      this.codeInfoFrom === other.codeInfoFrom &&
-      this.codeInfoTo === other.codeInfoTo
+      this.metadata.blockId === other.metadata.blockId &&
+      this.metadata.codeInfoFrom === other.metadata.codeInfoFrom &&
+      this.metadata.codeInfoTo === other.metadata.codeInfoTo &&
+      this.metadata.lineAboveFrom === other.metadata.lineAboveFrom &&
+      this.metadata.firstCodeLineEntryPos === other.metadata.firstCodeLineEntryPos
     )
   }
   ignoreEvent(event: Event) {
     return event instanceof MouseEvent
   }
+}
+
+function parseNumericDatasetValue(value: string | undefined): number | null {
+  if (!value) return null
+  const parsed = Number.parseInt(value, 10)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function escapeCssAttributeValue(value: string): string {
+  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+    return CSS.escape(value)
+  }
+
+  const escapedChars = new Set(['"', '\\', '#', '.', ':', '[', ']', '(', ')'])
+  let escaped = ''
+  for (const char of value) {
+    escaped += escapedChars.has(char) ? `\\${char}` : char
+  }
+  return escaped
+}
+
+export function openLanguagePopoverForCodeBlock(view: EditorView, blockId: string): boolean {
+  const escapedBlockId = escapeCssAttributeValue(blockId)
+  const badge = view.dom.querySelector<HTMLElement>(
+    `.codeblock-badge[data-codeblock-id="${escapedBlockId}"]`
+  )
+  if (!badge) return false
+
+  const codeInfoFrom = parseNumericDatasetValue(badge.dataset['codeInfoFrom'])
+  const codeInfoTo = parseNumericDatasetValue(badge.dataset['codeInfoTo'])
+  if (codeInfoFrom === null || codeInfoTo === null) return false
+
+  showLanguagePopover(
+    view,
+    badge,
+    codeInfoFrom,
+    codeInfoTo,
+    badge.dataset['codeLanguage']?.trim().toLowerCase() ?? '',
+    parseNumericDatasetValue(badge.dataset['lineAboveFrom']),
+    parseNumericDatasetValue(badge.dataset['firstCodeLineEntryPos'])
+  )
+  return true
 }
 
 export class CodeBlockWidget extends WidgetType {

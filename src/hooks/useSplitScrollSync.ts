@@ -17,7 +17,17 @@ type SyncDriver = 'editor' | 'preview'
 
 const DRIVER_LOCK_MS = 160
 const SCROLL_EPSILON_PX = 1
+const BOUNDARY_RATIO_EPSILON = 0.001
+const BOUNDARY_MIN_TOLERANCE_PX = 2
+const BOUNDARY_MAX_TOLERANCE_PX = 12
 const OFFSET_DECAY_TAU = 150 // exponential decay time constant in ms
+const MAX_SUBLINE_PREVIEW_AMPLIFICATION = 3
+
+interface SourceLineEntry {
+  line: number
+  contentTop: number
+  elementHeight: number
+}
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
@@ -25,6 +35,96 @@ function clamp(value: number, min: number, max: number): number {
 
 function getScrollableHeight(element: HTMLElement): number {
   return Math.max(0, element.scrollHeight - element.clientHeight)
+}
+
+function getBoundaryTolerancePx(scrollable: number): number {
+  if (scrollable <= 0) return BOUNDARY_MIN_TOLERANCE_PX
+  return clamp(
+    scrollable * BOUNDARY_RATIO_EPSILON,
+    BOUNDARY_MIN_TOLERANCE_PX,
+    BOUNDARY_MAX_TOLERANCE_PX
+  )
+}
+
+function getScrollProgress(scrollTop: number, scrollable: number): number {
+  if (scrollable <= 0) return 0
+  return clamp(scrollTop / scrollable, 0, 1)
+}
+
+function mapAtScrollBounds(
+  sourceScrollTop: number,
+  sourceScrollable: number,
+  targetScrollable: number
+): number | null {
+  if (sourceScrollable <= 0 || targetScrollable <= 0) return 0
+
+  const tolerancePx = getBoundaryTolerancePx(sourceScrollable)
+  const progress = getScrollProgress(sourceScrollTop, sourceScrollable)
+  const distanceToTop = Math.max(sourceScrollTop, 0)
+  const distanceToBottom = Math.max(sourceScrollable - sourceScrollTop, 0)
+
+  const nearTop = distanceToTop <= tolerancePx || progress <= BOUNDARY_RATIO_EPSILON
+  const nearBottom = distanceToBottom <= tolerancePx || progress >= 1 - BOUNDARY_RATIO_EPSILON
+
+  if (nearTop && nearBottom) {
+    return distanceToTop <= distanceToBottom ? 0 : targetScrollable
+  }
+
+  if (nearTop) return 0
+  if (nearBottom) return targetScrollable
+
+  return null
+}
+
+function isProgrammaticEcho(current: number, lastProgrammatic: number): boolean {
+  return (
+    Number.isFinite(lastProgrammatic) && Math.abs(current - lastProgrammatic) <= SCROLL_EPSILON_PX
+  )
+}
+
+function getEffectivePreviewSublineSpan(editorSpan: number, previewSpan: number): number {
+  if (editorSpan <= 0 || previewSpan <= 0) return 0
+  return Math.min(previewSpan, editorSpan * MAX_SUBLINE_PREVIEW_AMPLIFICATION)
+}
+
+function getEditorLineBlockTop(view: EditorView, lineNumber: number): number {
+  const line = view.state.doc.line(lineNumber)
+  return view.lineBlockAt(line.from).top
+}
+
+function getEditorLineBlockHeight(view: EditorView, lineNumber: number): number {
+  const line = view.state.doc.line(lineNumber)
+  return Math.max(view.lineBlockAt(line.from).height, SCROLL_EPSILON_PX)
+}
+
+function collectSourceLineEntries(
+  previewScrollEl: HTMLDivElement,
+  maxEditorLineNumber: number
+): SourceLineEntry[] {
+  const nodes = previewScrollEl.querySelectorAll<HTMLElement>('[data-source-line]')
+  if (nodes.length === 0) return []
+
+  const previewRect = previewScrollEl.getBoundingClientRect()
+  const entries: SourceLineEntry[] = []
+
+  for (const node of nodes) {
+    const rawLine = node.dataset['sourceLine']
+    if (!rawLine) continue
+
+    const lineNumber = Number.parseInt(rawLine, 10)
+    if (!Number.isFinite(lineNumber) || lineNumber < 1 || lineNumber > maxEditorLineNumber) {
+      continue
+    }
+
+    const rect = node.getBoundingClientRect()
+    entries.push({
+      line: lineNumber,
+      contentTop: rect.top - previewRect.top + previewScrollEl.scrollTop,
+      elementHeight: rect.height,
+    })
+  }
+
+  return entries
 }
 
 /**
@@ -250,38 +350,32 @@ function mapEditorToPreviewViaDOM(
   if (exact) {
     const rect = exact.getBoundingClientRect()
     const contentY = rect.top - previewRect.top + previewScrollEl.scrollTop
-    return clamp(contentY + subFraction * rect.height, 0, previewScrollable)
+    const effectiveSpan = getEffectivePreviewSublineSpan(topBlock.height, rect.height)
+    return clamp(contentY + subFraction * effectiveSpan, 0, previewScrollable)
   }
 
   // No exact match — find bracketing elements (before ≤ topLine < after)
-  const nodes = previewScrollEl.querySelectorAll<HTMLElement>('[data-source-line]')
-  if (nodes.length === 0) return null
+  const entries = collectSourceLineEntries(previewScrollEl, view.state.doc.lines)
+  if (entries.length === 0) return null
 
-  let before: { el: HTMLElement; line: number } | null = null
-  let after: { el: HTMLElement; line: number } | null = null
+  let before: SourceLineEntry | null = null
+  let after: SourceLineEntry | null = null
 
-  for (const node of nodes) {
-    const raw = node.dataset['sourceLine']
-    if (!raw) continue
-    const num = Number.parseInt(raw, 10)
-    if (!Number.isFinite(num)) continue
-
-    if (num <= topLineNum) {
-      before = { el: node, line: num }
+  for (const entry of entries) {
+    if (entry.line <= topLineNum) {
+      before = entry
     } else {
-      after = { el: node, line: num }
+      after = entry
       break // DOM order is ascending, first match after topLine is closest
     }
   }
 
   if (before && after) {
-    const bRect = before.el.getBoundingClientRect()
-    const aRect = after.el.getBoundingClientRect()
-    const bContentY = bRect.top - previewRect.top + previewScrollEl.scrollTop
-    const aContentY = aRect.top - previewRect.top + previewScrollEl.scrollTop
+    const bContentY = before.contentTop
+    const aContentY = after.contentTop
 
-    const bEditorTop = view.lineBlockAt(view.state.doc.line(before.line).from).top
-    const aEditorTop = view.lineBlockAt(view.state.doc.line(after.line).from).top
+    const bEditorTop = getEditorLineBlockTop(view, before.line)
+    const aEditorTop = getEditorLineBlockTop(view, after.line)
 
     const editorRange = aEditorTop - bEditorTop
     if (editorRange > 0) {
@@ -290,12 +384,64 @@ function mapEditorToPreviewViaDOM(
     }
   }
 
-  // Single bracket: use element position directly
-  if (before) {
-    const rect = before.el.getBoundingClientRect()
-    return clamp(rect.top - previewRect.top + previewScrollEl.scrollTop, 0, previewScrollable)
+  // Edge brackets are better handled by anchor interpolation fallback,
+  // which maps full scroll ranges with synthetic endpoints.
+  return null
+}
+
+/**
+ * Map preview scrollTop to editor scrollTop via direct DOM element lookup.
+ * Uses the same source-line elements and sub-line cap policy as editor->preview
+ * to keep two-way sync behavior stable around oversized generated blocks ([toc], images, diagrams).
+ */
+function mapPreviewToEditorViaDOM(
+  view: EditorView,
+  previewScrollEl: HTMLDivElement,
+  previewScrollTop: number
+): number | null {
+  const editorScrollable = getScrollableHeight(view.scrollDOM)
+  const entries = collectSourceLineEntries(previewScrollEl, view.state.doc.lines)
+  if (entries.length === 0) return null
+
+  let before: SourceLineEntry | null = null
+  let after: SourceLineEntry | null = null
+
+  for (const entry of entries) {
+    if (entry.contentTop <= previewScrollTop) {
+      before = entry
+      continue
+    }
+    after = entry
+    break
   }
 
+  if (before) {
+    const editorTop = getEditorLineBlockTop(view, before.line)
+    const editorSpan = getEditorLineBlockHeight(view, before.line)
+    const effectivePreviewSpan = getEffectivePreviewSublineSpan(editorSpan, before.elementHeight)
+    const localOffset = previewScrollTop - before.contentTop
+
+    if (effectivePreviewSpan > 0 && localOffset >= 0 && localOffset <= effectivePreviewSpan) {
+      const ratio = localOffset / effectivePreviewSpan
+      return clamp(editorTop + ratio * editorSpan, 0, editorScrollable)
+    }
+  }
+
+  if (before && after) {
+    const previewRange = after.contentTop - before.contentTop
+    if (previewRange > 0) {
+      const ratio = clamp((previewScrollTop - before.contentTop) / previewRange, 0, 1)
+      const beforeEditorTop = getEditorLineBlockTop(view, before.line)
+      const afterEditorTop = getEditorLineBlockTop(view, after.line)
+      return clamp(
+        beforeEditorTop + ratio * (afterEditorTop - beforeEditorTop),
+        0,
+        editorScrollable
+      )
+    }
+  }
+
+  // Edge brackets are better handled by anchor interpolation fallback.
   return null
 }
 
@@ -384,8 +530,8 @@ export function useSplitScrollSync({ enabled, previewScrollRef }: UseSplitScroll
   const previewSyncFrameRef = useRef<number | null>(null)
 
   // Track the last scrollTop we programmatically set to ignore feedback events
-  const lastProgrammaticPreviewTopRef = useRef(-1)
-  const lastProgrammaticEditorTopRef = useRef(-1)
+  const lastProgrammaticPreviewTopRef = useRef<number>(Number.NaN)
+  const lastProgrammaticEditorTopRef = useRef<number>(Number.NaN)
 
   const scrollOffsetRef = useRef(0)
   const scrollOffsetTimeRef = useRef(0)
@@ -428,22 +574,29 @@ export function useSplitScrollSync({ enabled, previewScrollRef }: UseSplitScroll
     const previewScrollEl = previewScrollRef.current
     if (!view || !previewScrollEl) return
 
+    const editorScrollTop = view.scrollDOM.scrollTop
+    const editorScrollable = getScrollableHeight(view.scrollDOM)
     const previewScrollable = getScrollableHeight(previewScrollEl)
 
-    // DOM-based mapping: accurate around height-asymmetric elements (images, diagrams)
-    let targetTop = mapEditorToPreviewViaDOM(view, previewScrollEl, view.scrollDOM.scrollTop)
+    const boundaryTarget = mapAtScrollBounds(editorScrollTop, editorScrollable, previewScrollable)
+
+    // Endpoint clamp guarantees full-range reachability.
+    let targetTop = boundaryTarget
     if (targetTop === null) {
-      ensureAnchors()
-      const editorScrollable = getScrollableHeight(view.scrollDOM)
-      targetTop = mapEditorToPreview(
-        view.scrollDOM.scrollTop,
-        anchorsRef.current,
-        editorScrollable,
-        previewScrollable
-      )
+      // DOM-based mapping: accurate around height-asymmetric elements (images, diagrams)
+      targetTop = mapEditorToPreviewViaDOM(view, previewScrollEl, editorScrollTop)
+      if (targetTop === null) {
+        ensureAnchors()
+        targetTop = mapEditorToPreview(
+          editorScrollTop,
+          anchorsRef.current,
+          editorScrollable,
+          previewScrollable
+        )
+      }
     }
 
-    if (scrollOffsetRef.current !== 0) {
+    if (boundaryTarget === null && scrollOffsetRef.current !== 0) {
       const elapsed = window.performance.now() - scrollOffsetTimeRef.current
       const decay = Math.exp(-elapsed / OFFSET_DECAY_TAU)
       if (decay < 0.01) {
@@ -468,16 +621,25 @@ export function useSplitScrollSync({ enabled, previewScrollRef }: UseSplitScroll
     const previewScrollEl = previewScrollRef.current
     if (!view || !previewScrollEl) return
 
-    ensureAnchors()
-
     const editorScrollable = getScrollableHeight(view.scrollDOM)
+    const previewScrollTop = previewScrollEl.scrollTop
     const previewScrollable = getScrollableHeight(previewScrollEl)
-    const targetTop = mapPreviewToEditor(
-      previewScrollEl.scrollTop,
-      anchorsRef.current,
-      editorScrollable,
-      previewScrollable
-    )
+
+    const boundaryTarget = mapAtScrollBounds(previewScrollTop, previewScrollable, editorScrollable)
+
+    let targetTop = boundaryTarget
+    if (targetTop === null) {
+      targetTop = mapPreviewToEditorViaDOM(view, previewScrollEl, previewScrollTop)
+      if (targetTop === null) {
+        ensureAnchors()
+        targetTop = mapPreviewToEditor(
+          previewScrollTop,
+          anchorsRef.current,
+          editorScrollable,
+          previewScrollable
+        )
+      }
+    }
     if (Math.abs(view.scrollDOM.scrollTop - targetTop) <= SCROLL_EPSILON_PX) return
 
     lockDriver('preview')
@@ -569,14 +731,21 @@ export function useSplitScrollSync({ enabled, previewScrollRef }: UseSplitScroll
     }
   })
 
+  const resetTransientSyncState = useEffectEvent(() => {
+    driverLockRef.current = null
+    clearLockTimer()
+    cancelScheduledFrames()
+    scrollOffsetRef.current = 0
+    scrollOffsetTimeRef.current = 0
+    lastProgrammaticPreviewTopRef.current = Number.NaN
+    lastProgrammaticEditorTopRef.current = Number.NaN
+  })
+
   useEffect(() => {
     if (!enabled) {
       anchorsRef.current = []
       anchorsDirtyRef.current = true
-      driverLockRef.current = null
-      scrollOffsetRef.current = 0
-      cancelScheduledFrames()
-      clearLockTimer()
+      resetTransientSyncState()
       return
     }
 
@@ -594,19 +763,42 @@ export function useSplitScrollSync({ enabled, previewScrollRef }: UseSplitScroll
         return
       }
 
+      // Keep programmatic guards clear so first real scroll after re-entry is never suppressed.
+      lastProgrammaticEditorTopRef.current = Number.NaN
+      lastProgrammaticPreviewTopRef.current = Number.NaN
+      scrollOffsetRef.current = 0
+      scrollOffsetTimeRef.current = window.performance.now()
+
       // --- Editor scroll detection via RAF poll ---
       // WKWebView (Tauri/macOS) doesn't fire native scroll events on
       // CodeMirror's .cm-scroller. Polling scrollTop is universally reliable.
-      let lastEditorScrollTop = view.scrollDOM.scrollTop
+      // Resolve view/scrollDOM on every frame so sync survives editor remounts
+      // (e.g. mode changes source <-> split).
+      let polledEditorScrollEl: HTMLElement | null = view.scrollDOM
+      let lastEditorScrollTop = polledEditorScrollEl.scrollTop
       let editorPollRAF = 0
 
       const pollEditorScroll = () => {
         if (disposed) return
-        const st = view.scrollDOM.scrollTop
+
+        const currentView = editorViewRef.current
+        const currentEditorScrollEl = currentView?.scrollDOM ?? null
+
+        if (currentEditorScrollEl !== polledEditorScrollEl) {
+          polledEditorScrollEl = currentEditorScrollEl
+          lastEditorScrollTop = currentEditorScrollEl?.scrollTop ?? 0
+        }
+
+        const st = currentEditorScrollEl?.scrollTop
+        if (st === undefined) {
+          editorPollRAF = window.requestAnimationFrame(pollEditorScroll)
+          return
+        }
+
         if (st !== lastEditorScrollTop) {
           lastEditorScrollTop = st
           // Ignore scroll changes we caused programmatically
-          if (Math.abs(st - lastProgrammaticEditorTopRef.current) > SCROLL_EPSILON_PX) {
+          if (!isProgrammaticEcho(st, lastProgrammaticEditorTopRef.current)) {
             scheduleEditorSync()
           }
         }
@@ -626,10 +818,7 @@ export function useSplitScrollSync({ enabled, previewScrollRef }: UseSplitScroll
       // --- Preview scroll detection via DOM event ---
       const handlePreviewScroll = () => {
         // Ignore scroll changes we caused programmatically
-        if (
-          Math.abs(previewScrollEl.scrollTop - lastProgrammaticPreviewTopRef.current) <=
-          SCROLL_EPSILON_PX
-        ) {
+        if (isProgrammaticEcho(previewScrollEl.scrollTop, lastProgrammaticPreviewTopRef.current)) {
           return
         }
         // Cancel smooth scroll animation when user manually scrolls
@@ -642,6 +831,7 @@ export function useSplitScrollSync({ enabled, previewScrollRef }: UseSplitScroll
 
       const mutationObserver = new MutationObserver(() => {
         markAnchorsDirty()
+        scheduleEditorSync()
       })
 
       mutationObserver.observe(previewScrollEl, {
@@ -686,9 +876,17 @@ export function useSplitScrollSync({ enabled, previewScrollRef }: UseSplitScroll
       markAnchorsDirty()
       scheduleEditorSync()
 
+      let initialSyncFrame = window.requestAnimationFrame(() => {
+        initialSyncFrame = window.requestAnimationFrame(() => {
+          markAnchorsDirty()
+          scheduleEditorSync()
+        })
+      })
+
       teardown = () => {
         window.cancelAnimationFrame(editorPollRAF)
         window.cancelAnimationFrame(cursorSyncRAF)
+        window.cancelAnimationFrame(initialSyncFrame)
         view.scrollDOM.removeEventListener('mouseup', handleEditorMouseUp)
         previewScrollEl.removeEventListener('scroll', handlePreviewScroll)
         mutationObserver.disconnect()
@@ -705,10 +903,7 @@ export function useSplitScrollSync({ enabled, previewScrollRef }: UseSplitScroll
       disposed = true
       if (setupFrame !== 0) window.cancelAnimationFrame(setupFrame)
       teardown?.()
-
-      driverLockRef.current = null
-      cancelScheduledFrames()
-      clearLockTimer()
+      resetTransientSyncState()
     }
   }, [enabled, editorViewRef, previewScrollRef])
 }
