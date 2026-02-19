@@ -39,7 +39,7 @@ src-tauri/src/
 
 ### Error Handling
 
-- `src/error.rs` — Unified `AppError` enum with `thiserror::Error` derive. Variants: `Io(std::io::Error)`, `PathValidation(String)`, `PathTraversal`, `NotADirectory(String)`, `FileTooLarge { size, max }`. Implements `Serialize` for Tauri IPC error responses.
+- `src/error.rs` — Unified `AppError` enum with `thiserror::Error` derive. Variants: `Io(std::io::Error)`, `PathValidation(String)`, `PathTraversal`, `NotADirectory(String)`, `FileTooLarge { size, max }`, `Ime(String)` (macOS-only via `#[cfg(target_os = "macos")]`). Implements `Serialize` for Tauri IPC error responses.
 
 ### Utilities
 

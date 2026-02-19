@@ -19,6 +19,7 @@ pub enum AppError {
     FileTooLarge { size: u64, max: u64 },
 
     #[error("IME operation failed: {0}")]
+    #[cfg(target_os = "macos")]
     Ime(String),
 }
 

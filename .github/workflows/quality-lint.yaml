@@ -22,7 +22,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version-file: '.node-version'
           cache: 'npm'
 
       - name: Setup Rust
@@ -33,7 +33,12 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: "src-tauri -> target"
+          workspaces: 'src-tauri -> target'
+
+      - name: Install system dependencies (Linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - name: Install dependencies
         run: npm ci
@@ -48,7 +53,7 @@ jobs:
         run: npm run format:check
 
       - name: Rust format check
-        run: npm run rust:fmt -- --check
+        run: npm run rust:fmt:check
 
-      # Note: Rust clippy requires system dependencies (glib, webkit)
-      # Run in Build job instead, or use pre-commit hooks locally
+      - name: Rust clippy
+        run: npm run rust:clippy

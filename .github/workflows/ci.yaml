@@ -1,16 +1,35 @@
 # =============================================================================
 # CI Orchestrator — reusable workflow 호출만 담당
+#
+# 트리거 최적화:
+#   - PR 이벤트만 CI 실행 (merge 시 push 중복 방지)
+#   - main 직접 push는 release-please가 담당, develop만 push 트리거
+#   - docs-only 변경은 스킵 (paths-ignore)
+#   - release-please 커밋(chore: release)은 스킵
+#   - 같은 PR에서 새 push 시 이전 run 자동 취소 (concurrency)
 # =============================================================================
 name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [develop]
+    paths-ignore:
+      - '**.md'
+      - '.docs/**'
+      - 'LICENSE'
+      - '.gitignore'
+      - '.release-please-manifest.json'
   pull_request:
     branches: [main, develop]
+    paths-ignore:
+      - '**.md'
+      - '.docs/**'
+      - 'LICENSE'
+      - '.gitignore'
+      - '.release-please-manifest.json'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
