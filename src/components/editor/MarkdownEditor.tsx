@@ -3,6 +3,7 @@ import { bracketMatching, indentOnInput } from '@codemirror/language'
 import { search } from '@codemirror/search'
 import { Compartment, EditorState, type Extension } from '@codemirror/state'
 import { EditorView, highlightActiveLine, keymap } from '@codemirror/view'
+import { Vim, vim } from '@replit/codemirror-vim'
 import { clsx } from 'clsx'
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 
@@ -38,6 +39,18 @@ import { formattingKeymap } from './formatCommands'
 // Module-level cache for lazy-loaded wysiwyg extension
 let cachedWysiwygFn: ((level: MermaidSecurityLevel) => Extension) | null = null
 
+// Register Vim Ex commands once at module level
+const dispatchSave = () =>
+  window.dispatchEvent(new KeyboardEvent('keydown', { key: 's', metaKey: true, bubbles: true }))
+Vim.defineEx('write', 'w', dispatchSave)
+Vim.defineEx('quit', 'q', () =>
+  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'w', metaKey: true, bubbles: true }))
+)
+Vim.defineEx('wquit', 'wq', () => {
+  dispatchSave()
+  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'w', metaKey: true, bubbles: true }))
+})
+
 export default memo(function MarkdownEditor() {
   const mode = useEditorStore(s => s.mode)
   const themeMode = useSettingsStore(s => s.settings.theme.mode)
@@ -51,6 +64,7 @@ export default memo(function MarkdownEditor() {
   const focusContextLines = useSettingsStore(s => s.settings.editor.focusContextLines)
   const spellcheck = useSettingsStore(s => s.settings.editor.spellcheck)
   const typewriterMode = useSettingsStore(s => s.settings.editor.typewriterMode)
+  const vimMode = useSettingsStore(s => s.settings.editor.vimMode)
   const mermaidSecurityLevel = useSettingsStore(s => s.settings.preview.mermaidSecurityLevel)
 
   const activeTabId = useTabStore(s => s.activeTabId)
@@ -70,6 +84,7 @@ export default memo(function MarkdownEditor() {
   const spellcheckCompRef = useRef(new Compartment())
   const typewriterCompRef = useRef(new Compartment())
   const codeBlockArrowNavCompRef = useRef(new Compartment())
+  const vimCompRef = useRef(new Compartment())
 
   activeTabIdRef.current = activeTabId
 
@@ -113,6 +128,7 @@ export default memo(function MarkdownEditor() {
       codeBlockArrowNavCompRef.current.reconfigure(
         isWysiwyg ? codeBlockArrowNavigationKeymap() : []
       ),
+      vimCompRef.current.reconfigure(vimMode ? vim() : []),
     ],
     [
       focusContextLines,
@@ -122,6 +138,7 @@ export default memo(function MarkdownEditor() {
       mermaidSecurityLevel,
       spellcheck,
       typewriterMode,
+      vimMode,
     ]
   )
 
@@ -139,6 +156,7 @@ export default memo(function MarkdownEditor() {
     ),
     typewriterCompRef.current.of(typewriterMode ? typewriterExtension() : []),
     codeBlockArrowNavCompRef.current.of(isWysiwyg ? codeBlockArrowNavigationKeymap() : []),
+    vimCompRef.current.of(vimMode ? vim() : []),
     fenceLanguageCompletion(),
     history(),
     search(),

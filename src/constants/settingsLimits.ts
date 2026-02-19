@@ -26,6 +26,7 @@ export const SETTINGS_DEFAULTS = {
     focusMode: false,
     focusContextLines: 0,
     typewriterMode: false,
+    vimMode: false,
   },
   preview: {
     fontSize: 16,
