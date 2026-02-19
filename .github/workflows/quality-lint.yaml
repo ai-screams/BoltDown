@@ -22,7 +22,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version-file: '.node-version'
           cache: 'npm'
 
       - name: Setup Rust
@@ -53,7 +53,7 @@ jobs:
         run: npm run format:check
 
       - name: Rust format check
-        run: npm run rust:fmt -- --check
+        run: npm run rust:fmt:check
 
       - name: Rust clippy
         run: npm run rust:clippy
