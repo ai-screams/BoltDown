@@ -212,12 +212,15 @@ tests/            🧪  E2E tests (Playwright)
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feat/my-feature`)
-3. Commit with [Conventional Commits](https://www.conventionalcommits.org/) (`feat(editor): add feature`)
-4. Push and open a Pull Request
+We welcome contributions! Please read our **[Contributing Guide](CONTRIBUTING.md)** for details on:
 
-Pre-commit hooks enforce linting, formatting, and commit message style automatically. ✅
+- Development setup and workflow
+- Code style and architecture guidelines
+- Commit message conventions (Conventional Commits with 25 scopes)
+- Pull request requirements (squash merge, 1 PR = 1 purpose)
+- Testing instructions
+
+Pre-commit hooks (Husky + lint-staged + commitlint) enforce quality automatically.
 
 ---
 
