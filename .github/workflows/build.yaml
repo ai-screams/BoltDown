@@ -1,5 +1,8 @@
 # =============================================================================
-# Build — Tauri 빌드 검증 (PR 시 Linux only, Release는 별도 워크플로우)
+# Build — Tauri 컴파일 검증 (cargo check, 패키징 없음)
+#
+# 풀 빌드(tauri build)는 release 워크플로우에서만 실행.
+# PR 단계에서는 cargo check로 컴파일 가능 여부만 확인 (~3분).
 # =============================================================================
 name: Build
 
@@ -11,9 +14,9 @@ permissions:
 
 jobs:
   build:
-    name: Build (Linux)
+    name: Build Check
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
@@ -41,5 +44,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Tauri
-        run: npm run tauri:build
+      - name: Vite build (frontend)
+        run: npx vite build
+
+      - name: Cargo check (Rust compile verification)
+        run: cd src-tauri && cargo check
