@@ -1,3 +1,4 @@
+import { clsx } from 'clsx'
 import { memo, useCallback, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 
@@ -12,10 +13,11 @@ interface MainLayoutProps {
 
 const MIN_RATIO = 0.2
 const MAX_RATIO = 0.8
+const DEFAULT_SPLIT_RATIO = 0.5
 
 export default memo(function MainLayout({ editor, preview, toolbar }: MainLayoutProps) {
   const mode = useEditorStore(s => s.mode)
-  const [splitRatio, setSplitRatio] = useState(0.5)
+  const [splitRatio, setSplitRatio] = useState(DEFAULT_SPLIT_RATIO)
   const [isDragging, setIsDragging] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const previewScrollRef = useRef<HTMLDivElement>(null)
@@ -24,6 +26,12 @@ export default memo(function MainLayout({ editor, preview, toolbar }: MainLayout
   useSplitScrollSync({ enabled: mode === 'split', previewScrollRef })
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.detail >= 2) {
+      e.preventDefault()
+      setSplitRatio(DEFAULT_SPLIT_RATIO)
+      return
+    }
+
     e.preventDefault()
     setIsDragging(true)
     document.body.style.cursor = 'col-resize'
@@ -55,7 +63,7 @@ export default memo(function MainLayout({ editor, preview, toolbar }: MainLayout
   }, [])
 
   const handleDoubleClick = useCallback(() => {
-    setSplitRatio(0.5)
+    setSplitRatio(DEFAULT_SPLIT_RATIO)
   }, [])
 
   return (
@@ -68,15 +76,21 @@ export default memo(function MainLayout({ editor, preview, toolbar }: MainLayout
             <div className="overflow-hidden" style={{ width: `${splitRatio * 100}%` }}>
               {editor}
             </div>
-            <div
-              className={`w-1 flex-none cursor-col-resize transition-[width,background-color] duration-150 ${
-                isDragging
-                  ? 'w-1 bg-electric-yellow'
-                  : 'bg-line hover:w-1.5 hover:bg-electric-yellow/50'
-              }`}
-              onDoubleClick={handleDoubleClick}
-              onMouseDown={handleMouseDown}
-            />
+            <div aria-hidden="true" className="group relative w-px flex-none">
+              <div
+                className={clsx(
+                  'pointer-events-none h-full w-px origin-center transition-[transform,background-color] duration-150',
+                  isDragging
+                    ? 'scale-x-100 bg-electric-yellow'
+                    : 'bg-line group-hover:scale-x-150 group-hover:bg-electric-yellow/50'
+                )}
+              />
+              <div
+                className="absolute inset-y-0 -left-[6px] -right-[6px] z-10 cursor-col-resize"
+                onDoubleClick={handleDoubleClick}
+                onMouseDown={handleMouseDown}
+              />
+            </div>
             <div ref={previewScrollRef} className="flex-1 overflow-auto overscroll-contain">
               {preview}
             </div>
