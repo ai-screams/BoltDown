@@ -70,7 +70,7 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 
 - `TabBar.tsx` — **WAI-ARIA tabs pattern**: `role="tablist"`, `role="tab"`, roving tabindex (active = 0, inactive = -1), keyboard navigation (ArrowLeft/Right/Home/End), programmatic focus on tab switch. F2 triggers rename. Icons marked with `aria-hidden="true"`.
 
-- `Header.tsx` — App header with export dropdown featuring **keyboard navigation** (ArrowDown/Up/Home/End/Escape), auto-focus first menu item on open.
+- `Header.tsx` — App header with mode toggle button and export dropdown. **Mode toggle**: Visual order is `[Live, Split, Source]` (intuitive first impression); actual `Cmd+\` cycle is `split → source → live`. All controls feature **keyboard navigation** (ArrowDown/Up/Home/End/Escape), auto-focus first menu item on open.
 
 - `Footer.tsx` — Status bar with **`aria-live="polite"` + `aria-atomic="true"`** on status text for screen reader announcements. Word/line/char count on right.
 
@@ -78,7 +78,7 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 
 - `FindReplaceModal.tsx` — Custom Find & Replace UI. **Full accessibility**: dialog with `aria-labelledby` and `aria-modal="true"`, toggle buttons with `aria-pressed` and `aria-label`, match counter with `role="status"`, `aria-live="polite"`, `aria-atomic="true"`, input fields with `aria-label`, all icons with `aria-hidden="true"`. ReDoS protection, debounced search, lazy line info, memoized rows.
 
-- `MarkdownEditor.tsx` — CM6 editor with per-tab EditorState cache and compartment reconfiguration. Ordered-list Tab behavior, code-block boundary keymap compartment (`codeBlockArrowNavCompRef`) for `ArrowUp`/`ArrowDown` + code-block-scoped `Mod+A` in live/zen mode, searchKeymap removed (replaced by FindReplaceModal).
+- `MarkdownEditor.tsx` — CM6 editor with per-tab EditorState cache and compartment reconfiguration. Ordered-list Tab behavior, code-block boundary keymap compartment (`codeBlockArrowNavCompRef`) for `ArrowUp`/`ArrowDown` + code-block-scoped `Mod+A` in live/zen mode, searchKeymap removed (replaced by FindReplaceModal). **UI Polish**: Live/zen modes apply `max-w-4xl` (896px) with `mx-auto` centering for optimal markdown reading width (~112 chars/line).
 
 - `ResizeHandle.tsx` — Draggable divider with **`role="separator"`, `aria-orientation="vertical"`, `aria-label="Resize sidebar"`**.
 
@@ -131,7 +131,7 @@ src-tauri/src/
 
 - **Code style**: `semi: false`, `singleQuote: true`, `arrowParens: 'avoid'`, `printWidth: 100`
 - **JSX prop order**: eslint-plugin-perfectionist enforces: key → ref → identity props → aria-\* → className → unknown → multiline → shorthand → callbacks
-- **Keyboard shortcuts**: Cmd+O (open), Cmd+S (save), Cmd+Shift+S (save as), Cmd+N (new tab), Cmd+\\ (mode cycle split/source/live), Cmd+Shift+Z (toggle zen), Escape (zen -> live), Cmd+, (settings), Cmd+F (find), Cmd+H (find & replace), Shift+Cmd+E (toggle sidebar), Shift+Cmd+/ (shortcuts help)
+- **Keyboard shortcuts**: Cmd+O (open), Cmd+S (save), Cmd+Shift+S (save as), Cmd+N (new tab), Cmd+\\ (mode cycle: split → source → live, repeats), Cmd+Shift+Z (toggle zen from any mode), Escape (zen → live), Cmd+, (settings), Cmd+F (find), Cmd+H (find & replace), Shift+Cmd+E (toggle sidebar), Shift+Cmd+/ (shortcuts help). **Note**: Header toggle button shows visual order [Live, Split, Source] for UX, but actual cycle is [split, source, live]
 - **Path aliases**: `@/` → `src/`, `@components/` → `src/components/`, etc.
 - **Zustand pattern**: Always use primitive-returning selectors (not object destructuring)
 - **CM6 pattern**: Compartments in `useRef`, not module-level singletons
@@ -139,6 +139,7 @@ src-tauri/src/
 - **Derived state**: `isDirty = content !== savedContent` (not stored)
 - **Sidebar sync**: `loadParentDirectory(filePath, openSidebar?)` consolidates directory loading logic
 - **File tree icons**: Use `@react-symbols/icons/utils` — `FileIcon` auto-assigns by extension, `FolderIcon` by folder name
+- **UI Layout Constraints**: Live/zen modes apply `max-w-4xl` (896px, ~112 chars/line optimal for markdown reading), split mode applies `max-w-3xl` (768px, ~96 chars/line) to preview with editor full-width, source mode has no preview. Choices based on typography research (Wikipedia Line Length).
 - **Accessibility**: ARIA attributes on interactive elements, prefers-reduced-motion support in CSS, decorative icons with `aria-hidden="true"`
 - **Error boundaries**: Use ErrorBoundary component to wrap potentially error-throwing components
 - **Type checking**: `npx tsc --noEmit` before committing

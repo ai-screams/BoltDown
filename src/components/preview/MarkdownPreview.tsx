@@ -1,6 +1,8 @@
+import { clsx } from 'clsx'
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react'
 
 import { useMarkdownParser } from '@/hooks/useMarkdownParser'
+import { useEditorStore } from '@/stores/editorStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useTabStore } from '@/stores/tabStore'
 import type { MermaidSecurityLevel } from '@/types/settings'
@@ -187,6 +189,7 @@ export default memo(function MarkdownPreview() {
   const html = useMarkdownParser(content)
   const containerRef = useRef<HTMLDivElement>(null)
   const renderTokenRef = useRef(0)
+  const mode = useEditorStore(s => s.mode)
   const preview = useSettingsStore(s => s.settings.preview)
 
   const enhancePreview = useCallback(() => {
@@ -255,10 +258,15 @@ export default memo(function MarkdownPreview() {
     [preview.fontSize, preview.lineHeight, preview.maxWidth]
   )
 
+  const containerClassName = clsx(
+    'prose dark:prose-invert p-6',
+    mode === 'split' ? 'max-w-3xl' : 'mx-auto'
+  )
+
   return (
     <div
       ref={containerRef}
-      className="prose dark:prose-invert mx-auto p-6"
+      className={containerClassName}
       style={previewStyle}
       dangerouslySetInnerHTML={{ __html: html }}
     />

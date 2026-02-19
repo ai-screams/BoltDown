@@ -176,3 +176,63 @@
 - `src/components/editor/MarkdownEditor.tsx`
 - `src/components/editor/extensions/wysiwyg/codeBlockArrowNavigationModel.test.ts`
 - `src/components/editor/extensions/wysiwyg/codeBlockBadge.test.ts`
+
+## 2026-02-19 — UI Polish: Mode Cycling Reorder + Preview Max-Width Constraints
+
+### What changed
+
+#### Editor Mode Cycling Reorder (Commit: d8c0706)
+
+- **Mode toggle button visual order** changed from `[split, source, live]` to `[live, split, source]`
+- **Intent**: Live (WYSIWYG) is primary writing experience; reordered header display for intuitive first impression
+- **Important**: Keyboard cycle via `Cmd+\` remains `split → source → live` (canonical order). The header toggle button order is **visual display only**, not the actual cycle order
+- **Implementation**: `Header.tsx` line 30–34, modes array reordered; cycle logic unchanged in `useKeyboardShortcuts.ts`
+
+#### Preview Max-Width Constraints (Commit: e9e08d9)
+
+- **Live/Zen modes**: Preview constrained to `max-w-4xl` (896px ≈ 56rem), centered with `mx-auto`
+  - **Rationale**: Optimal markdown reading width is 50–100 characters per line. At 16px base font, 896px yields ~112 chars/line, perfect for document reading + code blocks
+  - **Basis**: Wikipedia Line Length research (printed prose: 45–75 cpl optimal; digital: 55–112 cpl depending on use)
+- **Split mode**: Preview constrained to `max-w-3xl` (768px ≈ 48rem), left-aligned (no `mx-auto`)
+  - **Rationale**: Split pairs editor + preview side-by-side. Preview needs readable width (~96 chars/line) while preserving editor space
+  - **Behavior**: Editor takes full width (code space priority), preview takes constrained width (readability priority)
+- **Source mode**: No constraint (preview hidden)
+- **Implementation**: `MarkdownEditor.tsx` line 315–318 (live/zen), `MarkdownPreview.tsx` line 261–264 (split vs. others)
+
+### Typography & Readability Decisions
+
+- **Max-width values are data-driven**, not arbitrary
+- **Live/Zen**: 896px chosen to hit sweet spot of ~112 chars/line (optimal for both prose + code)
+- **Split**: 768px (96 chars/line) balances readability with split-panel space constraints
+- **Responsive**: Tailwind classes (`max-w-4xl`, `max-w-3xl`) automatically disable on narrow viewports (<768px), reverting to full-width
+
+### Files touched
+
+- `src/components/layout/Header.tsx` — modes array reorder (visual display order)
+- `src/components/editor/MarkdownEditor.tsx` — dynamic className for live/zen max-width
+- `src/components/preview/MarkdownPreview.tsx` — dynamic className for split vs. other mode widths
+
+### Key gotchas
+
+1. **Header toggle visual order ≠ keyboard cycle order**
+   - Header shows `[live, split, source]` for intuitive first impression
+   - `Cmd+\` cycle is `split → source → live` (unchanged)
+   - This asymmetry is intentional: new users see live first, power users have muscle memory for cycle
+2. **Preview inline `maxWidth` CSS overrides Tailwind classes**
+   - Settings store `preview.maxWidth` (px value) applied as inline style
+   - Takes precedence over `max-w-*` Tailwind classes
+   - User control preserved, but can override typography constraints
+3. **No max-width on live/zen outside editor container**
+   - `max-w-4xl` only applies inside `MarkdownEditor` container
+   - If container < 896px, constraint is naturally effective but invisible
+   - Works as intended (constraint respects parent width)
+
+### Regression checklist
+
+- Header mode toggle: clicking cycles through visually displayed order (live → split → source → live)
+- Keyboard `Cmd+\`: cycles through canonical order (split → source → live → split)
+- Live mode preview: max-width 896px applied, centered with left/right margins on large screens
+- Zen mode preview: same as live (centered, 896px max)
+- Split mode preview: max-width 768px applied, left-aligned (no auto margins), divider at 50/50 ratio shows asymmetric layout
+- Source mode: editor only, no preview visible, keyboard/ui cycle unchanged
+- Responsive: all modes full-width on tablets/mobile (<768px), max-widths disable naturally

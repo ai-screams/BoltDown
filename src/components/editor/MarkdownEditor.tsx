@@ -3,6 +3,7 @@ import { bracketMatching, indentOnInput } from '@codemirror/language'
 import { search } from '@codemirror/search'
 import { Compartment, EditorState, type Extension } from '@codemirror/state'
 import { EditorView, highlightActiveLine, keymap } from '@codemirror/view'
+import { clsx } from 'clsx'
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 
 import { STATUS_TIMEOUT_MS } from '@/constants/feedback'
@@ -310,5 +311,11 @@ export default memo(function MarkdownEditor() {
     view.dispatch({ effects: buildReconfigureEffects() })
   }, [buildReconfigureEffects])
 
-  return <div ref={containerRef} className="h-full [&_.cm-editor]:h-full" />
+  // Apply max-width constraint to live/zen modes for centered, readable content
+  const containerClassName = clsx(
+    'h-full [&_.cm-editor]:h-full',
+    (mode === 'live' || mode === 'zen') && 'mx-auto max-w-4xl'
+  )
+
+  return <div ref={containerRef} className={containerClassName} />
 })

@@ -28,9 +28,9 @@ import type { EditorMode } from '@/types/editor'
 import IconButton from '@components/common/IconButton'
 
 const modes: { mode: EditorMode; icon: typeof Columns2; label: string }[] = [
+  { mode: 'live', icon: PenLine, label: 'Live' },
   { mode: 'split', icon: Columns2, label: 'Split' },
   { mode: 'source', icon: Code2, label: 'Source' },
-  { mode: 'live', icon: PenLine, label: 'Live' },
 ]
 
 const themeIcon = { light: Sun, dark: Moon, system: Monitor }
