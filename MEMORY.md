@@ -236,3 +236,138 @@
 - Split mode preview: max-width 768px applied, left-aligned (no auto margins), divider at 50/50 ratio shows asymmetric layout
 - Source mode: editor only, no preview visible, keyboard/ui cycle unchanged
 - Responsive: all modes full-width on tablets/mobile (<768px), max-widths disable naturally
+
+## 2026-02-20 — CI/CD Pipeline & Release Automation
+
+### What changed
+
+Complete CI/CD pipeline build-out on branch `ci/release-pipeline`. Seven workflow files, four new config files, commitlint scope expansion, validate script alignment, and Rust conditional compilation fix.
+
+#### CI Workflows (7 files in `.github/workflows/`)
+
+| Workflow            | File                   | Trigger                                | Purpose                                                                     |
+| ------------------- | ---------------------- | -------------------------------------- | --------------------------------------------------------------------------- |
+| **CI**              | `ci.yaml`              | PR to main/develop, push to develop    | Orchestrator: lint → (test ∥ build), security (parallel independent job)    |
+| **Lint & Format**   | `quality-lint.yaml`    | `workflow_call`                        | TS type-check, ESLint, Prettier, rustfmt, **clippy**                        |
+| **Test**            | `quality-test.yaml`    | `workflow_call`                        | **Vitest** (`npm run test:run`) + Cargo test                                |
+| **Build**           | `build.yaml`           | `workflow_call`                        | `vite build` + `cargo check` (compile-only, no packaging — **~3min**)       |
+| **Security Scan**   | `security-scan.yaml`   | `workflow_call`                        | npm audit + cargo audit via **taiki-e/install-action@v2** (binary cache)    |
+| **Release**         | `release-please.yaml`  | push to main                           | release-please-action@v4 + conditional tauri-action@v0 cross-platform build |
+| **Weekly Security** | `security-weekly.yaml` | cron Sun 00:00 UTC + workflow_dispatch | Reuses `security-scan.yaml`                                                 |
+
+#### CI Job DAG
+
+```
+PR / push(develop)
+    │
+    ├── lint ──┬── test     (parallel after lint)
+    │          └── build    (parallel after lint)
+    └── security            (independent, parallel)
+```
+
+#### Trigger Optimization
+
+- **push:main removed from CI** — only `release-please.yaml` runs on main push (no duplicate CI after merge)
+- **paths-ignore**: `**.md`, `.docs/**`, `LICENSE`, `.gitignore`, `.release-please-manifest.json`
+- **Concurrency**: `${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}` with `cancel-in-progress: true`
+- **GITHUB_TOKEN limitation**: tag-triggered workflows won't fire from GITHUB_TOKEN-created tags, so `build-tauri` is integrated into `release-please.yaml` as a conditional job
+
+#### Release Pipeline (`release-please.yaml`)
+
+- **Step 1**: `release-please-action@v4` creates/updates Release PR (version bump + CHANGELOG)
+- **Step 2**: On merge → GitHub Release created, `release_created=true`
+- **Step 3**: `build-tauri` job (conditional on `release_created`) runs 4-way parallel matrix:
+  - macOS ARM64 (`aarch64-apple-darwin`)
+  - macOS x64 (`x86_64-apple-darwin`)
+  - Linux x64 (`ubuntu-22.04`)
+  - Windows x64 (`windows-latest`)
+- **Assets**: DMG (ARM64/x64), deb, AppImage, MSI, NSIS exe
+- **Version sync**: `release-please-config.json` extra-files syncs `package.json` → `Cargo.toml` + `tauri.conf.json`
+
+#### Semantic Versioning
+
+- `feat:` → minor bump (0.1.0 → 0.2.0)
+- `fix:` → patch bump (0.1.0 → 0.1.1)
+- `feat!:` / `BREAKING CHANGE:` → minor during 0.x (`bump-minor-pre-major: true`), major after 1.0
+- Current version: `0.1.0` (tracked in `.release-please-manifest.json`)
+
+#### Build Optimization
+
+- **PR CI build**: `vite build` + `cargo check` only (~3 min vs ~15 min full `tauri build`)
+- **Full `tauri build`**: reserved for release pipeline only (cross-platform matrix, 60 min timeout)
+
+#### Commitlint Scopes Expanded (25 scopes)
+
+Expanded from 13 to 25 scopes in 4 categories:
+
+- **Core** (7): `editor`, `preview`, `parser`, `math`, `diagram`, `vim`, `find`
+- **UI** (6): `ui`, `sidebar`, `tab`, `tree`, `settings`, `theme`
+- **Infrastructure** (9): `store`, `file`, `export`, `config`, `deps`, `rust`, `tauri`, `ci`, `release`
+- **Cross-cutting** (3): `a11y`, `security`, `perf`
+
+#### Version Pinning (new files)
+
+| File                            | Content                                            | Purpose                                   |
+| ------------------------------- | -------------------------------------------------- | ----------------------------------------- |
+| `.node-version`                 | `22`                                               | Pinned Node.js version for CI + local dev |
+| `src-tauri/rust-toolchain.toml` | `stable` + `rustfmt,clippy`                        | Pinned Rust channel + components          |
+| `release-please-config.json`    | node release-type, extra-files, changelog-sections | Release-please configuration              |
+| `.release-please-manifest.json` | `{ ".": "0.1.0" }`                                 | Current version tracking                  |
+
+#### Validate Script Alignment
+
+`npm run validate` now mirrors the CI pipeline order exactly:
+
+```
+type-check → lint → format:check → rust:fmt:check → rust:clippy → test:run → rust:test
+```
+
+#### Rust Fixes
+
+- `error.rs`: `Ime` variant now gated with `#[cfg(target_os = "macos")]` — prevents compile errors on Linux/Windows
+- `ime.rs`: Unnecessary casts removed (clippy lint cleanup)
+
+### Commits
+
+- `6c7610f` — fix CI workflows: activate clippy/vitest, clean build matrix, cache cargo-audit
+- `f4c2b68` — add release-please + tauri-action cross-platform release pipeline
+- `c34d884` — merge release workflow into release-please (GITHUB_TOKEN tag trigger fix)
+- `9b5d568` — optimize CI triggers: deduplicate runs, skip docs, fix concurrency
+- `853e400` — resolve clippy errors: cfg-gate Ime variant, remove unnecessary casts
+- `07f2537` — pin Node/Rust versions and align validate script with CI
+- `46a20ed` — replace full tauri build with cargo check in PR pipeline
+
+### Files touched
+
+- `.github/workflows/ci.yaml` — orchestrator with trigger optimization
+- `.github/workflows/quality-lint.yaml` — added clippy step
+- `.github/workflows/quality-test.yaml` — activated vitest
+- `.github/workflows/build.yaml` — `vite build` + `cargo check` (was full `tauri build`)
+- `.github/workflows/security-scan.yaml` — taiki-e binary cache for cargo-audit
+- `.github/workflows/release-please.yaml` — **NEW** release-please + tauri-action integrated
+- `.github/workflows/security-weekly.yaml` — reuses security-scan
+- `.node-version` — **NEW** pinned to 22
+- `src-tauri/rust-toolchain.toml` — **NEW** stable + rustfmt,clippy
+- `release-please-config.json` — **NEW** release-please configuration
+- `.release-please-manifest.json` — **NEW** version manifest
+- `commitlint.config.js` — expanded to 25 scopes (4 categories)
+- `package.json` — validate script aligned with CI order
+- `src-tauri/src/error.rs` — `#[cfg(target_os = "macos")]` on Ime variant
+- `src-tauri/src/commands/ime.rs` — removed unnecessary casts
+
+### Key gotchas
+
+1. **push:main only triggers release-please.yaml** — CI is intentionally skipped on main push because PRs already validated the code
+2. **GITHUB_TOKEN tag limitation** — tags created by GITHUB_TOKEN don't trigger other workflows, so build-tauri must live inside release-please.yaml
+3. **Build check vs. full build** — PR CI uses `cargo check` (~3 min), full `tauri build` only runs in release pipeline (~15 min per platform)
+4. **Ime cfg-gate** — `AppError::Ime` variant only exists on macOS; match arms in non-macOS code must not reference it
+5. **Node version source of truth** — `.node-version` file (not `engines.node` in package.json) is what CI uses via `node-version-file`
+
+### Regression checklist
+
+- `npm run validate` passes all 7 steps locally
+- `commitlint` accepts all 25 scopes (e.g., `feat(vim): ...`, `ci(release): ...`)
+- `cargo check` compiles on Linux without Ime variant errors
+- `cargo clippy -- -D warnings` passes with zero warnings
+- `vitest run` executes and passes
+- Release-please config valid: `release-please-config.json` + `.release-please-manifest.json` parseable

@@ -45,10 +45,12 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 | `tailwind.config.js`            | Brand colors (electric-yellow, deep-blue), Inter/Pretendard fonts               |
 | `eslint.config.js`              | ESLint v9 flat config, TS/React/a11y/import-order, perfectionist sort-jsx-props |
 | `.prettierrc`                   | No semi, single quote, 100 width, Tailwind class sort                           |
-| `commitlint.config.js`          | Conventional Commits enforcement (26 scopes)                                    |
+| `commitlint.config.js`          | Conventional Commits enforcement (25 scopes)                                    |
 | `package-lock.json`             | npm dependency lockfile                                                         |
 | `release-please-config.json`    | Release-please: node release type, extra-files (Cargo.toml, tauri.conf.json)    |
 | `.release-please-manifest.json` | Release-please: current version tracking                                        |
+| `.node-version`                 | Node.js version pin (22) for CI `node-version-file` and local tooling           |
+| `src-tauri/rust-toolchain.toml` | Rust toolchain pin (stable) with rustfmt + clippy components                    |
 
 ## Key Components & Stores
 
@@ -183,7 +185,7 @@ src-tauri/src/
 | CI              | `ci.yaml`              | PR to main/develop, push to develop | Orchestrator: lint → (test ∥ build), security (parallel) |
 | Lint & Format   | `quality-lint.yaml`    | `workflow_call`                     | TS type-check, ESLint, Prettier, rustfmt, clippy         |
 | Test            | `quality-test.yaml`    | `workflow_call`                     | Vitest + Cargo test                                      |
-| Build           | `build.yaml`           | `workflow_call`                     | Tauri build verification (Linux only)                    |
+| Build           | `build.yaml`           | `workflow_call`                     | Vite build + cargo check verification (Linux only)       |
 | Security Scan   | `security-scan.yaml`   | `workflow_call`                     | npm audit + cargo audit                                  |
 | Weekly Security | `security-weekly.yaml` | cron (Sun 00:00 UTC)                | Scheduled security scan                                  |
 | Release         | `release-please.yaml`  | push to main                        | release-please + tauri-action cross-platform build       |
@@ -226,7 +228,7 @@ feat/fix commits merge to main
 
 - Branch strategy: feature branches → PR → main
 - Commit style: Conventional Commits (`feat(editor):`, `fix(preview):`, etc.)
-- Scopes (26): editor, preview, parser, math, diagram, vim, find, ui, sidebar, tab, tree, settings, theme, store, file, export, config, deps, rust, tauri, ci, release, a11y, security, perf
+- Scopes (25): editor, preview, parser, math, diagram, vim, find, ui, sidebar, tab, tree, settings, theme, store, file, export, config, deps, rust, tauri, ci, release, a11y, security, perf
 - Pre-commit: Husky + lint-staged + commitlint
 - Current branch is workspace-dependent; verify with `git branch --show-current`
 
