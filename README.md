@@ -107,9 +107,21 @@ Download the `.dmg` file from the [latest release](https://github.com/ai-screams
 
 > 💡 **Apple Silicon and Intel** — We provide separate builds for each architecture for the best native performance.
 
+> [!CAUTION]
+> **"BoltDown is damaged and can't be opened"** — The app is not yet code-signed with an Apple Developer certificate. macOS Gatekeeper blocks unsigned apps by default. To open BoltDown, run this in Terminal after installing:
+>
+> ```bash
+> xattr -cr /Applications/BoltDown.app
+> ```
+>
+> We plan to enroll in the Apple Developer Program soon to provide properly signed and notarized builds.
+
 ### 🪟 Windows
 
 Download the `.msi` installer from the [latest release](https://github.com/ai-screams/BoltDown/releases/latest) and run it.
+
+> [!CAUTION]
+> **Windows SmartScreen warning** — The app is not yet code-signed. When you see "Windows protected your PC", click **"More info"** → **"Run anyway"** to proceed. Code signing is planned for a future release.
 
 ### 🐧 Linux
 
