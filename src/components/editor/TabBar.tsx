@@ -24,6 +24,7 @@ export default memo(function TabBar() {
   const [renamingTabId, setRenamingTabId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
   const renameInputRef = useRef<HTMLInputElement>(null)
+  const renameCommitInFlightRef = useRef<string | null>(null)
 
   const handleNewTab = useCallback(() => {
     openTab(null, FILE_DEFAULTS.untitledName, '')
@@ -45,28 +46,45 @@ export default memo(function TabBar() {
 
   const commitRename = useCallback(
     async (tabId: string) => {
+      if (renameCommitInFlightRef.current === tabId) {
+        return
+      }
+
+      renameCommitInFlightRef.current = tabId
+
       setRenamingTabId(null)
       const trimmed = renameValue.trim()
-      if (!trimmed) return
+      if (!trimmed) {
+        renameCommitInFlightRef.current = null
+        return
+      }
 
       const tab = useTabStore.getState().tabs.find(t => t.id === tabId)
-      if (!tab) return
+      if (!tab) {
+        renameCommitInFlightRef.current = null
+        return
+      }
 
       const newFileName = /\.[^.]+$/.test(trimmed) ? trimmed : `${trimmed}.md`
-      if (newFileName === tab.fileName) return
+      if (newFileName === tab.fileName) {
+        renameCommitInFlightRef.current = null
+        return
+      }
 
-      if (tab.filePath) {
-        try {
+      try {
+        if (tab.filePath) {
           const newPath = joinPath(getDirectoryPath(tab.filePath), newFileName)
           const { invoke } = await import('@tauri-apps/api/core')
           await invoke('rename_file', { oldPath: tab.filePath, newPath })
           renameTab(tabId, newFileName, newPath)
-        } catch (e) {
-          console.warn('Failed to rename file:', e)
-          useEditorStore.getState().flashStatus('Rename failed', STATUS_TIMEOUT_MS.error)
+        } else {
+          renameTab(tabId, newFileName, null)
         }
-      } else {
-        renameTab(tabId, newFileName, null)
+      } catch (e) {
+        console.warn('Failed to rename file:', e)
+        useEditorStore.getState().flashStatus('Rename failed', STATUS_TIMEOUT_MS.error)
+      } finally {
+        renameCommitInFlightRef.current = null
       }
     },
     [renameValue, renameTab]
@@ -126,8 +144,22 @@ export default memo(function TabBar() {
   )
 
   useEffect(() => {
+    const isEditableTarget = (target: EventTarget | null): boolean => {
+      if (!(target instanceof HTMLElement)) {
+        return false
+      }
+
+      const tagName = target.tagName
+      return (
+        tagName === 'INPUT' ||
+        tagName === 'TEXTAREA' ||
+        tagName === 'SELECT' ||
+        target.isContentEditable
+      )
+    }
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'F2' && !renamingTabId) {
+      if (e.key === 'F2' && !renamingTabId && !isEditableTarget(e.target)) {
         const activeId = useTabStore.getState().activeTabId
         const activeTab = useTabStore.getState().tabs.find(t => t.id === activeId)
         if (activeTab) {
@@ -164,30 +196,26 @@ export default memo(function TabBar() {
       </button>
       <div
         role="tablist"
+        aria-label="Open tabs"
         className="flex flex-1 items-center overflow-x-auto"
         onKeyDown={handleTabListKeyDown}
       >
         {tabs.map(tab => {
           const isRenaming = tab.id === renamingTabId
           return (
-            <button
+            <div
               key={tab.id}
-              role="tab"
-              type="button"
+              role="presentation"
               className={clsx(
-                'group flex h-8 w-[160px] shrink-0 cursor-pointer items-center gap-1.5 border-r px-3 text-xs transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50',
+                'group flex h-8 w-[160px] shrink-0 cursor-pointer items-center gap-1.5 border-r px-3 text-xs transition-colors duration-150',
                 isRenaming
                   ? 'border-electric-yellow bg-electric-yellow/10 dark:border-electric-yellow dark:bg-electric-yellow/10'
                   : tab.id === activeTabId
                     ? 'border-line bg-surface text-fg'
                     : 'border-line text-fg-muted hover:bg-surface hover:text-fg-secondary'
               )}
-              data-tab-id={tab.id}
-              tabIndex={tab.id === activeTabId ? 0 : -1}
-              onClick={() => !isRenaming && setActiveTab(tab.id)}
               onDoubleClick={e => !isRenaming && handleDoubleClick(e, tab.id, tab.fileName)}
             >
-              <FileText aria-hidden="true" className="h-3 w-3 flex-none" />
               {isRenaming ? (
                 <input
                   ref={renameInputRef}
@@ -209,23 +237,32 @@ export default memo(function TabBar() {
                 />
               ) : (
                 <>
-                  <span className="truncate">{tab.fileName}</span>
-                  {tab.content !== tab.savedContent && (
-                    <span className="flex-none text-electric-yellow">●</span>
-                  )}
+                  <button
+                    role="tab"
+                    type="button"
+                    aria-selected={tab.id === activeTabId}
+                    className="flex min-w-0 flex-1 items-center gap-1.5 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50"
+                    data-tab-id={tab.id}
+                    tabIndex={tab.id === activeTabId ? 0 : -1}
+                    onClick={() => setActiveTab(tab.id)}
+                  >
+                    <FileText aria-hidden="true" className="h-3 w-3 flex-none" />
+                    <span className="truncate">{tab.fileName}</span>
+                    {tab.content !== tab.savedContent && (
+                      <span className="flex-none text-electric-yellow">●</span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Close tab"
+                    className="ml-auto flex-none rounded p-0.5 opacity-0 hover:bg-surface-muted group-focus-within:opacity-100 group-hover:opacity-100"
+                    onClick={e => handleClose(e, tab.id)}
+                  >
+                    <X aria-hidden="true" className="h-3 w-3" />
+                  </button>
                 </>
               )}
-              {!isRenaming && (
-                <button
-                  type="button"
-                  aria-label="Close tab"
-                  className="ml-auto flex-none rounded p-0.5 opacity-0 hover:bg-surface-muted group-hover:opacity-100"
-                  onClick={e => handleClose(e, tab.id)}
-                >
-                  <X aria-hidden="true" className="h-3 w-3" />
-                </button>
-              )}
-            </button>
+            </div>
           )
         })}
         <button
