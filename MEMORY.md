@@ -4,7 +4,7 @@
 
 ### What changed
 
-- Zen WYSIWYG moved to StateField-based block-safe decorations and now supports stable rich blocks (table, math, code, Mermaid) with click-to-edit for interactive widgets.
+- WYSIWYG (live + zen) moved to StateField-based block-safe decorations and now supports stable rich blocks (table, math, code, Mermaid) with click-to-edit for interactive widgets.
 - Zen Mermaid rendering was added with lazy import, theme-aware init, and code-block fallback when render fails.
 - KaTeX warning noise was reduced by aligning both preview and Zen math rendering to `throwOnError: false` + `strict: 'ignore'`.
 - Ordered-list `Tab` behavior now nests as `1.` and renumbers following siblings; nested indent uses 4 spaces so split preview parses structure consistently.
@@ -14,7 +14,7 @@
 
 ### Files touched by these behaviors
 
-- `src/components/editor/extensions/wysiwyg.ts`
+- `src/components/editor/extensions/wysiwyg/index.ts`
 - `src/components/editor/MarkdownEditor.tsx`
 - `src/components/editor/extensions/typewriter.ts`
 - `src/utils/markdownConfig.ts`
@@ -159,3 +159,20 @@
 - Ordered list: `Tab` then `Shift-Tab` preserves indentation symmetry and numbering.
 - Table: row/col controls, resize, and column alignment operate without forcing raw markdown reveal.
 - Table: control action followed by `Cmd+Z` works without scroll jump to unrelated position.
+
+## 2026-02-19 — Code Block Boundary Navigation + Docs Fact-Check
+
+### What changed
+
+- Added fenced code-block boundary navigation model + keymap wiring for live/zen editor mode.
+- `ArrowUp`/`ArrowDown` now handle boundary transitions around fenced blocks, including opening the language editor from the first code line.
+- `Mod+A` now selects code text only when caret is inside a fenced block (including hidden fence lines); outside blocks it falls back to normal editor select-all.
+- Documentation was synced to current architecture (live+zen wording, compartment list, widget event handling, and current file paths).
+
+### Evidence anchors
+
+- `src/components/editor/extensions/wysiwyg/codeBlockArrowNavigationModel.ts`
+- `src/components/editor/extensions/wysiwyg/codeBlockArrowNavigationKeymap.ts`
+- `src/components/editor/MarkdownEditor.tsx`
+- `src/components/editor/extensions/wysiwyg/codeBlockArrowNavigationModel.test.ts`
+- `src/components/editor/extensions/wysiwyg/codeBlockBadge.test.ts`

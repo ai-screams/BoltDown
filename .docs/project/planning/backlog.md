@@ -2,7 +2,7 @@
 
 > 단일 백로그. 활성 코드 작업은 완료되었고 Known Issues만 유지.
 > SSoT: 이 파일은 현재/활성 계획 상태의 기준 문서이며, 구현 세부 이력은 `AGENTS.md`, `MEMORY.md`, `git log`를 함께 참조.
-> 최종 갱신: 2026-02-19 (Waves 1-10 완료, 라이브 파리티/테이블 안정화 반영)
+> 최종 갱신: 2026-02-19 (Waves 1-10 완료 + 코드블록 경계 내비게이션/문서 팩트체크 반영)
 
 ---
 
@@ -19,7 +19,18 @@
 
 ---
 
-## Completed (Waves 1-9)
+## Ideas (Future)
+
+> 당장 착수하지 않고 아이디어로만 보관하는 후보.
+
+| ID  | Idea                                              | Scope                                                     | Note                                                                                                                                                                             |
+| --- | ------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| I1  | Split 우측 렌더에 Live 뷰어 재사용 가능성 검토    | `wysiwyg/`, `MarkdownPreview`, split sync                 | 클릭 비활성 + 드래그 허용 read-only 상호작용, `data-source-line` 계약/스크롤 싱크 재설계 필요. 구현 난이도 중~고로 판단되어 추후 POC로만 검토.                                   |
+| I2  | Code block Live/Split 회귀 픽스처 + 패리티 게이트 | `wysiwyg/`, `MarkdownPreview`, `src/styles/codeblock.css` | 경계 이동(`ArrowUp/Down`), 블록 내부 `Mod+A`, 배지/언어 편집, CSS 결합 지점을 기준으로 파리티 회귀를 문서화. 계획: `.docs/project/planning/code-block-live-split-parity-plan.md` |
+
+---
+
+## Completed (Waves 1-10)
 
 ### Wave 1 — Phase 2 Completion (ba748dd)
 
@@ -101,6 +112,7 @@
 
 - **PRD (원본 비전)**: `.docs/spec/prd/feature-roadmap.md` — Phase 1-4 전체 로드맵
 - **Idea/Plan**: `.docs/project/planning/markdown-lint-on-save-plan.md` — 저장 시 Markdown lint 런타임 통합 초안
+- **Idea/Plan**: `.docs/project/planning/code-block-live-split-parity-plan.md` — 코드블록 Live/Split 패리티 및 회귀 체크 계획
 - **Find & Replace 고급**: `.docs/project/planning/archive/polishing-phase-backlog.md` — Search history, Cmd+D 등
 - **Phase 2 아카이브**: `.docs/project/planning/archive/phase2-plan.md`
 - **아키텍처**: `AGENTS.md` (루트 및 각 디렉토리)

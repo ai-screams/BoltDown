@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) + **React 19** (TypeScript frontend) + **CodeMirror 6** (editor engine). Phase 1 MVP complete. Phase 2 complete (Waves 1-8): Settings System (4-category modal, Tauri persistence, theme presets, custom CSS editor), Find & Replace (Cmd+F/H, ReDoS protection, keyboard navigation), Shortcuts/Changelog/About modals, Tauri 2.0 modular architecture with clean separation of concerns, file save fixes, layout fixes, sidebar improvements (file/outline tabs, auto-sync, file tree icons), WYSIWYG Zen mode (StateField decorations with two-tier reveal, in-place code editing, KaTeX/Mermaid/Prism.js/tables), Focus Mode, Typewriter Mode, Auto-save, Tab Rename, Image Drag & Drop (Tauri native drag events, path resolution), Spellcheck (CM6 contentAttributes). Split view scroll sync (implemented): DOM-based mapping + anchor fallback, SmoothScroller, click-to-sync, offset correction. **WIG Compliance**: 18 accessibility fixes across 9 files (TabBar WAI-ARIA tabs, Header export menu keyboard nav, FileTreeNode context menu keyboard nav, SettingsModal form accessibility, FindReplaceModal ARIA, Footer live region, Sidebar decorative icons, App beforeunload guard, index.html preconnect).
+Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) + **React 19** (TypeScript frontend) + **CodeMirror 6** (editor engine). Phase 1 and Phase 2 are complete, and post-Phase-2 waves are also merged (live mode parity updates, ordered-list normalization, split sync hardening, table editing stabilization, and fenced code-block boundary navigation with code-block-scoped `Mod+A`). WYSIWYG decorations run in both **live** and **zen** modes via StateField-based rendering. **WIG Compliance**: 18 accessibility fixes across 9 files (TabBar WAI-ARIA tabs, Header export menu keyboard nav, FileTreeNode context menu keyboard nav, SettingsModal form accessibility, FindReplaceModal ARIA, Footer live region, Sidebar decorative icons, App beforeunload guard, index.html preconnect).
 
 ## Architecture Overview
 
@@ -27,12 +27,13 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 
 ## Key Directories
 
-| Directory    | Purpose                                                    |
-| ------------ | ---------------------------------------------------------- |
-| `src/`       | React frontend — components, stores, hooks, types, utils   |
-| `src-tauri/` | Rust backend — modular commands, error handling, utils     |
-| `.docs/`     | Documentation — ADR, PRD, brand guidelines, wiki, planning |
-| `tests/`     | E2E tests (Playwright, placeholder)                        |
+| Directory     | Purpose                                                    |
+| ------------- | ---------------------------------------------------------- |
+| `src/`        | React frontend — components, stores, hooks, types, utils   |
+| `src/styles/` | Shared CSS layers (tokens, code-block line/badge styling)  |
+| `src-tauri/`  | Rust backend — modular commands, error handling, utils     |
+| `.docs/`      | Documentation — ADR, PRD, brand guidelines, wiki, planning |
+| `tests/`      | E2E tests (Playwright, placeholder)                        |
 
 ## Configuration Files
 
@@ -77,7 +78,7 @@ Cross-platform desktop Markdown editor built with **Tauri 2.0** (Rust backend) +
 
 - `FindReplaceModal.tsx` — Custom Find & Replace UI. **Full accessibility**: dialog with `aria-labelledby` and `aria-modal="true"`, toggle buttons with `aria-pressed` and `aria-label`, match counter with `role="status"`, `aria-live="polite"`, `aria-atomic="true"`, input fields with `aria-label`, all icons with `aria-hidden="true"`. ReDoS protection, debounced search, lazy line info, memoized rows.
 
-- `MarkdownEditor.tsx` — CM6 editor with per-tab EditorState cache and compartment reconfiguration. Ordered-list Tab behavior, searchKeymap removed (replaced by FindReplaceModal).
+- `MarkdownEditor.tsx` — CM6 editor with per-tab EditorState cache and compartment reconfiguration. Ordered-list Tab behavior, code-block boundary keymap compartment (`codeBlockArrowNavCompRef`) for `ArrowUp`/`ArrowDown` + code-block-scoped `Mod+A` in live/zen mode, searchKeymap removed (replaced by FindReplaceModal).
 
 - `ResizeHandle.tsx` — Draggable divider with **`role="separator"`, `aria-orientation="vertical"`, `aria-label="Resize sidebar"`**.
 
@@ -134,6 +135,7 @@ src-tauri/src/
 - **Path aliases**: `@/` → `src/`, `@components/` → `src/components/`, etc.
 - **Zustand pattern**: Always use primitive-returning selectors (not object destructuring)
 - **CM6 pattern**: Compartments in `useRef`, not module-level singletons
+- **Code-block keymap wiring**: keep `codeBlockArrowNavigationKeymap()` model/keymap/compartment wiring aligned (`codeBlockArrowNavigationModel.ts` ↔ `codeBlockArrowNavigationKeymap.ts` ↔ `MarkdownEditor.tsx` compartment reconfigure path)
 - **Derived state**: `isDirty = content !== savedContent` (not stored)
 - **Sidebar sync**: `loadParentDirectory(filePath, openSidebar?)` consolidates directory loading logic
 - **File tree icons**: Use `@react-symbols/icons/utils` — `FileIcon` auto-assigns by extension, `FolderIcon` by folder name
@@ -143,6 +145,13 @@ src-tauri/src/
 - **Linting**: `npx eslint src/` before committing
 - **Dead code**: `npm run knip` to detect unused exports/dependencies
 - **Build**: `npx vite build` to verify; `npm run tauri:build` for DMG
+
+## Code Block Maintenance Contract
+
+- Keep decoration/CSS coupling in sync: `buildDecorations.ts` emits `codeblock-line`, `codeblock-fence-hidden-line`, badge/popover classes and `data-*` attributes that are consumed by `src/styles/codeblock.css`.
+- Keep language list coupling in sync: `KNOWN_LANGUAGES` in `CodeBlockWidget.ts` drives both badge popover autocomplete and fence completion via `fenceLanguageCompletion.ts`.
+- Keep keymap model wiring in sync: update both `codeBlockArrowNavigationModel.ts` and `codeBlockArrowNavigationKeymap.ts`, and keep `MarkdownEditor.tsx` `codeBlockArrowNavCompRef` live/zen reconfigure behavior intact.
+- Update tests with behavior changes: at minimum `codeBlockArrowNavigationModel.test.ts` and `codeBlockBadge.test.ts`; include widget-level tests when `ignoreEvent`, dataset attributes, or popover behavior changes.
 
 ## Tech Stack
 
