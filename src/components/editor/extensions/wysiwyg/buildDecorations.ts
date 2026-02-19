@@ -9,6 +9,7 @@ import { stripInlineMarkdown } from '@/utils/markdownText'
 
 import { appendMathDecorations } from './BlockMathWidget'
 import { BulletWidget } from './BulletWidget'
+import { getFencedCodeBlockIdFromRange } from './codeBlockArrowNavigationModel'
 import { LanguageBadgeWidget, applyPrismTokens, getCodeBlockPalette } from './CodeBlockWidget'
 import { ImageWidget } from './ImageWidget'
 import {
@@ -395,6 +396,7 @@ export function buildDecorations(
 
       // Fenced code blocks: mermaid as widget, others always editable
       if (node.name === 'FencedCode') {
+        const blockId = getFencedCodeBlockIdFromRange(from, to)
         const codeInfoNode = node.node.getChildren('CodeInfo')
         const codeTextNode = node.node.getChildren('CodeText')
         const language =
@@ -404,6 +406,12 @@ export function buildDecorations(
         const code =
           codeTextNode.length > 0 ? state.sliceDoc(codeTextNode[0]!.from, codeTextNode[0]!.to) : ''
         const normalizedLanguage = language.toLowerCase()
+        const openingFenceLine = state.doc.lineAt(from)
+        const safeCodeInfoPos = Math.min(from + 3, to)
+        const codeInfoFrom = codeInfoNode.length > 0 ? codeInfoNode[0]!.from : safeCodeInfoPos
+        const codeInfoTo = codeInfoNode.length > 0 ? codeInfoNode[0]!.to : safeCodeInfoPos
+        const lineAboveFrom =
+          openingFenceLine.number > 1 ? state.doc.line(openingFenceLine.number - 1).from : null
 
         if (normalizedLanguage === 'mermaid') {
           // MERMAID: Keep existing reveal behavior (widget when outside, reveal when inside)
@@ -419,14 +427,21 @@ export function buildDecorations(
             const firstLine = state.doc.lineAt(from)
             const lastLine = state.doc.lineAt(to)
 
+            decorations.push(Decoration.replace({}).range(firstLine.from, firstLine.to))
             decorations.push(
-              Decoration.replace({}).range(
-                firstLine.from,
-                Math.min(firstLine.to + 1, state.doc.length)
-              )
+              Decoration.line({
+                class: 'codeblock-fence-hidden-line',
+                attributes: { 'data-codeblock-id': blockId },
+              }).range(firstLine.from)
             )
             if (lastLine.from > firstLine.to) {
-              decorations.push(Decoration.replace({}).range(lastLine.from - 1, lastLine.to))
+              decorations.push(Decoration.replace({}).range(lastLine.from, lastLine.to))
+              decorations.push(
+                Decoration.line({
+                  class: 'codeblock-fence-hidden-line',
+                  attributes: { 'data-codeblock-id': blockId },
+                }).range(lastLine.from)
+              )
             }
 
             const palette = codeBlockPalette
@@ -434,14 +449,14 @@ export function buildDecorations(
               const codeFrom = codeTextNode[0]!.from
               const codeTo = codeTextNode[0]!.to
               const startLine = state.doc.lineAt(codeFrom)
-              const endLine = state.doc.lineAt(codeTo)
-
+              const endLine = state.doc.lineAt(Math.max(codeFrom, codeTo - 1))
               for (let i = startLine.number; i <= endLine.number; i++) {
                 const line = state.doc.line(i)
                 decorations.push(
                   Decoration.line({
                     attributes: {
                       style: `background: ${palette.background}; font-family: monospace; font-size: 0.875em;`,
+                      'data-codeblock-id': blockId,
                     },
                   }).range(line.from)
                 )
@@ -454,36 +469,41 @@ export function buildDecorations(
               }
             }
 
-            if (language && codeInfoNode.length > 0) {
-              const infoFrom = codeInfoNode[0]!.from
-              const infoTo = codeInfoNode[0]!.to
-              decorations.push(
-                Decoration.widget({
-                  widget: new LanguageBadgeWidget(language, infoFrom, infoTo),
-                  side: -1,
-                }).range(codeTextNode.length > 0 ? codeTextNode[0]!.from : from)
-              )
-            }
+            decorations.push(
+              Decoration.widget({
+                widget: new LanguageBadgeWidget(language, {
+                  blockId,
+                  codeInfoFrom,
+                  codeInfoTo,
+                  lineAboveFrom,
+                }),
+                side: -1,
+              }).range(from)
+            )
           }
         } else {
           // NON-MERMAID: Always show styled editable code block (Typora-style)
           const firstLine = state.doc.lineAt(from)
           const lastLine = state.doc.lineAt(to)
-          const cursorOnFence = cursorLine === firstLine.number
 
-          // Hide opening fence (unless cursor is on it — via badge click for language editing)
-          if (!cursorOnFence) {
-            decorations.push(
-              Decoration.replace({}).range(
-                firstLine.from,
-                Math.min(firstLine.to + 1, state.doc.length)
-              )
-            )
-          }
+          // Hide opening fence
+          decorations.push(Decoration.replace({}).range(firstLine.from, firstLine.to))
+          decorations.push(
+            Decoration.line({
+              class: 'codeblock-fence-hidden-line',
+              attributes: { 'data-codeblock-id': blockId },
+            }).range(firstLine.from)
+          )
 
           // Always hide closing fence
           if (lastLine.from > firstLine.to) {
-            decorations.push(Decoration.replace({}).range(lastLine.from - 1, lastLine.to))
+            decorations.push(Decoration.replace({}).range(lastLine.from, lastLine.to))
+            decorations.push(
+              Decoration.line({
+                class: 'codeblock-fence-hidden-line',
+                attributes: { 'data-codeblock-id': blockId },
+              }).range(lastLine.from)
+            )
           }
 
           // Style code lines with shared CSS classes
@@ -491,7 +511,7 @@ export function buildDecorations(
             const codeFrom = codeTextNode[0]!.from
             const codeTo = codeTextNode[0]!.to
             const startLine = state.doc.lineAt(codeFrom)
-            const endLine = state.doc.lineAt(codeTo)
+            const endLine = state.doc.lineAt(Math.max(codeFrom, codeTo - 1))
 
             for (let i = startLine.number; i <= endLine.number; i++) {
               const line = state.doc.line(i)
@@ -500,13 +520,18 @@ export function buildDecorations(
               const isLast = i === endLine.number
 
               const attrs: Record<string, string> = {
-                class: 'codeblock-line',
                 'data-line-number': String(lineNum),
+                'data-codeblock-id': blockId,
               }
               if (isFirst) attrs['data-codeblock-first'] = ''
               if (isLast) attrs['data-codeblock-last'] = ''
 
-              decorations.push(Decoration.line({ attributes: attrs }).range(line.from))
+              decorations.push(
+                Decoration.line({
+                  class: 'codeblock-line',
+                  attributes: attrs,
+                }).range(line.from)
+              )
             }
 
             // Apply Prism syntax highlighting
@@ -518,17 +543,18 @@ export function buildDecorations(
           }
 
           // Language badge widget (only when fence is hidden)
-          const codeInfoFrom = codeInfoNode.length > 0 ? codeInfoNode[0]!.from : from + 3
-          const codeInfoTo = codeInfoNode.length > 0 ? codeInfoNode[0]!.to : from + 3
-          if (language && !cursorOnFence) {
-            decorations.push(
-              Decoration.widget({
-                widget: new LanguageBadgeWidget(language, codeInfoFrom, codeInfoTo),
-                side: -1,
-                block: true,
-              }).range(codeTextNode.length > 0 ? codeTextNode[0]!.from : from)
-            )
-          }
+          decorations.push(
+            Decoration.widget({
+              widget: new LanguageBadgeWidget(language, {
+                blockId,
+                codeInfoFrom,
+                codeInfoTo,
+                lineAboveFrom,
+              }),
+              side: -1,
+              block: true,
+            }).range(from)
+          )
         }
       }
     },

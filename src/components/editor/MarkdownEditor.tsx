@@ -31,6 +31,7 @@ import { focusExtension } from './extensions/focus'
 import { markdownExtension } from './extensions/markdown'
 import { boltdownDarkTheme, boltdownTheme } from './extensions/theme'
 import { typewriterExtension } from './extensions/typewriter'
+import { codeBlockArrowNavigationKeymap } from './extensions/wysiwyg/codeBlockArrowNavigationKeymap'
 import { formattingKeymap } from './formatCommands'
 
 // Module-level cache for lazy-loaded wysiwyg extension
@@ -67,6 +68,7 @@ export default memo(function MarkdownEditor() {
   const focusCompRef = useRef(new Compartment())
   const spellcheckCompRef = useRef(new Compartment())
   const typewriterCompRef = useRef(new Compartment())
+  const codeBlockArrowNavCompRef = useRef(new Compartment())
 
   activeTabIdRef.current = activeTabId
 
@@ -107,6 +109,9 @@ export default memo(function MarkdownEditor() {
         EditorView.contentAttributes.of(getSpellingContentAttributes(spellcheck))
       ),
       typewriterCompRef.current.reconfigure(typewriterMode ? typewriterExtension() : []),
+      codeBlockArrowNavCompRef.current.reconfigure(
+        isWysiwyg ? codeBlockArrowNavigationKeymap() : []
+      ),
     ],
     [
       focusContextLines,
@@ -132,6 +137,7 @@ export default memo(function MarkdownEditor() {
       EditorView.contentAttributes.of(getSpellingContentAttributes(spellcheck))
     ),
     typewriterCompRef.current.of(typewriterMode ? typewriterExtension() : []),
+    codeBlockArrowNavCompRef.current.of(isWysiwyg ? codeBlockArrowNavigationKeymap() : []),
     fenceLanguageCompletion(),
     history(),
     search(),
