@@ -7,6 +7,7 @@ export interface CodeBlockArrowNavigationOpenLanguageAction {
   type: 'open-language-editor'
   blockId: string
   lineAboveFrom: number | null
+  firstCodeLineEntryPos: number | null
 }
 
 export interface CodeBlockArrowNavigationMoveCursorAction {
@@ -111,6 +112,7 @@ export function resolveCodeBlockArrowNavigation(
           type: 'open-language-editor',
           blockId: block.blockId,
           lineAboveFrom: block.lineAboveFrom,
+          firstCodeLineEntryPos: block.firstCodeLineEntryPos,
         }
       }
 
@@ -129,7 +131,12 @@ export function resolveCodeBlockArrowNavigation(
         block.firstCodeLineEntryPos !== null &&
         cursorLineNumber === block.lineAboveNumber
       ) {
-        return { type: 'move-cursor', targetPos: block.firstCodeLineEntryPos }
+        return {
+          type: 'open-language-editor',
+          blockId: block.blockId,
+          lineAboveFrom: block.lineAboveFrom,
+          firstCodeLineEntryPos: block.firstCodeLineEntryPos,
+        }
       }
 
       if (

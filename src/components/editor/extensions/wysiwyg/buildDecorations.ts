@@ -412,10 +412,27 @@ export function buildDecorations(
         const codeInfoTo = codeInfoNode.length > 0 ? codeInfoNode[0]!.to : safeCodeInfoPos
         const lineAboveFrom =
           openingFenceLine.number > 1 ? state.doc.line(openingFenceLine.number - 1).from : null
+        const firstCodeLineEntryPos =
+          codeTextNode.length > 0
+            ? Math.min(codeTextNode[0]!.from + 1, state.doc.lineAt(codeTextNode[0]!.from).to)
+            : null
 
         if (normalizedLanguage === 'mermaid') {
           // MERMAID: Keep existing reveal behavior (widget when outside, reveal when inside)
           if (!revealBlock) {
+            decorations.push(
+              Decoration.widget({
+                widget: new LanguageBadgeWidget(language, {
+                  blockId,
+                  codeInfoFrom,
+                  codeInfoTo,
+                  lineAboveFrom,
+                  firstCodeLineEntryPos,
+                }),
+                side: -1,
+                block: true,
+              }).range(from)
+            )
             decorations.push(
               Decoration.replace({
                 widget: new MermaidWidget(code, mermaidSecurityLevel),
@@ -476,6 +493,7 @@ export function buildDecorations(
                   codeInfoFrom,
                   codeInfoTo,
                   lineAboveFrom,
+                  firstCodeLineEntryPos,
                 }),
                 side: -1,
               }).range(from)
@@ -550,6 +568,7 @@ export function buildDecorations(
                 codeInfoFrom,
                 codeInfoTo,
                 lineAboveFrom,
+                firstCodeLineEntryPos,
               }),
               side: -1,
               block: true,

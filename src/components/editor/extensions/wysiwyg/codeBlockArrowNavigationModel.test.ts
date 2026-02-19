@@ -51,15 +51,17 @@ describe.each([
     })
   })
 
-  it('ArrowDown from line above enters the block at first code line', () => {
+  it('ArrowDown from line above opens language editor with first code-line target', () => {
     const state = createState(language, 1)
 
     const action = resolveCodeBlockArrowNavigation(state, state.selection.main, 'down')
 
-    expect(action).toEqual({
-      type: 'move-cursor',
-      targetPos: state.doc.line(3).from + 1,
-    })
+    expect(action?.type).toBe('open-language-editor')
+    if (!action || action.type !== 'open-language-editor') {
+      throw new Error('Expected open-language-editor action')
+    }
+    expect(action.lineAboveFrom).toBe(state.doc.line(1).from)
+    expect(action.firstCodeLineEntryPos).toBe(state.doc.line(3).from + 1)
   })
 
   it('ArrowUp from line below enters the block at last code line', () => {

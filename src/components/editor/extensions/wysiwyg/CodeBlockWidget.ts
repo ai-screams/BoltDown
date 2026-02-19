@@ -23,6 +23,7 @@ export interface LanguageBadgeMetadata {
   codeInfoFrom: number
   codeInfoTo: number
   lineAboveFrom: number | null
+  firstCodeLineEntryPos: number | null
 }
 
 export function getCodeBlockPalette() {
@@ -213,7 +214,8 @@ function showLanguagePopover(
   codeInfoFrom: number,
   codeInfoTo: number,
   currentLang: string,
-  lineAboveFrom: number | null
+  lineAboveFrom: number | null,
+  firstCodeLineEntryPos: number | null
 ) {
   // Remove any existing popover
   view.dom.querySelector('.codeblock-lang-popover')?.remove()
@@ -308,7 +310,10 @@ function showLanguagePopover(
       el.classList.toggle('active', i === activeIndex)
       el.setAttribute('aria-selected', String(i === activeIndex))
     })
-    items[activeIndex]?.scrollIntoView({ block: 'nearest' })
+    const activeItem = items[activeIndex] as HTMLElement | undefined
+    if (activeItem && typeof activeItem.scrollIntoView === 'function') {
+      activeItem.scrollIntoView({ block: 'nearest' })
+    }
     const activeEl: Element | undefined = items[activeIndex]
     if (activeEl?.id) {
       input.setAttribute('aria-activedescendant', activeEl.id)
@@ -362,19 +367,48 @@ function showLanguagePopover(
     })
   }
 
+  const moveToFirstCodeLine = (): void => {
+    if (firstCodeLineEntryPos === null) return
+
+    const nextLang: string = input.value.trim().toLowerCase()
+    const changes =
+      nextLang !== currentLang ? { from: codeInfoFrom, to: codeInfoTo, insert: nextLang } : null
+    if (!closePopover()) return
+
+    view.dispatch({
+      changes: changes ?? undefined,
+      selection: { anchor: firstCodeLineEntryPos },
+      scrollIntoView: true,
+    })
+  }
+
   input.addEventListener('input', filterList)
 
   input.addEventListener('keydown', e => {
     const items = list.querySelectorAll('.codeblock-lang-option')
+    const query = input.value.trim().toLowerCase()
+    const isEmptyQuery = query.length === 0
+    const isListVisible = list.style.display !== 'none'
+    const hasSuggestions = items.length > 0
 
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setActive(activeIndex + 1)
+      if (isListVisible && !isEmptyQuery && hasSuggestions && activeIndex < items.length - 1) {
+        setActive(activeIndex + 1)
+      } else if (firstCodeLineEntryPos !== null) {
+        moveToFirstCodeLine()
+      } else if (hasSuggestions && activeIndex < items.length - 1) {
+        setActive(activeIndex + 1)
+      }
       return
     }
     if (e.key === 'ArrowUp') {
       e.preventDefault()
-      moveToAboveLine()
+      if (isListVisible && !isEmptyQuery && hasSuggestions && activeIndex > 0) {
+        setActive(activeIndex - 1)
+      } else {
+        moveToAboveLine()
+      }
       return
     }
     if (e.key === 'Enter') {
@@ -430,6 +464,10 @@ export class LanguageBadgeWidget extends WidgetType {
     badge.dataset['codeInfoTo'] = String(this.metadata.codeInfoTo)
     badge.dataset['lineAboveFrom'] =
       this.metadata.lineAboveFrom === null ? '' : String(this.metadata.lineAboveFrom)
+    badge.dataset['firstCodeLineEntryPos'] =
+      this.metadata.firstCodeLineEntryPos === null
+        ? ''
+        : String(this.metadata.firstCodeLineEntryPos)
 
     badge.addEventListener('mousedown', e => {
       e.preventDefault()
@@ -439,7 +477,8 @@ export class LanguageBadgeWidget extends WidgetType {
         this.metadata.codeInfoFrom,
         this.metadata.codeInfoTo,
         this.language,
-        this.metadata.lineAboveFrom
+        this.metadata.lineAboveFrom,
+        this.metadata.firstCodeLineEntryPos
       )
     })
 
@@ -451,7 +490,8 @@ export class LanguageBadgeWidget extends WidgetType {
       this.metadata.blockId === other.metadata.blockId &&
       this.metadata.codeInfoFrom === other.metadata.codeInfoFrom &&
       this.metadata.codeInfoTo === other.metadata.codeInfoTo &&
-      this.metadata.lineAboveFrom === other.metadata.lineAboveFrom
+      this.metadata.lineAboveFrom === other.metadata.lineAboveFrom &&
+      this.metadata.firstCodeLineEntryPos === other.metadata.firstCodeLineEntryPos
     )
   }
   ignoreEvent(event: Event) {
@@ -495,7 +535,8 @@ export function openLanguagePopoverForCodeBlock(view: EditorView, blockId: strin
     codeInfoFrom,
     codeInfoTo,
     badge.dataset['codeLanguage']?.trim().toLowerCase() ?? '',
-    parseNumericDatasetValue(badge.dataset['lineAboveFrom'])
+    parseNumericDatasetValue(badge.dataset['lineAboveFrom']),
+    parseNumericDatasetValue(badge.dataset['firstCodeLineEntryPos'])
   )
   return true
 }
