@@ -3,6 +3,7 @@ import { useShallow } from 'zustand/react/shallow'
 
 import { EditorViewProvider } from '@/contexts/EditorViewContext'
 import { useAutoSave } from '@/hooks/useAutoSave'
+import useAutoUpdate from '@/hooks/useAutoUpdate'
 import { useCustomCss } from '@/hooks/useCustomCss'
 import { useFileSystem } from '@/hooks/useFileSystem'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
@@ -21,6 +22,7 @@ import MainLayout from '@components/layout/MainLayout'
 import MarkdownPreview from '@components/preview/MarkdownPreview'
 import ResizeHandle from '@components/sidebar/ResizeHandle'
 import Sidebar from '@components/sidebar/Sidebar'
+import UpdateNotification from '@components/update/UpdateNotification'
 
 // Lazy-load modals (only loaded when opened)
 const SettingsModal = lazy(() => import('@components/settings/SettingsModal'))
@@ -46,6 +48,7 @@ const preview = (
 function App() {
   const { openFile, saveFile, saveFileAs } = useFileSystem()
   useAutoSave()
+  useAutoUpdate()
   useCustomCss()
   const { isOpen: sidebarOpen, isResizing: sidebarResizing } = useSidebarStore(
     useShallow(s => ({ isOpen: s.isOpen, isResizing: s.isResizing }))
@@ -141,6 +144,7 @@ function App() {
   return (
     <EditorViewProvider>
       <div className="flex h-screen flex-col overflow-hidden bg-gray-50 dark:bg-gray-900">
+        <UpdateNotification />
         <div className={mode === 'zen' ? 'zen-slide-up' : 'zen-slide-down'}>
           <Header
             onOpenAbout={handleOpenAbout}

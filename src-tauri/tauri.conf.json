@@ -21,13 +21,7 @@
       },
       "assetProtocol": {
         "enable": true,
-        "scope": [
-          "$HOME/**",
-          "$DOCUMENT/**",
-          "$DESKTOP/**",
-          "$DOWNLOAD/**",
-          "$PICTURE/**"
-        ]
+        "scope": ["$HOME/**", "$DOCUMENT/**", "$DESKTOP/**", "$DOWNLOAD/**", "$PICTURE/**"]
       }
     },
     "windows": [
@@ -49,6 +43,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": "all",
     "icon": [
       "icons/32x32.png",
@@ -62,5 +57,11 @@
     "category": "Productivity",
     "shortDescription": "Lightning-fast Markdown editor",
     "longDescription": "BoltDown is a lightning-fast, lightweight Markdown editor built with Tauri. 10x smaller than Electron apps, with instant startup and beautiful WYSIWYG editing."
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDcyQkRGOTkwODlBREZBMjkKUldRcCtxMkprUG05Y3RiNW9HdlUxOG1zMHZoaWxWNFNQUzF0L3I3U210SjlIcFFnOU9JMzRjMnEK",
+      "endpoints": ["https://github.com/ai-screams/BoltDown/releases/latest/download/latest.json"]
+    }
   }
 }

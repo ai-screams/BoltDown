@@ -7,21 +7,13 @@
     "core:default",
     "dialog:default",
     "shell:allow-open",
+    "updater:default",
+    "process:default",
     "fs:default",
     {
       "identifier": "fs:scope",
-      "allow": [
-        "$HOME/**/*",
-        "$DOCUMENT/**/*",
-        "$DESKTOP/**/*",
-        "$DOWNLOAD/**/*",
-        "$APPDATA/**/*"
-      ],
-      "deny": [
-        "$HOME/.ssh/**",
-        "$HOME/.gnupg/**",
-        "$HOME/.aws/**"
-      ]
+      "allow": ["$HOME/**/*", "$DOCUMENT/**/*", "$DESKTOP/**/*", "$DOWNLOAD/**/*", "$APPDATA/**/*"],
+      "deny": ["$HOME/.ssh/**", "$HOME/.gnupg/**", "$HOME/.aws/**"]
     }
   ]
 }

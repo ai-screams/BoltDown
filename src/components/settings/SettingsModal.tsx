@@ -24,6 +24,7 @@ import {
   PREVIEW_SETTING_LIMITS,
 } from '@/constants/settingsLimits'
 import { THEME_MODES, THEME_PRESETS } from '@/constants/theme'
+import { checkForUpdate } from '@/hooks/useAutoUpdate'
 import { useSettingsStore } from '@/stores/settingsStore'
 import type {
   FontFamily,
@@ -737,6 +738,23 @@ function GeneralPanel() {
           label="Restore Last File"
           onChange={v => updateGeneral({ restoreLastFile: v })}
         />
+      </SettingRow>
+      <SettingRow description="Check for updates when the app starts" label="Auto Update">
+        <Toggle
+          checked={general.autoUpdate}
+          label="Auto Update"
+          onChange={v => updateGeneral({ autoUpdate: v })}
+        />
+      </SettingRow>
+      <SettingRow description="Check for new versions now" label="Updates">
+        <button
+          type="button"
+          aria-label="Check for updates"
+          className="bg-surface-muted text-fg hover:bg-electric-yellow hover:text-deep-blue rounded px-3 py-1.5 text-xs font-medium transition-colors"
+          onClick={() => void checkForUpdate()}
+        >
+          Check Now
+        </button>
       </SettingRow>
     </div>
   )
