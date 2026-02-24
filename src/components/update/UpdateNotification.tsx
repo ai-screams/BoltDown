@@ -28,15 +28,15 @@ export default memo(function UpdateNotification() {
       )}
     >
       {state.status === 'available' ? (
-        <Download aria-hidden="true" className="h-4 w-4 flex-shrink-0 text-electric-yellow" />
+        <Download aria-hidden="true" className="text-electric-yellow h-4 w-4 flex-shrink-0" />
       ) : (
         <RefreshCw
           aria-hidden="true"
-          className="h-4 w-4 flex-shrink-0 animate-spin text-electric-yellow"
+          className="text-electric-yellow h-4 w-4 flex-shrink-0 animate-spin"
         />
       )}
 
-      <span className="min-w-0 flex-1 truncate text-fg">
+      <span className="text-fg min-w-0 flex-1 truncate">
         {state.status === 'available'
           ? `Update v${state.version} is available`
           : 'Downloading update…'}
@@ -46,7 +46,7 @@ export default memo(function UpdateNotification() {
         <button
           type="button"
           aria-label={`Update to version ${state.version}`}
-          className="flex-shrink-0 rounded bg-electric-yellow px-3 py-1 text-xs font-medium text-deep-blue transition-colors hover:bg-electric-yellow/80"
+          className="bg-electric-yellow text-deep-blue hover:bg-electric-yellow/80 flex-shrink-0 rounded px-3 py-1 text-xs font-medium transition-colors"
           onClick={handleInstall}
         >
           Update Now
@@ -57,7 +57,7 @@ export default memo(function UpdateNotification() {
         <button
           type="button"
           aria-label="Dismiss update notification"
-          className="flex-shrink-0 rounded p-1 text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg"
+          className="text-fg-muted hover:bg-surface-muted hover:text-fg flex-shrink-0 rounded p-1 transition-colors"
           onClick={handleDismiss}
         >
           <X aria-hidden="true" className="h-3.5 w-3.5" />
@@ -65,10 +65,10 @@ export default memo(function UpdateNotification() {
       )}
 
       {state.status === 'downloading' && (
-        <div className="h-1.5 w-24 flex-shrink-0 overflow-hidden rounded-full bg-surface-muted">
+        <div className="bg-surface-muted h-1.5 w-24 flex-shrink-0 overflow-hidden rounded-full">
           <div
             className={clsx(
-              'h-full rounded-full bg-electric-yellow transition-all duration-300',
+              'bg-electric-yellow h-full rounded-full transition-all duration-300',
               state.contentLength === 0 && 'animate-pulse'
             )}
             style={{

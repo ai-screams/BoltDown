@@ -750,7 +750,7 @@ function GeneralPanel() {
         <button
           type="button"
           aria-label="Check for updates"
-          className="rounded bg-surface-muted px-3 py-1.5 text-xs font-medium text-fg transition-colors hover:bg-electric-yellow hover:text-deep-blue"
+          className="bg-surface-muted text-fg hover:bg-electric-yellow hover:text-deep-blue rounded px-3 py-1.5 text-xs font-medium transition-colors"
           onClick={() => void checkForUpdate()}
         >
           Check Now
