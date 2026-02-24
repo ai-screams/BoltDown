@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/ai-screams/BoltDown/compare/v0.1.3...v0.1.4) (2026-02-24)
+
+
+### Bug Fixes
+
+* **tauri:** update signing key with password-protected key pair ([b1acf72](https://github.com/ai-screams/BoltDown/commit/b1acf72f5fc0d2995de7c8096e0b93fbe8666a7a))
+
 ## [0.1.3](https://github.com/ai-screams/BoltDown/compare/v0.1.2...v0.1.3) (2026-02-24)
 
 

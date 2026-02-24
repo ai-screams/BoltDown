@@ -1,6 +1,6 @@
 [package]
 name = "boltdown"
-version = "0.1.3"
+version = "0.1.4"
 description = "Lightning-fast Markdown editor built with Tauri"
 authors = ["PignuAnte (Ai-Scream)"]
 license = "MIT"
