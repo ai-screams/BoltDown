@@ -66,7 +66,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDcyQkRGOTkwODlBREZBMjkKUldRcCtxMkprUG05Y3RiNW9HdlUxOG1zMHZoaWxWNFNQUzF0L3I3U210SjlIcFFnOU9JMzRjMnEK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDFGM0FBQTdGRDcwQjY3RkMKUldUOFp3dlhmNm82SDhrN25INzIyRXFxQkh1TkNIN2l4eG9RNTE0dk1ZS1pPRURMeGtFWEVGN3UK",
       "endpoints": [
         "https://github.com/ai-screams/BoltDown/releases/latest/download/latest.json"
       ]
