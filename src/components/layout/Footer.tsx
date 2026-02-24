@@ -16,14 +16,14 @@ export default memo(function Footer({ className }: { className?: string }) {
   return (
     <footer
       className={clsx(
-        'flex h-8 flex-none items-center justify-between border-t border-line bg-surface px-4',
+        'border-line bg-surface flex h-8 flex-none items-center justify-between border-t px-4',
         className
       )}
     >
-      <span aria-atomic="true" aria-live="polite" className="text-xs text-thunder-gray">
+      <span aria-atomic="true" aria-live="polite" className="text-thunder-gray text-xs">
         {statusText || 'Ready'}
       </span>
-      <span className="text-xs tabular-nums text-thunder-gray">
+      <span className="text-thunder-gray text-xs tabular-nums">
         {stats.words.toLocaleString()} words · {readingTime} min read ·{' '}
         {stats.lines.toLocaleString()} lines · {stats.chars.toLocaleString()} chars
       </span>

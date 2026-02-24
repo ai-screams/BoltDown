@@ -63,8 +63,8 @@ export default memo(function ResizeHandle() {
       aria-orientation="vertical"
       className={`group relative flex-none cursor-col-resize transition-[width,background-color,box-shadow] duration-150 ${
         isDragging
-          ? 'w-1.5 bg-electric-yellow'
-          : 'bg-border w-1 hover:w-1.5 hover:bg-electric-yellow/50'
+          ? 'bg-electric-yellow w-1.5'
+          : 'bg-border hover:bg-electric-yellow/50 w-1 hover:w-1.5'
       }`}
       style={dragStyle}
       onDoubleClick={handleDoubleClick}
