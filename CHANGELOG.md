@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/ai-screams/BoltDown/compare/v0.1.1...v0.1.2) (2026-02-24)
+
+
+### Features
+
+* **tauri:** add auto-updater with Tauri v2 updater plugin ([#40](https://github.com/ai-screams/BoltDown/issues/40)) ([013261c](https://github.com/ai-screams/BoltDown/commit/013261cc42064f93a067b4aab0d5f8ce723d4dca))
+
 ## [0.1.1](https://github.com/ai-screams/BoltDown/compare/v0.1.0...v0.1.1) (2026-02-19)
 
 
