@@ -144,7 +144,7 @@ export default memo(function FileTree({ onFileOpen }: FileTreeProps) {
 
   if (treeData.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center p-4 text-xs text-fg-muted">
+      <div className="text-fg-muted flex flex-1 items-center justify-center p-4 text-xs">
         No folder open
       </div>
     )

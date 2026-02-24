@@ -14,7 +14,7 @@ import RecentFiles from './RecentFiles'
 const tabs: { key: SidebarTab; label: string }[] = [
   { key: 'files', label: 'FILES' },
   { key: 'recent', label: 'RECENT' },
-  { key: 'outline', label: 'OUTLINE' },
+  { key: 'outline-solid', label: 'OUTLINE' },
 ]
 
 interface SidebarProps {
@@ -53,7 +53,7 @@ export default memo(function Sidebar({ onFileOpen }: SidebarProps) {
     <aside
       aria-label="Sidebar"
       className={clsx(
-        'flex flex-col overflow-hidden border-r border-line bg-surface-canvas',
+        'border-line bg-surface-canvas flex flex-col overflow-hidden border-r',
         !isResizing && 'transition-[width] duration-200 ease-in-out'
       )}
       style={{ width: isOpen ? width : 0 }}
@@ -61,7 +61,7 @@ export default memo(function Sidebar({ onFileOpen }: SidebarProps) {
       <div
         role="tablist"
         aria-label="Sidebar sections"
-        className="flex h-8 flex-none items-center border-b border-line"
+        className="border-line flex h-8 flex-none items-center border-b"
       >
         {tabs.map(({ key, label }) => (
           <button
@@ -115,7 +115,7 @@ export default memo(function Sidebar({ onFileOpen }: SidebarProps) {
       {isTauri() && (
         <button
           type="button"
-          className="flex h-9 flex-none items-center justify-center gap-1.5 border-t border-line text-xs text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg-secondary"
+          className="border-line text-fg-muted hover:bg-surface-muted hover:text-fg-secondary flex h-9 flex-none items-center justify-center gap-1.5 border-t text-xs transition-colors"
           onClick={handleOpenFolder}
         >
           <FolderOpen aria-hidden="true" className="h-3.5 w-3.5" />
@@ -124,7 +124,7 @@ export default memo(function Sidebar({ onFileOpen }: SidebarProps) {
       )}
 
       {!isTauri() && (
-        <div className="flex h-9 flex-none items-center justify-center border-t border-line text-[10px] text-fg-muted">
+        <div className="border-line text-fg-muted flex h-9 flex-none items-center justify-center border-t text-[10px]">
           Open in Tauri for file browsing
         </div>
       )}

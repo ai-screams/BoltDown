@@ -35,10 +35,10 @@ function createBoltdownTheme(dark: boolean) {
         boxShadow: 'inset 3px 0 0 var(--c-cm-active-line-shadow-focused)',
       },
       '.cm-selectionBackground': {
-        backgroundColor: 'var(--c-cm-selection-bg) !important',
+        backgroundColor: 'var(--c-cm-selection-bg) important!',
       },
       '&.cm-focused .cm-selectionBackground': {
-        backgroundColor: 'var(--c-cm-selection-bg-focused) !important',
+        backgroundColor: 'var(--c-cm-selection-bg-focused) important!',
       },
       '.cm-line': {
         lineHeight: '1.6',

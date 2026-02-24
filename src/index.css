@@ -1,9 +1,548 @@
-@import './styles/tokens.css';
+@import './styles/tokens.css' layer(base);
 @import './styles/codeblock.css';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-surface-canvas: rgb(var(--s-bg-canvas));
+  --color-surface: rgb(var(--s-bg-surface));
+  --color-surface-elevated: rgb(var(--s-bg-elevated));
+  --color-surface-muted: rgb(var(--s-bg-muted));
+
+  --color-fg: rgb(var(--s-text-primary));
+  --color-fg-secondary: rgb(var(--s-text-secondary));
+  --color-fg-muted: rgb(var(--s-text-muted));
+
+  --color-line: rgb(var(--s-border-default));
+  --color-line-strong: rgb(var(--s-border-strong));
+
+  --color-accent: rgb(var(--s-accent));
+  --color-accent-strong: rgb(var(--s-accent-strong));
+
+  --color-info: rgb(var(--s-info));
+  --color-danger: rgb(var(--s-danger));
+  --color-success: rgb(var(--s-success));
+  --color-warning: rgb(var(--s-warning));
+
+  --color-link: rgb(var(--s-link));
+  --color-link-hover: rgb(var(--s-link-hover));
+
+  --color-brand-accent: rgb(var(--color-brand-accent));
+  --color-brand-accent-strong: rgb(var(--color-brand-accent-strong));
+  --color-brand-primary: rgb(var(--color-brand-primary));
+  --color-brand-info: rgb(var(--color-brand-info));
+  --color-brand-success: rgb(var(--color-brand-success));
+
+  --color-electric-yellow: rgb(var(--color-electric-yellow));
+  --color-electric-dark: rgb(var(--color-electric-dark));
+
+  --color-deep-blue: rgb(var(--color-deep-blue));
+  --color-deep-navy: rgb(var(--color-deep-navy));
+
+  --color-thunder-gray: rgb(var(--color-thunder-gray));
+
+  --color-volt-orange: rgb(var(--color-volt-orange));
+
+  --color-ion-purple: rgb(var(--color-ion-purple));
+
+  --color-charge-green: rgb(var(--color-charge-green));
+
+  --font-sans: Inter, Pretendard, system-ui, sans-serif;
+  --font-mono: JetBrains Mono, Fira Code, Consolas, Monaco, monospace;
+
+  --animate-bolt: bolt 0.3s ease-in-out;
+
+  @keyframes bolt {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-4px);
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+/* Prose Styling (Markdown Preview) */
+@utility prose {
+  @apply text-gray-900 dark:text-gray-100;
+
+  & h1 {
+    @apply mb-4 text-4xl leading-tight font-bold tracking-tight text-gray-900 dark:text-white;
+  }
+
+  & h2 {
+    @apply mt-8 mb-3 text-3xl leading-tight font-bold text-gray-900 dark:text-white;
+  }
+
+  & h3 {
+    @apply mt-6 mb-2 text-2xl leading-snug font-semibold text-gray-900 dark:text-white;
+  }
+
+  & p {
+    @apply mb-4 leading-relaxed;
+  }
+
+  & code {
+    @apply rounded-sm bg-gray-100 px-1.5 py-0.5 text-sm dark:bg-gray-800;
+  }
+
+  & pre {
+    @apply mb-4 overflow-x-auto rounded-lg bg-gray-100 p-4 dark:bg-gray-800;
+  }
+
+  & a {
+    @apply text-deep-blue hover:text-electric-dark dark:text-electric-yellow underline dark:hover:text-yellow-300;
+  }
+
+  & blockquote {
+    @apply border-electric-yellow border-l-4 pl-4 text-gray-600 italic dark:text-gray-400;
+  }
+  & pre {
+    @apply relative;
+  }
+
+  & pre code {
+    @apply bg-transparent p-0;
+    font-size: var(--preview-code-font-size, 14px);
+  }
+
+  /* Language badge in preview code blocks */
+  & .preview-lang-badge {
+    position: absolute;
+    bottom: 6px;
+    right: 10px;
+    font-size: 0.75em;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+    color: rgb(var(--c-code-block-badge) / 0.7);
+    text-transform: lowercase;
+    letter-spacing: 0.03em;
+    pointer-events: none;
+    user-select: none;
+  }
+  & ul {
+    @apply mb-4 list-disc pl-6;
+  }
+
+  & ol {
+    @apply mb-4 list-decimal pl-6;
+  }
+
+  & li {
+    @apply mb-1;
+  }
+
+  & hr {
+    @apply my-6 border-gray-200 dark:border-gray-700;
+  }
+
+  & table {
+    @apply mb-4 w-full border-collapse;
+  }
+
+  & th {
+    @apply border border-gray-300 bg-gray-50 px-3 py-2 text-left font-semibold dark:border-gray-600 dark:bg-gray-800;
+  }
+
+  & td {
+    @apply border border-gray-300 px-3 py-2 dark:border-gray-600;
+  }
+
+  & img {
+    @apply my-4 max-w-full rounded-sm;
+  }
+
+  & strong {
+    @apply font-bold;
+  }
+
+  & em {
+    @apply italic;
+  }
+}
+
+/* Prism.js Syntax Highlighting */
+@utility preview-lang-badge {
+  /* Language badge in preview code blocks */
+  .prose & {
+    position: absolute;
+    bottom: 6px;
+    right: 10px;
+    font-size: 0.75em;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+    color: rgb(var(--c-code-block-badge) / 0.7);
+    text-transform: lowercase;
+    letter-spacing: 0.03em;
+    pointer-events: none;
+    user-select: none;
+  }
+}
+@utility token {
+  /* Token colors (Tomorrow Night inspired) */
+  &.comment {
+    color: rgb(var(--c-prism-comment) / 1);
+  }
+  &.prolog {
+    color: rgb(var(--c-prism-comment) / 1);
+  }
+  &.doctype {
+    color: rgb(var(--c-prism-comment) / 1);
+  }
+  &.cdata {
+    color: rgb(var(--c-prism-comment) / 1);
+  }
+  &.punctuation {
+    color: rgb(var(--c-prism-punctuation) / 1);
+  }
+  &.property {
+    color: rgb(var(--c-prism-property) / 1);
+  }
+  &.tag {
+    color: rgb(var(--c-prism-property) / 1);
+  }
+  &.boolean {
+    color: rgb(var(--c-prism-property) / 1);
+  }
+  &.number {
+    color: rgb(var(--c-prism-property) / 1);
+  }
+  &.constant {
+    color: rgb(var(--c-prism-property) / 1);
+  }
+  &.symbol {
+    color: rgb(var(--c-prism-property) / 1);
+  }
+  &.deleted {
+    color: rgb(var(--c-prism-property) / 1);
+  }
+  &.selector {
+    color: rgb(var(--c-prism-selector) / 1);
+  }
+  &.attr-name {
+    color: rgb(var(--c-prism-selector) / 1);
+  }
+  &.string {
+    color: rgb(var(--c-prism-selector) / 1);
+  }
+  &.char {
+    color: rgb(var(--c-prism-selector) / 1);
+  }
+  &.builtin {
+    color: rgb(var(--c-prism-selector) / 1);
+  }
+  &.inserted {
+    color: rgb(var(--c-prism-selector) / 1);
+  }
+  &.operator {
+    color: rgb(var(--c-prism-operator) / 1);
+  }
+  &.entity {
+    color: rgb(var(--c-prism-operator) / 1);
+  }
+  &.url {
+    color: rgb(var(--c-prism-operator) / 1);
+  }
+  &.atrule {
+    color: rgb(var(--c-prism-keyword) / 1);
+  }
+  &.attr-value {
+    color: rgb(var(--c-prism-keyword) / 1);
+  }
+  &.keyword {
+    color: rgb(var(--c-prism-keyword) / 1);
+  }
+  &.function {
+    color: rgb(var(--c-prism-function) / 1);
+  }
+  &.class-name {
+    color: rgb(var(--c-prism-function) / 1);
+  }
+  &.regex {
+    color: rgb(var(--c-prism-regex) / 1);
+  }
+  &.important {
+    color: rgb(var(--c-prism-regex) / 1);
+  }
+  &.variable {
+    color: rgb(var(--c-prism-regex) / 1);
+  }
+}
+@utility comment {
+  /* Token colors (Tomorrow Night inspired) */
+  &.token {
+    color: rgb(var(--c-prism-comment) / 1);
+  }
+}
+@utility prolog {
+  & .token {
+    color: rgb(var(--c-prism-comment) / 1);
+  }
+}
+@utility doctype {
+  & .token {
+    color: rgb(var(--c-prism-comment) / 1);
+  }
+}
+@utility cdata {
+  & .token {
+    color: rgb(var(--c-prism-comment) / 1);
+  }
+}
+@utility punctuation {
+  &.token {
+    color: rgb(var(--c-prism-punctuation) / 1);
+  }
+}
+@utility property {
+  &.token {
+    color: rgb(var(--c-prism-property) / 1);
+  }
+}
+@utility tag {
+  & .token {
+    color: rgb(var(--c-prism-property) / 1);
+  }
+}
+@utility boolean {
+  & .token {
+    color: rgb(var(--c-prism-property) / 1);
+  }
+}
+@utility number {
+  & .token {
+    color: rgb(var(--c-prism-property) / 1);
+  }
+}
+@utility constant {
+  & .token {
+    color: rgb(var(--c-prism-property) / 1);
+  }
+}
+@utility symbol {
+  & .token {
+    color: rgb(var(--c-prism-property) / 1);
+  }
+}
+@utility deleted {
+  & .token {
+    color: rgb(var(--c-prism-property) / 1);
+  }
+}
+@utility selector {
+  &.token {
+    color: rgb(var(--c-prism-selector) / 1);
+  }
+}
+@utility attr-name {
+  & .token {
+    color: rgb(var(--c-prism-selector) / 1);
+  }
+}
+@utility string {
+  & .token {
+    color: rgb(var(--c-prism-selector) / 1);
+  }
+}
+@utility char {
+  & .token {
+    color: rgb(var(--c-prism-selector) / 1);
+  }
+}
+@utility builtin {
+  & .token {
+    color: rgb(var(--c-prism-selector) / 1);
+  }
+}
+@utility inserted {
+  & .token {
+    color: rgb(var(--c-prism-selector) / 1);
+  }
+}
+@utility operator {
+  &.token {
+    color: rgb(var(--c-prism-operator) / 1);
+  }
+}
+@utility entity {
+  & .token {
+    color: rgb(var(--c-prism-operator) / 1);
+  }
+}
+@utility url {
+  & .token {
+    color: rgb(var(--c-prism-operator) / 1);
+  }
+}
+@utility atrule {
+  &.token {
+    color: rgb(var(--c-prism-keyword) / 1);
+  }
+}
+@utility attr-value {
+  & .token {
+    color: rgb(var(--c-prism-keyword) / 1);
+  }
+}
+@utility keyword {
+  & .token {
+    color: rgb(var(--c-prism-keyword) / 1);
+  }
+}
+@utility function {
+  &.token {
+    color: rgb(var(--c-prism-function) / 1);
+  }
+}
+@utility class-name {
+  & .token {
+    color: rgb(var(--c-prism-function) / 1);
+  }
+}
+@utility regex {
+  &.token {
+    color: rgb(var(--c-prism-regex) / 1);
+  }
+}
+@utility important {
+  & .token {
+    color: rgb(var(--c-prism-regex) / 1);
+  }
+}
+@utility variable {
+  & .token {
+    color: rgb(var(--c-prism-regex) / 1);
+  }
+}
+
+/* Prose extras */
+@utility katex-block {
+  @apply my-4 overflow-x-auto text-center;
+}
+@utility mermaid-rendered {
+  @apply my-4 flex justify-center;
+
+  & svg {
+    @apply max-w-full;
+  }
+}
+@utility markdown-toc {
+  /* TOC navigation */
+  @apply my-4 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800;
+  & .toc-item {
+    @apply py-0.5;
+  }
+  & .toc-item a {
+    @apply text-sm text-blue-600 no-underline hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300;
+  }
+}
+@utility toc-item {
+  .markdown-toc & {
+    @apply py-0.5;
+  }
+  .markdown-toc & a {
+    @apply text-sm text-blue-600 no-underline hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300;
+  }
+}
+
+/* Find & Replace match highlighting */
+@utility cm-searchMatch {
+  background-color: var(--c-search-match-bg);
+  border-radius: 2px;
+}
+@utility cm-searchMatch-selected {
+  background-color: var(--c-search-match-selected-bg);
+  border-radius: 2px;
+  box-shadow:
+    0 0 0 1px var(--c-search-match-selected-ring),
+    0 0 0 3px var(--c-search-match-selected-glow);
+}
+
+/* Focus Mode line dimming */
+@utility cm-focus-dimmed {
+  opacity: 0.3;
+  transition: opacity 200ms ease-out;
+}
+@utility cm-focus-context {
+  opacity: 0.6;
+  transition: opacity 200ms ease-out;
+}
+
+/* CodeMirror full-height fix */
+@utility cm-editor {
+  height: 100% !important;
+}
+@utility cm-scroller {
+  overflow: auto !important;
+  overscroll-behavior: contain;
+}
+@utility scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+@utility animate-bolt {
+  animation: bolt 0.3s ease-in-out;
+}
+@utility animate-dropdown {
+  animation: dropdown 0.15s ease-out;
+}
+@utility zen-slide-up {
+  /* Zen Mode transitions */
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition:
+    max-height 250ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+@utility zen-slide-down {
+  max-height: 200px;
+  opacity: 1;
+  overflow: visible;
+  transition:
+    max-height 250ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+@utility zen-footer-dim {
+  opacity: 0.4;
+  transition: opacity 250ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    opacity: 1;
+  }
+}
+@utility mermaid-block {
+  /* Hide raw mermaid source text during async render.
+     Cache hits apply SVG synchronously — no visible blank gap.
+     Cache misses show a placeholder skeleton until render completes. */
+  &pre:not(.mermaid-rendered) {
+    visibility: hidden;
+    /* Reserve space to prevent layout shift — approximate single-diagram height */
+    min-height: 80px;
+  }
+}
 
 /* BoltDown Custom Styles */
 
@@ -43,184 +582,6 @@
   }
 }
 
-/* Prose Styling (Markdown Preview) */
-@layer components {
-  .prose {
-    @apply text-gray-900 dark:text-gray-100;
-  }
-
-  .prose h1 {
-    @apply mb-4 text-4xl font-bold leading-tight tracking-tight text-gray-900 dark:text-white;
-  }
-
-  .prose h2 {
-    @apply mb-3 mt-8 text-3xl font-bold leading-tight text-gray-900 dark:text-white;
-  }
-
-  .prose h3 {
-    @apply mb-2 mt-6 text-2xl font-semibold leading-snug text-gray-900 dark:text-white;
-  }
-
-  .prose p {
-    @apply mb-4 leading-relaxed;
-  }
-
-  .prose code {
-    @apply rounded bg-gray-100 px-1.5 py-0.5 text-sm dark:bg-gray-800;
-  }
-
-  .prose pre {
-    @apply mb-4 overflow-x-auto rounded-lg bg-gray-100 p-4 dark:bg-gray-800;
-  }
-
-  .prose a {
-    @apply text-deep-blue underline hover:text-electric-dark dark:text-electric-yellow dark:hover:text-yellow-300;
-  }
-
-  .prose blockquote {
-    @apply border-l-4 border-electric-yellow pl-4 italic text-gray-600 dark:text-gray-400;
-  }
-}
-
-/* Prism.js Syntax Highlighting */
-@layer components {
-  .prose pre {
-    @apply relative;
-  }
-
-  .prose pre code {
-    @apply bg-transparent p-0;
-    font-size: var(--preview-code-font-size, 14px);
-  }
-
-  /* Language badge in preview code blocks */
-  .prose .preview-lang-badge {
-    position: absolute;
-    bottom: 6px;
-    right: 10px;
-    font-size: 0.75em;
-    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
-    color: rgb(var(--c-code-block-badge) / 0.7);
-    text-transform: lowercase;
-    letter-spacing: 0.03em;
-    pointer-events: none;
-    user-select: none;
-  }
-
-  /* Token colors (Tomorrow Night inspired) */
-  .token.comment,
-  .token.prolog,
-  .token.doctype,
-  .token.cdata {
-    color: rgb(var(--c-prism-comment) / 1);
-  }
-  .token.punctuation {
-    color: rgb(var(--c-prism-punctuation) / 1);
-  }
-  .token.property,
-  .token.tag,
-  .token.boolean,
-  .token.number,
-  .token.constant,
-  .token.symbol,
-  .token.deleted {
-    color: rgb(var(--c-prism-property) / 1);
-  }
-  .token.selector,
-  .token.attr-name,
-  .token.string,
-  .token.char,
-  .token.builtin,
-  .token.inserted {
-    color: rgb(var(--c-prism-selector) / 1);
-  }
-  .token.operator,
-  .token.entity,
-  .token.url {
-    color: rgb(var(--c-prism-operator) / 1);
-  }
-  .token.atrule,
-  .token.attr-value,
-  .token.keyword {
-    color: rgb(var(--c-prism-keyword) / 1);
-  }
-  .token.function,
-  .token.class-name {
-    color: rgb(var(--c-prism-function) / 1);
-  }
-  .token.regex,
-  .token.important,
-  .token.variable {
-    color: rgb(var(--c-prism-regex) / 1);
-  }
-}
-
-/* Prose extras */
-@layer components {
-  .prose ul {
-    @apply mb-4 list-disc pl-6;
-  }
-
-  .prose ol {
-    @apply mb-4 list-decimal pl-6;
-  }
-
-  .prose li {
-    @apply mb-1;
-  }
-
-  .prose hr {
-    @apply my-6 border-gray-200 dark:border-gray-700;
-  }
-
-  .prose table {
-    @apply mb-4 w-full border-collapse;
-  }
-
-  .prose th {
-    @apply border border-gray-300 bg-gray-50 px-3 py-2 text-left font-semibold dark:border-gray-600 dark:bg-gray-800;
-  }
-
-  .prose td {
-    @apply border border-gray-300 px-3 py-2 dark:border-gray-600;
-  }
-
-  .prose img {
-    @apply my-4 max-w-full rounded;
-  }
-
-  .katex-block {
-    @apply my-4 overflow-x-auto text-center;
-  }
-
-  .mermaid-rendered {
-    @apply my-4 flex justify-center;
-  }
-
-  .mermaid-rendered svg {
-    @apply max-w-full;
-  }
-
-  .prose strong {
-    @apply font-bold;
-  }
-
-  .prose em {
-    @apply italic;
-  }
-
-  /* TOC navigation */
-  .markdown-toc {
-    @apply my-4 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800;
-  }
-  .markdown-toc .toc-item {
-    @apply py-0.5;
-  }
-  .markdown-toc .toc-item a {
-    @apply text-sm text-blue-600 no-underline hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300;
-  }
-}
-
 /* Custom Scrollbar */
 @layer base {
   ::-webkit-scrollbar {
@@ -242,59 +603,8 @@
   }
 }
 
-/* Find & Replace match highlighting */
-@layer components {
-  .cm-searchMatch {
-    background-color: var(--c-search-match-bg);
-    border-radius: 2px;
-  }
-  .cm-searchMatch-selected {
-    background-color: var(--c-search-match-selected-bg);
-    border-radius: 2px;
-    box-shadow:
-      0 0 0 1px var(--c-search-match-selected-ring),
-      0 0 0 3px var(--c-search-match-selected-glow);
-  }
-}
-
-/* Focus Mode line dimming */
-@layer components {
-  .cm-focus-dimmed {
-    opacity: 0.3;
-    transition: opacity 200ms ease-out;
-  }
-  .cm-focus-context {
-    opacity: 0.6;
-    transition: opacity 200ms ease-out;
-  }
-}
-
-/* CodeMirror full-height fix */
-@layer components {
-  .cm-editor {
-    height: 100% !important;
-  }
-
-  .cm-scroller {
-    overflow: auto !important;
-    overscroll-behavior: contain;
-  }
-}
-
 /* Animations */
 @layer utilities {
-  .scrollbar-none {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .scrollbar-none::-webkit-scrollbar {
-    display: none;
-  }
-
-  .animate-bolt {
-    animation: bolt 0.3s ease-in-out;
-  }
-
   @keyframes bolt {
     0%,
     100% {
@@ -303,10 +613,6 @@
     50% {
       transform: translateY(-4px);
     }
-  }
-
-  .animate-dropdown {
-    animation: dropdown 0.15s ease-out;
   }
 
   @keyframes dropdown {
@@ -319,75 +625,39 @@
       transform: translateY(0);
     }
   }
-
-  /* Zen Mode transitions */
-  .zen-slide-up {
-    max-height: 0;
-    opacity: 0;
-    overflow: hidden;
-    transition:
-      max-height 250ms cubic-bezier(0.4, 0, 0.2, 1),
-      opacity 250ms cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .zen-slide-down {
-    max-height: 200px;
-    opacity: 1;
-    overflow: visible;
-    transition:
-      max-height 250ms cubic-bezier(0.4, 0, 0.2, 1),
-      opacity 250ms cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .zen-footer-dim {
-    opacity: 0.4;
-    transition: opacity 250ms cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .zen-footer-dim:hover {
-    opacity: 1;
-  }
 }
 
-/* Reduced Motion */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-/* Print Styles */
-@media print {
-  header,
-  footer,
-  .cm-editor,
-  .cm-gutters {
-    display: none !important;
+@layer utilities {
+  /* Reduced Motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
-  main {
-    display: block !important;
+  /* Print Styles */
+  @media print {
+    header,
+    footer,
+    .cm-editor,
+    .cm-gutters {
+      display: none !important;
+    }
+
+    main {
+      display: block !important;
+    }
+
+    .prose {
+      max-width: 100% !important;
+      padding: 0 !important;
+    }
   }
 
-  .prose {
-    max-width: 100% !important;
-    padding: 0 !important;
-  }
-}
-
-/* Mermaid async render placeholder */
-@layer components {
-  /* Hide raw mermaid source text during async render.
-     Cache hits apply SVG synchronously — no visible blank gap.
-     Cache misses show a placeholder skeleton until render completes. */
-  pre.mermaid-block:not(.mermaid-rendered) {
-    visibility: hidden;
-    /* Reserve space to prevent layout shift — approximate single-diagram height */
-    min-height: 80px;
-  }
+  /* Mermaid async render placeholder */
 }

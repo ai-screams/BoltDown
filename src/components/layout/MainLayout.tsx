@@ -81,12 +81,12 @@ export default memo(function MainLayout({ editor, preview, toolbar }: MainLayout
                 className={clsx(
                   'pointer-events-none h-full w-px origin-center transition-[transform,background-color] duration-150',
                   isDragging
-                    ? 'scale-x-100 bg-electric-yellow'
-                    : 'bg-line group-hover:scale-x-150 group-hover:bg-electric-yellow/50'
+                    ? 'bg-electric-yellow scale-x-100'
+                    : 'bg-line group-hover:bg-electric-yellow/50 group-hover:scale-x-150'
                 )}
               />
               <div
-                className="absolute inset-y-0 -left-[6px] -right-[6px] z-10 cursor-col-resize"
+                className="absolute inset-y-0 -right-[6px] -left-[6px] z-10 cursor-col-resize"
                 onDoubleClick={handleDoubleClick}
                 onMouseDown={handleMouseDown}
               />
