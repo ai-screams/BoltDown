@@ -180,11 +180,11 @@ export default memo(function TabBar() {
   }, [renamingTabId])
 
   return (
-    <div className="flex h-8 flex-none items-center border-b border-line bg-surface-muted">
+    <div className="border-line bg-surface-muted flex h-8 flex-none items-center border-b">
       <button
         aria-label="Toggle sidebar"
         className={clsx(
-          'flex h-8 w-8 flex-none items-center justify-center border-r border-line transition-colors',
+          'border-line flex h-8 w-8 flex-none items-center justify-center border-r transition-colors',
           sidebarOpen
             ? 'bg-electric-yellow/30 text-electric-dark'
             : 'text-fg-muted hover:bg-surface hover:text-fg-secondary'
@@ -219,7 +219,7 @@ export default memo(function TabBar() {
               {isRenaming ? (
                 <input
                   ref={renameInputRef}
-                  className="min-w-0 flex-1 rounded border border-electric-yellow bg-surface px-1 py-0.5 text-xs text-fg focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-electric-yellow/50"
+                  className="border-electric-yellow bg-surface text-fg focus-visible:ring-electric-yellow/50 min-w-0 flex-1 rounded-sm border px-1 py-0.5 text-xs focus-visible:ring-1 focus-visible:outline-hidden"
                   value={renameValue}
                   onBlur={() => void commitRename(tab.id)}
                   onChange={e => setRenameValue(e.target.value)}
@@ -241,7 +241,7 @@ export default memo(function TabBar() {
                     role="tab"
                     type="button"
                     aria-selected={tab.id === activeTabId}
-                    className="flex min-w-0 flex-1 items-center gap-1.5 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50"
+                    className="focus-visible:ring-electric-yellow/50 flex min-w-0 flex-1 items-center gap-1.5 rounded-sm focus-visible:ring-2 focus-visible:outline-hidden"
                     data-tab-id={tab.id}
                     tabIndex={tab.id === activeTabId ? 0 : -1}
                     onClick={() => setActiveTab(tab.id)}
@@ -249,13 +249,13 @@ export default memo(function TabBar() {
                     <FileText aria-hidden="true" className="h-3 w-3 flex-none" />
                     <span className="truncate">{tab.fileName}</span>
                     {tab.content !== tab.savedContent && (
-                      <span className="flex-none text-electric-yellow">●</span>
+                      <span className="text-electric-yellow flex-none">●</span>
                     )}
                   </button>
                   <button
                     type="button"
                     aria-label="Close tab"
-                    className="ml-auto flex-none rounded p-0.5 opacity-0 hover:bg-surface-muted group-focus-within:opacity-100 group-hover:opacity-100"
+                    className="hover:bg-surface-muted ml-auto flex-none rounded-sm p-0.5 opacity-0 group-focus-within:opacity-100 group-hover:opacity-100"
                     onClick={e => handleClose(e, tab.id)}
                   >
                     <X aria-hidden="true" className="h-3 w-3" />
@@ -267,7 +267,7 @@ export default memo(function TabBar() {
         })}
         <button
           aria-label="New tab"
-          className="flex h-8 w-8 flex-none items-center justify-center text-fg-muted transition-[color,background-color,opacity,transform] duration-150 hover:scale-110 hover:bg-surface hover:text-fg-secondary active:scale-95"
+          className="text-fg-muted hover:bg-surface hover:text-fg-secondary flex h-8 w-8 flex-none items-center justify-center transition-[color,background-color,opacity,transform] duration-150 hover:scale-110 active:scale-95"
           title="New Tab (Cmd+N)"
           onClick={handleNewTab}
         >

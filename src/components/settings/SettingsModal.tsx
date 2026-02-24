@@ -55,10 +55,10 @@ function SettingRow({
   return (
     <div className="flex items-center justify-between gap-4 py-3">
       <div className="min-w-0">
-        <div className="text-sm font-medium text-fg">{label}</div>
-        {description && <div className="mt-0.5 text-xs text-fg-muted">{description}</div>}
+        <div className="text-fg text-sm font-medium">{label}</div>
+        {description && <div className="text-fg-muted mt-0.5 text-xs">{description}</div>}
       </div>
-      <div className="flex-shrink-0">{children}</div>
+      <div className="shrink-0">{children}</div>
     </div>
   )
 }
@@ -78,14 +78,14 @@ function Toggle({
       aria-checked={checked}
       aria-label={label}
       className={clsx(
-        'relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50',
+        'focus-visible:ring-electric-yellow/50 relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus-visible:ring-2 focus-visible:outline-hidden',
         checked ? 'bg-electric-yellow' : 'bg-surface-muted'
       )}
       onClick={() => onChange(!checked)}
     >
       <span
         className={clsx(
-          'inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200',
+          'inline-block h-3.5 w-3.5 rounded-full bg-white shadow-xs transition-transform duration-200',
           checked ? 'translate-x-[18px]' : 'translate-x-[3px]'
         )}
       />
@@ -107,7 +107,7 @@ function Select<T extends string>({
   return (
     <select
       aria-label={label}
-      className="rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg-secondary focus-visible:border-electric-yellow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-electric-yellow/50"
+      className="border-line bg-surface text-fg-secondary focus-visible:border-electric-yellow focus-visible:ring-electric-yellow/50 rounded-md border px-2 py-1 text-xs focus-visible:ring-1 focus-visible:outline-hidden"
       value={value}
       onChange={e => onChange(e.target.value as T)}
     >
@@ -156,7 +156,7 @@ function NumberInput({
     <input
       type="number"
       aria-label={label}
-      className="w-20 rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg-secondary focus-visible:border-electric-yellow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-electric-yellow/50"
+      className="border-line bg-surface text-fg-secondary focus-visible:border-electric-yellow focus-visible:ring-electric-yellow/50 w-20 rounded-md border px-2 py-1 text-xs focus-visible:ring-1 focus-visible:outline-hidden"
       max={max}
       min={min}
       step={step ?? 1}
@@ -194,7 +194,7 @@ const ThemeModeControl = memo(function ThemeModeControl() {
   const updateTheme = useSettingsStore(s => s.updateTheme)
 
   return (
-    <div className="flex rounded-lg border border-line bg-surface-muted p-0.5">
+    <div className="border-line bg-surface-muted flex rounded-lg border p-0.5">
       {THEME_MODES.map(value => {
         const Icon = themeModeMeta[value].icon
         const label = themeModeMeta[value].label
@@ -205,9 +205,9 @@ const ThemeModeControl = memo(function ThemeModeControl() {
             type="button"
             aria-pressed={value === mode}
             className={clsx(
-              'flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-[color,background-color,opacity,transform] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95',
+              'focus-visible:ring-electric-yellow/50 flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-[color,background-color,opacity,transform] duration-150 focus-visible:ring-2 focus-visible:outline-hidden active:scale-95',
               value === mode
-                ? 'bg-electric-yellow text-deep-blue shadow-sm'
+                ? 'bg-electric-yellow text-deep-blue shadow-xs'
                 : 'text-fg-muted hover:text-fg-secondary'
             )}
             onClick={() => updateTheme({ mode: value })}
@@ -237,7 +237,7 @@ const ThemePresetControl = memo(function ThemePresetControl() {
             aria-label={`${preset.label} theme`}
             aria-pressed={isActive}
             className={clsx(
-              'rounded-lg border px-2.5 py-2 text-left transition-[color,background-color,opacity,transform] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50',
+              'focus-visible:ring-electric-yellow/50 rounded-lg border px-2.5 py-2 text-left transition-[color,background-color,opacity,transform] duration-150 focus-visible:ring-2 focus-visible:outline-hidden',
               isActive
                 ? 'border-electric-yellow bg-electric-yellow/10'
                 : 'border-line bg-surface hover:border-electric-yellow/60'
@@ -245,12 +245,12 @@ const ThemePresetControl = memo(function ThemePresetControl() {
             onClick={() => updateTheme({ name: preset.name })}
           >
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-semibold text-fg">{preset.label}</span>
+              <span className="text-fg text-xs font-semibold">{preset.label}</span>
               {isActive && (
-                <Check aria-hidden="true" className="h-3.5 w-3.5 text-electric-yellow" />
+                <Check aria-hidden="true" className="text-electric-yellow h-3.5 w-3.5" />
               )}
             </div>
-            <p className="mt-1 text-[11px] leading-snug text-fg-secondary">{preset.description}</p>
+            <p className="text-fg-secondary mt-1 text-[11px] leading-snug">{preset.description}</p>
             <div className="mt-2 flex flex-col gap-1">
               <div className="flex items-center gap-0.5">
                 {preset.swatches.map((swatch, index) => (
@@ -308,25 +308,25 @@ const CustomCssEditor = memo(function CustomCssEditor() {
     <div className="mt-4">
       <button
         type="button"
-        className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm font-medium text-fg transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50"
+        className="text-fg hover:bg-surface-muted focus-visible:ring-electric-yellow/50 flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-hidden"
         onClick={() => setIsOpen(v => !v)}
       >
-        <ChevronIcon aria-hidden="true" className="h-4 w-4 text-fg-muted" />
-        <Code2 aria-hidden="true" className="h-4 w-4 text-fg-muted" />
+        <ChevronIcon aria-hidden="true" className="text-fg-muted h-4 w-4" />
+        <Code2 aria-hidden="true" className="text-fg-muted h-4 w-4" />
         <span>Custom CSS</span>
         {customCss.length > 0 && (
-          <span className="ml-auto rounded bg-surface-muted px-1.5 py-0.5 text-xs text-fg-muted">
+          <span className="bg-surface-muted text-fg-muted ml-auto rounded-sm px-1.5 py-0.5 text-xs">
             {customCss.length.toLocaleString()}
           </span>
         )}
       </button>
       {isOpen && (
-        <div className="mt-2 rounded-lg border border-line bg-surface-muted p-3">
-          <p className="mb-2 text-xs text-fg-muted">
+        <div className="border-line bg-surface-muted mt-2 rounded-lg border p-3">
+          <p className="text-fg-muted mb-2 text-xs">
             Add custom CSS to override theme styles. Changes apply in real-time.
           </p>
           <textarea
-            className="w-full resize-y rounded border border-line bg-surface px-2 py-1.5 font-mono text-xs text-fg focus-visible:border-electric-yellow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-electric-yellow/50"
+            className="border-line bg-surface text-fg focus-visible:border-electric-yellow focus-visible:ring-electric-yellow/50 w-full resize-y rounded-sm border px-2 py-1.5 font-mono text-xs focus-visible:ring-1 focus-visible:outline-hidden"
             rows={8}
             spellCheck={false}
             value={customCss}
@@ -342,7 +342,7 @@ const CustomCssEditor = memo(function CustomCssEditor() {
             {customCss.length > 0 && (
               <button
                 type="button"
-                className="flex items-center gap-1 rounded px-2 py-1 text-xs text-fg-muted transition-colors hover:bg-surface hover:text-fg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50"
+                className="text-fg-muted hover:bg-surface hover:text-fg-secondary focus-visible:ring-electric-yellow/50 flex items-center gap-1 rounded-sm px-2 py-1 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-hidden"
                 onClick={handleReset}
               >
                 <RotateCcw aria-hidden="true" className="h-3 w-3" />
@@ -421,10 +421,10 @@ const CssReference = memo(function CssReference() {
   const RefChevron = isOpen ? ChevronDown : ChevronRight
 
   return (
-    <div className="mt-3 border-t border-line pt-3">
+    <div className="border-line mt-3 border-t pt-3">
       <button
         type="button"
-        className="flex w-full items-center gap-1.5 text-left text-xs font-medium text-fg-muted transition-colors hover:text-fg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50"
+        className="text-fg-muted hover:text-fg-secondary focus-visible:ring-electric-yellow/50 flex w-full items-center gap-1.5 text-left text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:outline-hidden"
         onClick={() => setIsOpen(v => !v)}
       >
         <RefChevron aria-hidden="true" className="h-3 w-3" />
@@ -435,11 +435,11 @@ const CssReference = memo(function CssReference() {
         <div className="mt-2 space-y-3 text-xs">
           {CSS_REFERENCE_SECTIONS.map(section => (
             <div key={section.title}>
-              <h4 className="mb-1 font-medium text-fg-secondary">{section.title}</h4>
+              <h4 className="text-fg-secondary mb-1 font-medium">{section.title}</h4>
               <div className="space-y-0.5">
                 {section.items.map(item => (
                   <div key={item.token} className="flex items-baseline gap-2">
-                    <code className="shrink-0 rounded bg-surface px-1 py-0.5 font-mono text-[10px] text-fg-muted">
+                    <code className="bg-surface text-fg-muted shrink-0 rounded-sm px-1 py-0.5 font-mono text-[10px]">
                       {item.token}
                     </code>
                     <span className="text-fg-muted">{item.desc}</span>
@@ -450,11 +450,11 @@ const CssReference = memo(function CssReference() {
           ))}
 
           <div>
-            <h4 className="mb-1 font-medium text-fg-secondary">Selectors</h4>
+            <h4 className="text-fg-secondary mb-1 font-medium">Selectors</h4>
             <div className="space-y-0.5">
               {CSS_SELECTORS.map(item => (
                 <div key={item.sel} className="flex items-baseline gap-2">
-                  <code className="shrink-0 rounded bg-surface px-1 py-0.5 font-mono text-[10px] text-fg-muted">
+                  <code className="bg-surface text-fg-muted shrink-0 rounded-sm px-1 py-0.5 font-mono text-[10px]">
                     {item.sel}
                   </code>
                   <span className="text-fg-muted">{item.desc}</span>
@@ -464,12 +464,12 @@ const CssReference = memo(function CssReference() {
           </div>
 
           <div>
-            <h4 className="mb-1 font-medium text-fg-secondary">Recipes</h4>
+            <h4 className="text-fg-secondary mb-1 font-medium">Recipes</h4>
             <div className="space-y-1">
               {CSS_RECIPES.map(recipe => (
                 <div key={recipe.label}>
                   <span className="text-fg-muted">{recipe.label}</span>
-                  <code className="mt-0.5 block rounded bg-surface px-1.5 py-1 font-mono text-[10px] text-fg-muted">
+                  <code className="bg-surface text-fg-muted mt-0.5 block rounded-sm px-1.5 py-1 font-mono text-[10px]">
                     {recipe.code}
                   </code>
                 </div>
@@ -477,7 +477,7 @@ const CssReference = memo(function CssReference() {
             </div>
           </div>
 
-          <p className="text-[10px] text-fg-muted">
+          <p className="text-fg-muted text-[10px]">
             Values use RGB channels (e.g. <code className="font-mono">136 192 208</code>). Scope to
             a theme with <code className="font-mono">:root[data-theme=&quot;name&quot;]</code> or
             dark mode with <code className="font-mono">.dark</code>.
@@ -490,7 +490,7 @@ const CssReference = memo(function CssReference() {
 
 function ThemePanel() {
   return (
-    <div className="divide-y divide-line">
+    <div className="divide-line divide-y">
       <SettingRow description="Light, dark, or follow system preference" label="Theme Mode">
         <ThemeModeControl />
       </SettingRow>
@@ -527,7 +527,7 @@ function EditorPanel() {
   const updateEditor = useSettingsStore(s => s.updateEditor)
 
   return (
-    <div className="divide-y divide-line">
+    <div className="divide-line divide-y">
       <SettingRow description="Editor font" label="Font Family">
         <Select
           label="Font Family"
@@ -634,7 +634,7 @@ function PreviewPanel() {
   const updatePreview = useSettingsStore(s => s.updatePreview)
 
   return (
-    <div className="divide-y divide-line">
+    <div className="divide-line divide-y">
       <SettingRow
         description={`${PREVIEW_SETTING_LIMITS.fontSize.min} - ${PREVIEW_SETTING_LIMITS.fontSize.max}px`}
         label="Font Size"
@@ -696,7 +696,7 @@ function PreviewPanel() {
           onChange={v => updatePreview({ mermaidSecurityLevel: v })}
         />
         {preview.mermaidSecurityLevel === 'loose' && (
-          <p role="alert" className="mt-1.5 text-xs text-warning">
+          <p role="alert" className="text-warning mt-1.5 text-xs">
             Loose mode may execute untrusted HTML in Mermaid diagrams.
           </p>
         )}
@@ -710,7 +710,7 @@ function GeneralPanel() {
   const updateGeneral = useSettingsStore(s => s.updateGeneral)
 
   return (
-    <div className="divide-y divide-line">
+    <div className="divide-line divide-y">
       <SettingRow description="Automatically save changes" label="Auto Save">
         <Toggle
           checked={general.autoSave}
@@ -790,26 +790,26 @@ export default memo(function SettingsModal({ isOpen, onClose }: SettingsModalPro
   return (
     <div
       ref={backdropRef}
-      className="z-60 fixed inset-0 flex items-center justify-center overscroll-contain bg-black/40 backdrop-blur-sm"
+      className="fixed inset-0 z-60 flex items-center justify-center overscroll-contain bg-black/40 backdrop-blur-xs"
       onClick={handleBackdropClick}
     >
       <div
         role="dialog"
         aria-labelledby="settings-dialog-title"
         aria-modal="true"
-        className="animate-dropdown flex h-[480px] w-[640px] flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-2xl"
+        className="animate-dropdown border-line bg-surface flex h-[480px] w-[640px] flex-col overflow-hidden rounded-xl border shadow-2xl"
       >
         {/* Header */}
-        <div className="flex h-12 flex-none items-center justify-between border-b border-line px-4">
+        <div className="border-line flex h-12 flex-none items-center justify-between border-b px-4">
           <div className="flex items-center gap-2">
-            <Settings aria-hidden="true" className="h-4 w-4 text-fg-muted" />
-            <span id="settings-dialog-title" className="text-sm font-semibold text-fg">
+            <Settings aria-hidden="true" className="text-fg-muted h-4 w-4" />
+            <span id="settings-dialog-title" className="text-fg text-sm font-semibold">
               Settings
             </span>
           </div>
           <button
             aria-label="Close settings"
-            className="rounded p-1.5 text-fg-muted transition-[color,background-color,opacity,transform] duration-150 hover:scale-110 hover:bg-surface-muted hover:text-fg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95"
+            className="text-fg-muted hover:bg-surface-muted hover:text-fg-secondary focus-visible:ring-electric-yellow/50 rounded-sm p-1.5 transition-[color,background-color,opacity,transform] duration-150 hover:scale-110 focus-visible:ring-2 focus-visible:outline-hidden active:scale-95"
             onClick={onClose}
           >
             <X aria-hidden="true" className="h-4 w-4" />
@@ -818,7 +818,7 @@ export default memo(function SettingsModal({ isOpen, onClose }: SettingsModalPro
 
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar */}
-          <div className="flex w-40 flex-none flex-col border-r border-line bg-surface-canvas">
+          <div className="border-line bg-surface-canvas flex w-40 flex-none flex-col border-r">
             <nav className="flex-1 py-2">
               {categories.map(({ key, label, icon: Icon }) => (
                 <button
@@ -839,10 +839,10 @@ export default memo(function SettingsModal({ isOpen, onClose }: SettingsModalPro
             </nav>
 
             {/* Reset buttons */}
-            <div className="border-t border-line p-2">
+            <div className="border-line border-t p-2">
               <button
                 type="button"
-                className="flex w-full items-center gap-1.5 rounded px-2 py-1.5 text-[10px] text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg-secondary"
+                className="text-fg-muted hover:bg-surface-muted hover:text-fg-secondary flex w-full items-center gap-1.5 rounded-sm px-2 py-1.5 text-[10px] transition-colors"
                 onClick={() => resetCategory(activeCategory)}
               >
                 <RotateCcw aria-hidden="true" className="h-3 w-3" />
@@ -850,7 +850,7 @@ export default memo(function SettingsModal({ isOpen, onClose }: SettingsModalPro
               </button>
               <button
                 type="button"
-                className="flex w-full items-center gap-1.5 rounded px-2 py-1.5 text-[10px] text-fg-muted transition-colors hover:bg-danger/10 hover:text-danger"
+                className="text-fg-muted hover:bg-danger/10 hover:text-danger flex w-full items-center gap-1.5 rounded-sm px-2 py-1.5 text-[10px] transition-colors"
                 onClick={resetAll}
               >
                 <RotateCcw aria-hidden="true" className="h-3 w-3" />

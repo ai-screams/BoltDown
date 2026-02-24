@@ -91,18 +91,18 @@ export default memo(function EditorToolbar() {
   }
 
   return (
-    <div className="relative flex h-9 flex-none border-b border-line bg-surface-canvas">
+    <div className="border-line bg-surface-canvas relative flex h-9 flex-none border-b">
       <div
         aria-hidden="true"
         className={clsx(
-          'pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-surface-canvas via-surface-canvas/90 to-transparent transition-opacity duration-150',
+          'from-surface-canvas via-surface-canvas/90 pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-linear-to-r to-transparent transition-opacity duration-150',
           showLeftFade ? 'opacity-100' : 'opacity-0'
         )}
       />
       <div
         aria-hidden="true"
         className={clsx(
-          'pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-surface-canvas via-surface-canvas/90 to-transparent transition-opacity duration-150',
+          'from-surface-canvas via-surface-canvas/90 pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-linear-to-l to-transparent transition-opacity duration-150',
           showRightFade ? 'opacity-100' : 'opacity-0'
         )}
       />
@@ -153,7 +153,7 @@ export default memo(function EditorToolbar() {
           onClick={() => exec(v => toggleWrap(v, '<sub>', '</sub>'))}
         />
 
-        <div className="mx-1 h-4 w-px flex-none bg-line" />
+        <div className="bg-line mx-1 h-4 w-px flex-none" />
 
         {/* Headings */}
         <IconButton
@@ -177,7 +177,7 @@ export default memo(function EditorToolbar() {
           onClick={() => exec(v => insertAtLineStart(v, '#### '))}
         />
 
-        <div className="mx-1 h-4 w-px flex-none bg-line" />
+        <div className="bg-line mx-1 h-4 w-px flex-none" />
 
         {/* Links & media */}
         <IconButton
@@ -192,7 +192,7 @@ export default memo(function EditorToolbar() {
           onClick={() => exec(v => insertBlock(v, '![alt](url)'))}
         />
 
-        <div className="mx-1 h-4 w-px flex-none bg-line" />
+        <div className="bg-line mx-1 h-4 w-px flex-none" />
 
         {/* Code & math */}
         <IconButton
@@ -208,7 +208,7 @@ export default memo(function EditorToolbar() {
         />
         <IconButton icon={Sigma} label="Math" onClick={() => exec(v => insertMathBlock(v))} />
 
-        <div className="mx-1 h-4 w-px flex-none bg-line" />
+        <div className="bg-line mx-1 h-4 w-px flex-none" />
 
         {/* Block elements */}
         <IconButton
@@ -232,7 +232,7 @@ export default memo(function EditorToolbar() {
           onClick={() => exec(v => insertTaskList(v))}
         />
 
-        <div className="mx-1 h-4 w-px flex-none bg-line" />
+        <div className="bg-line mx-1 h-4 w-px flex-none" />
 
         {/* Insert */}
         <IconButton icon={Table} label="Table" onClick={() => exec(v => insertTable(v))} />

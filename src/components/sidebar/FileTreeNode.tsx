@@ -117,7 +117,7 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
         role="treeitem"
         aria-expanded={isDir ? node.isOpen : undefined}
         aria-selected={!isDir ? node.isSelected : undefined}
-        className="group relative flex cursor-pointer items-center gap-1 px-1 py-0.5 text-xs hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-electric-yellow/50"
+        className="group hover:bg-surface-muted focus-visible:ring-electric-yellow/50 relative flex cursor-pointer items-center gap-1 px-1 py-0.5 text-xs focus-visible:ring-1 focus-visible:outline-hidden"
         style={style}
         tabIndex={0}
         onClick={handleNodeClick}
@@ -129,9 +129,9 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
         {isDir ? (
           <>
             {node.isOpen ? (
-              <ChevronDown aria-hidden="true" className="h-3.5 w-3.5 flex-none text-fg-muted" />
+              <ChevronDown aria-hidden="true" className="text-fg-muted h-3.5 w-3.5 flex-none" />
             ) : (
-              <ChevronRight aria-hidden="true" className="h-3.5 w-3.5 flex-none text-fg-muted" />
+              <ChevronRight aria-hidden="true" className="text-fg-muted h-3.5 w-3.5 flex-none" />
             )}
             <span className="flex-none" style={{ width: 16, height: 16 }}>
               <FolderIcon folderName={name} />
@@ -145,7 +145,7 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
             </span>
           </>
         )}
-        <span className="flex-1 truncate text-fg-secondary">{name}</span>
+        <span className="text-fg-secondary flex-1 truncate">{name}</span>
 
         {/* Hover action icons (files only) */}
         {!isDir && (
@@ -159,20 +159,20 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
             <button
               type="button"
               aria-label="Duplicate"
-              className="rounded p-0.5 hover:bg-surface-elevated"
+              className="hover:bg-surface-elevated rounded-sm p-0.5"
               title="Duplicate file"
               onClick={handleDuplicate}
             >
-              <Copy aria-hidden="true" className="h-3 w-3 text-fg-muted" />
+              <Copy aria-hidden="true" className="text-fg-muted h-3 w-3" />
             </button>
             <button
               type="button"
               aria-label="Delete"
-              className="rounded p-0.5 hover:bg-surface-elevated"
+              className="hover:bg-surface-elevated rounded-sm p-0.5"
               title="Delete file"
               onClick={handleDelete}
             >
-              <Trash2 aria-hidden="true" className="h-3 w-3 text-fg-muted" />
+              <Trash2 aria-hidden="true" className="text-fg-muted h-3 w-3" />
             </button>
           </div>
         )}
@@ -183,7 +183,7 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
         <div
           ref={menuRef}
           role="menu"
-          className="fixed z-50 min-w-[140px] rounded-md border border-line bg-surface py-1 shadow-lg"
+          className="border-line bg-surface fixed z-50 min-w-[140px] rounded-md border py-1 shadow-lg"
           style={{ left: menuPos.x, top: menuPos.y }}
           onClick={e => e.stopPropagation()}
           onKeyDown={handleMenuKeyDown}
@@ -191,7 +191,7 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
           <button
             role="menuitem"
             type="button"
-            className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-fg-secondary hover:bg-surface-muted"
+            className="text-fg-secondary hover:bg-surface-muted flex w-full items-center gap-2 px-3 py-1.5 text-xs"
             tabIndex={0}
             onClick={e => {
               handleDuplicate(e)
@@ -204,7 +204,7 @@ function FileTreeNodeComponent({ node, style, onDelete, onDuplicate }: FileTreeN
           <button
             role="menuitem"
             type="button"
-            className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-danger hover:bg-surface-muted"
+            className="text-danger hover:bg-surface-muted flex w-full items-center gap-2 px-3 py-1.5 text-xs"
             tabIndex={0}
             onClick={e => {
               handleDelete(e)

@@ -36,23 +36,23 @@ export default memo(function AboutModal({ isOpen, onClose, onOpenChangelog }: Ab
   return (
     <div
       ref={backdropRef}
-      className="z-60 fixed inset-0 flex items-center justify-center overscroll-contain bg-black/40 backdrop-blur-sm"
+      className="fixed inset-0 z-60 flex items-center justify-center overscroll-contain bg-black/40 backdrop-blur-xs"
       onClick={handleBackdropClick}
     >
       <div
         role="dialog"
         aria-labelledby="about-dialog-title"
         aria-modal="true"
-        className="animate-dropdown flex w-[360px] flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-2xl"
+        className="animate-dropdown border-line bg-surface flex w-[360px] flex-col overflow-hidden rounded-xl border shadow-2xl"
       >
         {/* Header */}
-        <div className="flex h-12 flex-none items-center justify-between border-b border-line px-4">
-          <span id="about-dialog-title" className="text-sm font-semibold text-fg">
+        <div className="border-line flex h-12 flex-none items-center justify-between border-b px-4">
+          <span id="about-dialog-title" className="text-fg text-sm font-semibold">
             About
           </span>
           <button
             aria-label="Close about"
-            className="rounded p-1.5 text-fg-muted transition-[color,background-color,opacity,transform] duration-150 hover:scale-110 hover:bg-surface-muted hover:text-fg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50 active:scale-95"
+            className="text-fg-muted hover:bg-surface-muted hover:text-fg-secondary focus-visible:ring-electric-yellow/50 rounded-sm p-1.5 transition-[color,background-color,opacity,transform] duration-150 hover:scale-110 focus-visible:ring-2 focus-visible:outline-hidden active:scale-95"
             onClick={onClose}
           >
             <X aria-hidden="true" className="h-4 w-4" />
@@ -62,26 +62,26 @@ export default memo(function AboutModal({ isOpen, onClose, onOpenChangelog }: Ab
         {/* Content */}
         <div className="flex flex-col items-center px-6 py-6">
           <div className="flex items-center gap-2">
-            <Zap aria-hidden="true" className="h-8 w-8 text-electric-yellow" fill="currentColor" />
-            <span className="text-xl font-bold text-fg">BoltDown</span>
+            <Zap aria-hidden="true" className="text-electric-yellow h-8 w-8" fill="currentColor" />
+            <span className="text-fg text-xl font-bold">BoltDown</span>
           </div>
-          <span className="mt-1 text-xs text-fg-muted">v{APP_VERSION}</span>
-          <p className="mt-3 text-center text-sm text-fg-secondary">
+          <span className="text-fg-muted mt-1 text-xs">v{APP_VERSION}</span>
+          <p className="text-fg-secondary mt-3 text-center text-sm">
             Lightning-fast Markdown editor built with Tauri.
           </p>
 
-          <div className="mt-5 w-full space-y-2 rounded-lg border border-line bg-surface-muted p-3 text-xs text-fg-muted">
+          <div className="border-line bg-surface-muted text-fg-muted mt-5 w-full space-y-2 rounded-lg border p-3 text-xs">
             <div className="flex justify-between">
               <span>License</span>
-              <span className="font-medium text-fg-secondary">MIT</span>
+              <span className="text-fg-secondary font-medium">MIT</span>
             </div>
             <div className="flex justify-between">
               <span>Framework</span>
-              <span className="font-medium text-fg-secondary">React 19 + Tauri 2.0</span>
+              <span className="text-fg-secondary font-medium">React 19 + Tauri 2.0</span>
             </div>
             <div className="flex justify-between">
               <span>Editor</span>
-              <span className="font-medium text-fg-secondary">CodeMirror 6</span>
+              <span className="text-fg-secondary font-medium">CodeMirror 6</span>
             </div>
           </div>
 
@@ -89,7 +89,7 @@ export default memo(function AboutModal({ isOpen, onClose, onOpenChangelog }: Ab
             {onOpenChangelog && (
               <button
                 type="button"
-                className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-fg-secondary transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-yellow/50"
+                className="border-line text-fg-secondary hover:bg-surface-muted focus-visible:ring-electric-yellow/50 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:outline-hidden"
                 onClick={() => {
                   onClose()
                   onOpenChangelog()
@@ -100,9 +100,9 @@ export default memo(function AboutModal({ isOpen, onClose, onOpenChangelog }: Ab
             )}
           </div>
 
-          <p className="mt-5 flex items-center gap-1 text-[11px] text-fg-muted">
+          <p className="text-fg-muted mt-5 flex items-center gap-1 text-[11px]">
             Made with{' '}
-            <Heart aria-hidden="true" className="h-3 w-3 text-danger" fill="currentColor" /> by
+            <Heart aria-hidden="true" className="text-danger h-3 w-3" fill="currentColor" /> by
             BoltDown Team
           </p>
         </div>
