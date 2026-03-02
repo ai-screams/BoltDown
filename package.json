@@ -63,7 +63,7 @@
     "@uiw/react-codemirror": "^4.23.0",
     "clsx": "^2.1.1",
     "dompurify": "^3.3.1",
-    "katex": "^0.16.32",
+    "katex": "^0.16.33",
     "lucide-react": "^0.575.0",
     "markdown-it": "^14.1.1",
     "mermaid": "^11.0.0",
